@@ -1,0 +1,17 @@
+# 4.2in E-Paper Spotify Weather Clock 
+
+<img src="spotify_epaper_preview.jpg">
+
+Ok I had way too much fun making this project.Two Spotify users' current listening, or recent listening are displayed along with the musical context
+The e-paper display has a partial update each minute 5 times before a full refresh cleans the screen. Open invite to email me, atscott@ucsc.edu, if you have any questions regarding my implementation, or otherwise aberrant programming practices.
+ 
+## OpenWeatherMap API 
+
+Shout out to the folks at OpenWeatherMap. This proect samples the weather from a given city every 5 minutes at no cost.
+
+## Spotipy Documentation
+https://github.com/plamere/spotipy/blob/master/docs/index.rst
+
+https://spotipy.readthedocs.io/en/latest/
+
+**This project supports the Waveshare 4.2inch B&W display, and has been tested with Python 3.7.3**
