@@ -1,6 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/python3
+# SpotifyOAuthDemo.py https://github.com/perelin/spotipy_oauth_demo
 # -*- coding:utf-8 -*-
-
 import sys
 import os
 picdir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'pic')
@@ -160,17 +160,17 @@ def drawBoarderLines(image_draw_object):
 
 def drawName(image_draw_object, text, name_x, name_y):
     # DRAW BOLD TEXTNAME @ name_x, name_y
-    move_x, move_y = randint(-2, 1), randint(-2, 1)
+    move_x, move_y = randint(-1, 1), randint(-1, 1)
     name_width, name_height = draw.textsize(text, font = helveti32)
-    draw.text((name_x, name_y), text, font = helveti32)
+    draw.text((name_x + move_x, name_y + move_y), text, font = helveti32)
     # draw.line([(name_x - 1, name_y + name_height + 2), (name_x + name_width - 1, name_y + name_height + 2)], fill = 0)
-    draw.line([(name_x - 1, name_y + name_height + 3), (name_x + name_width - 1, name_y + name_height + 3)], fill = 0)
+    draw.line([(name_x - 1 + move_x, name_y + name_height + 3 + move_y), (name_x + name_width - 1 + move_x, name_y + name_height + 3 + move_y)], fill = 0)
     return name_width, name_height
 
 def drawUserTimeAgo(image_draw_object, text, time_x, time_y):
     move_x, move_y = randint(-2, 1), randint(-2, 1)
     time_width, time_height = draw.textsize(text, font = DSfnt16)
-    draw.text((time_x, time_y), text, font = DSfnt16)
+    draw.text((time_x + move_x, time_y + move_y), text, font = DSfnt16)
 
 def drawSpotContext(image_draw_object, context_type, context_text, context_x, context_y):
     moveLine = randint(-1, 1)
@@ -326,6 +326,7 @@ if __name__ == '__main__':
     album_icon = Image.open('Icons/album.png')
 
     # OPEN_WEATHER API SETTUP
+    # generate here: https://openweathermap.org/appid
     OPENWEATHER_API_KEY = ""
     OPENWEATHER_BASE_URL = "http://api.openweathermap.org/data/2.5/weather?"
     OPENWEATHER_CITY_ID = "" # https://openweathermap.org/find
@@ -336,20 +337,21 @@ if __name__ == '__main__':
     REDIRECT_URI = 'http://www.google.com/'
 
     # ALEX SPOTIPY 
-    A_SPOT_CLIENT_ID = ''
-    A_SPOT_CLIENT_SECRET = ''
+    # generate here: https://developer.spotify.com/dashboard/
+    A_SPOT_CLIENT_ID = 'yourClientID'
+    A_SPOT_CLIENT_SECRET = 'yourClientSecret'
     A_SPOT_CONTEXT_TYPE = ""
     A_SPOT_CONTEXT_NAME = ""
-    A_CACHE = ''
-    A_USERNAME = ''
+    A_CACHE = '.yourSpotAuthCache'
+    A_USERNAME = 'yourSpotUsername'
 
     # EMMA SPOTIPY 
-    E_SPOT_CLIENT_ID = ''
-    E_SPOT_CLIENT_SECRET = ''
+    E_SPOT_CLIENT_ID = 'secondClientID'
+    E_SPOT_CLIENT_SECRET = 'secondClientSecret'
     E_SPOT_CONTEXT_TYPE = ""
     E_SPOT_CONTEXT_NAME = ""
-    E_CACHE = ''
-    E_USERNAME = ''
+    E_CACHE = '.secondSpotAuthCache'
+    E_USERNAME = 'secondSpotUsername'
 
     try:
         # ePAPER init and clear
@@ -361,7 +363,7 @@ if __name__ == '__main__':
 
         oldTime = None
         temp = None
-        countToFive = 0 # get weather, full update every 10 minutes
+        countToFive = 0 # get weather every 5 minutes
 
         while True:
             # GET REGULAR TIME
@@ -394,10 +396,10 @@ if __name__ == '__main__':
                 alex_track_name, alex_artist_name = "", ""
 
             # ALEX TRACK TITLES CONTEXT ----------------------------------------------------------------
-            text_x, text_y = (WIDTH // 50, - (HEIGHT // 1.125) + HEIGHT)
+            text_x, text_y = (WIDTH // 50, - (HEIGHT // 1.125) + HEIGHT )
             track_line_count, track_text_size = drawTrackText(draw, alex_track_name, alex_artist_name, text_x, text_y)
             drawArtistText(draw, alex_track_name, alex_artist_name, track_line_count, track_text_size, text_x, text_y)
-            alex_context_x, alex_context_y = WIDTH // 100, 195
+            alex_context_x, alex_context_y = WIDTH // 100, 195 
             drawSpotContext(draw, A_SPOT_CONTEXT_TYPE, A_SPOT_CONTEXT_NAME, alex_context_x, alex_context_y)
 
             # GET EMMAS's SPOTIFY TOKEN
@@ -413,19 +415,19 @@ if __name__ == '__main__':
                 emma_track_name, emma_artist_name = "", ""          
 
             # EMMA TRACK TITLES ----------------------------------------------------------------
-            text_x, text_y = (WIDTH // 50 + 203, - (HEIGHT // 1.125) + HEIGHT)
+            text_x, text_y = (WIDTH // 50 + 203, - (HEIGHT // 1.125) + HEIGHT )
             track_line_count, track_text_size = drawTrackText(draw, emma_track_name, emma_artist_name, text_x, text_y)
             drawArtistText(draw, emma_track_name, emma_artist_name, track_line_count, track_text_size, text_x, text_y)
             emma_context_x, emma_context_y = 202 + WIDTH // 100, 195 
             drawSpotContext(draw, E_SPOT_CONTEXT_TYPE, E_SPOT_CONTEXT_NAME, emma_context_x, emma_context_y)
 
             # DRAW NAMES TIME SINCE ----------------------------------------------------------------
-            alex_x, alex_y = (WIDTH // 50), (HEIGHT // 50)
+            alex_x, alex_y = (WIDTH // 50), (HEIGHT // 50) 
             alex_width, alex_height = drawName(draw, "Alex", alex_x, alex_y)
-            drawUserTimeAgo(draw, alex_time_passed, alex_x + 10 + alex_width, alex_y + alex_height // 2)
-            emma_x, emma_y = 202 + (WIDTH // 50), (HEIGHT // 50)
+            drawUserTimeAgo(draw, alex_time_passed, alex_x + 10 + alex_width, + alex_y + alex_height // 2)
+            emma_x, emma_y = 202 + (WIDTH // 50), (HEIGHT // 50) 
             emma_width, emma_height = drawName(draw, "Emma", emma_x, emma_y)
-            drawUserTimeAgo(draw, emma_time_passed, emma_x + 10 + emma_width, emma_y + emma_height // 2) 
+            drawUserTimeAgo(draw, emma_time_passed, emma_x + 10 + emma_width, + emma_y + emma_height // 2) 
 
             # HIDDEN DARK MODE
             # Himage = ImageMath.eval('255-(a)',a=Himage)
@@ -433,31 +435,33 @@ if __name__ == '__main__':
             # DRAW LINES DATE TIME TEMP ----------------------------------------------------------------
             drawBoarderLines(draw)
             drawDateTimeTemp(draw, military_time, date_str, temp)
-
-            if countToFive > 0 and countToFive % 5 == 0:
-                print("\tFULL update")
-                epd.display(epd.getbuffer(Himage)) 
-            else:
-                # I HAVE NO CLUD WHY WE NEED TO INVERT PARTIAL UPDATE... 
-                print("\tpartial update")
-                Himage = ImageMath.eval('255-(a)',a=Himage)
-                epd.EPD_4IN2_PartialDisplay(0, 0, 400, 300, epd.getbuffer(Himage))
+            epd.display(epd.getbuffer(Himage)) 
 
             # DEBUG TIMER 
-            stop = time.time() 
+            stop = time.time()
             TIME_ELAPSED = stop - start
             remaining_time = seconds_left - TIME_ELAPSED
-            print("\t", round(TIME_ELAPSED, 2), "\tseconds per loop\t", "sleeping for {} seconds".format(int(remaining_time)))
             if remaining_time > 0:
-                time.sleep(remaining_time)
+                # From midnight - 6:59am, update every 5 minutes to 'save' the screen some labor
+                hour = int(military_time.split(":")[0])
+                if military_time[-2:] == 'am' and (hour == 12 or hour < 7):
+                    print("\t", round(TIME_ELAPSED, 2), "\tseconds per loop\t", "sleeping for {} seconds".format(int(remaining_time) + 300))
+                    time.sleep(remaining_time + 600)
+                # Otherwise, update every 3 minutes as per Waveshare specs to not damage display in the long term
+                else:
+                    print("\t", round(TIME_ELAPSED, 2), "\tseconds per loop\t", "sleeping for {} seconds".format(int(remaining_time) + 180))
+                    time.sleep(remaining_time + 180)
 
             # Increment counter for Weather requests
-            if countToFive == 10:
+            if countToFive == 4:
                 countToFive = 0
             else:
                 countToFive += 1
 
+            # Please note epd.sleep() is not being called, and the Waveshare display might see damage as a result
+            # I'm still working on this issue, lmk if you the reader have insight on this issue
+            # I have found that epd.sleep() takes ~10 minutes to reinitiate after epd.init()
+
     except Exception as e:
         print(e)
-        epd4in2.epdconfig.module_exit()
         exit()
