@@ -17,22 +17,44 @@ from PIL import Image, ImageDraw, ImageFont, ImageMath
 
 def getTimeFromDatetime(TIME_ELAPSED, oldMinute):
     # GET REGULAR TIME
-    date = dt.now() + timedelta(seconds = TIME_ELAPSED)
-    newMinute = date.strftime("%M")
-    while newMinute == oldMinute:
-        date = dt.now() + timedelta(seconds = TIME_ELAPSED)
-        newMinute = date.strftime("%M")
-        time.sleep(0.5)
+
+    # DEBUG
+    # date = dt.now() + timedelta(seconds = TIME_ELAPSED) + timedelta(seconds = 57600)
+
+    # REAL
+    date = dt.now() + timedelta(seconds = TIME_ELAPSED) 
+
+    am_pm = date.strftime("%p")
+    time_str = date.strftime("%-I:%M") + am_pm.lower()
+    hour = int(time_str.split(":")[0])
+    newMinute = int(date.strftime("%M")[-1])
+
+    # Here we make some considerations so the screen isn't updated too frequently
+    # We air on the side of caution, and would rather add an additional minute than shrink by a minute
+    if oldMinute != None and ((time_str[-2:] == 'am' and (hour >= 6 and hour != 12)) or (time_str[-2:] == 'pm' and (hour < 8 or hour == 12))):
+        # 6:00am - 7:59pm update screen every 3 minutes
+        while int(abs(oldMinute - newMinute)) < 3:
+            date = dt.now() + timedelta(seconds = TIME_ELAPSED)
+            newMinute = int(date.strftime("%M")[-1])
+            time.sleep(0.5)
+    # 8:00pm - 2:00am update screen every 5
+    elif oldMinute != None and ((time_str[-2:] == 'am' and (hour < 2)) or time_str[-2:] == 'pm' and (hour >= 8 or hour == 12)):
+        while int(abs(oldMinute - newMinute)) < 5:
+            date = dt.now() + timedelta(seconds = TIME_ELAPSED)
+            newMinute = int(date.strftime("%M")[-1])
+            time.sleep(0.5)
+
+    # 2:00am - 5:59am check time every 15ish minutes, but granularity here is not paramount
     seconds_left = 60 - int(date.strftime("%S")) 
     date_str, am_pm = date.strftime("%a, %b %-d"), date.strftime("%p")
     time_str = date.strftime("%-I:%M") + am_pm.lower()
-    return seconds_left, time_str, date_str, newMinute
+    return seconds_left, time_str, date_str, int(newMinute)
 
 def getTimeFromTimeDelta(duration):
     days, seconds = duration.days, duration.seconds
     hours = days * 24 + seconds // 3600
     minutes = (seconds % 3600) // 60
-    seconds = (seconds % 60)
+    # seconds = (seconds % 60)
     return hours, minutes
 
 def round_down(num, divisor):
@@ -57,7 +79,9 @@ def getWeather(weather_url_api):
     weather_json = weather_response.json()
     if weather_json["cod"] != "404":
         weather = weather_json["main"]
-        temp = int((weather["temp"] * 9/5) - 459.67)
+        temp = int((weather["feels_like"] * 9/5) - 459.67)
+        # temp_min = int((weather["temp_min"] * 9/5) - 459.67) 
+        # temp_max = int((weather["temp_max"] * 9/5) - 459.67)
     return temp
 
 def getSpotipyToken(sp_oauth, token_info):
@@ -161,18 +185,18 @@ def drawBoarderLines(image_draw_object):
 def drawName(image_draw_object, text, name_x, name_y):
     # DRAW BOLD TEXTNAME @ name_x, name_y
     move_x, move_y = randint(-1, 1), randint(-1, 1)
-    name_width, name_height = draw.textsize(text, font = helveti32)
-    draw.text((name_x + move_x, name_y + move_y), text, font = helveti32)
+    name_width, name_height = image_draw_object.textsize(text, font = helveti32)
+    image_draw_object.text((name_x + move_x, name_y + move_y), text, font = helveti32)
     # draw.line([(name_x - 1, name_y + name_height + 2), (name_x + name_width - 1, name_y + name_height + 2)], fill = 0)
-    draw.line([(name_x - 1 + move_x, name_y + name_height + 3 + move_y), (name_x + name_width - 1 + move_x, name_y + name_height + 3 + move_y)], fill = 0)
+    image_draw_object.line([(name_x - 1 + move_x, name_y + name_height + 3 + move_y), (name_x + name_width - 1 + move_x, name_y + name_height + 3 + move_y)], fill = 0)
     return name_width, name_height
 
 def drawUserTimeAgo(image_draw_object, text, time_x, time_y):
     move_x, move_y = randint(-2, 1), randint(-2, 1)
-    time_width, time_height = draw.textsize(text, font = DSfnt16)
-    draw.text((time_x + move_x, time_y + move_y), text, font = DSfnt16)
+    time_width, time_height = image_draw_object.textsize(text, font = DSfnt16)
+    image_draw_object.text((time_x + move_x, time_y + move_y), text, font = DSfnt16)
 
-def drawSpotContext(image_draw_object, context_type, context_text, context_x, context_y):
+def drawSpotContext(image_draw_object, Himage, context_type, context_text, context_x, context_y):
     moveLine = randint(-1, 1)
     if context_type != None:
         context_width, context_height = image_draw_object.textsize(context_text, font = DSfnt16)
@@ -195,8 +219,7 @@ def drawSpotContext(image_draw_object, context_type, context_text, context_x, co
 
 def drawDateTimeTemp(image_draw_object, military_time, date_str, temp):
     temp_x, temp_y = WIDTH - WIDTH // 5, HEIGHT - HEIGHT // 5
-    # CHECK for triple digit weather :( and adjust temp print location
-    if temp >= 100: temp_x -= 5
+    if temp >= 100: temp_x -= 5 # CHECK for triple digit weather :( and adjust temp print location
     image_draw_object.text((temp_x, temp_y), str(temp) + "F", font = DSfnt64)
 
     time_width, time_height = image_draw_object.textsize(military_time, DSfnt64)
@@ -253,7 +276,7 @@ def drawArtistText(image_draw_object, track_name, artist_name, track_line_count,
     temp_artist_lines = textwrap.wrap(artist_name, width = 8)
     temp_track_lines = textwrap.wrap(track_name, width = 8)
     if len(temp_artist_lines) <= 2 and len(temp_track_lines) == 1:
-        width, _ = draw.textsize(artist_name, font = DSfnt64)
+        width, _ = image_draw_object.textsize(artist_name, font = DSfnt64)
         artist_lines = textwrap.wrap(artist_name, width = 8)
         text_y +=((1 + track_line_count) * track_height) // 1.5
         for artist_line_count, line in enumerate(artist_lines):
@@ -262,17 +285,20 @@ def drawArtistText(image_draw_object, track_name, artist_name, track_line_count,
             text_y += height
     else:
         # DRAW ALL ARTIST NAMES
-        width, height = draw.textsize(track_name, font = DSfnt64)
+        width, height = image_draw_object.textsize(track_name, font = DSfnt64)
         artist_lines = textwrap.wrap(artist_name, width = 17)
 
         nudge = 0
-        # text_y if two lines of big text
         if (track_height == 44 or track_height == 48) and track_line_count < 1:
             nudge = track_height * (track_line_count + 1) // 1.1
-        elif (track_height >= 22 or track_height <= 48) and track_line_count < 2:
+        elif (track_height >= 22 or track_height <= 44) and track_line_count < 2:
             nudge = track_height * (track_line_count + 1) * 1.125
-        elif (track_height >= 22 or track_height <= 48) and track_line_count <= 3:
-            nudge = track_height * (track_line_count + 1) * 1.05
+        elif track_height > 44 and track_line_count <= 2:
+            nudge = track_height * (track_line_count + 1)
+        elif (track_height >= 22 or track_height <= 44) and track_line_count <= 3:
+            nudge = track_height * (track_line_count + 1) * 1.1
+        elif (track_height == 48) and track_line_count <= 3:
+            nudge = track_height * (track_line_count + 1) // 1.025
         elif track_line_count >= 4:
             nudge = track_height * (track_line_count + 1)
         else:
@@ -311,66 +337,19 @@ def drawArtistText(image_draw_object, track_name, artist_name, track_line_count,
             if text_y + height >= 220:
                 break
 
-if __name__ == '__main__':
-    # Load local resources. Fonts and Icons from /ePaperFonts and /Icons
-    DSfnt16 = ImageFont.truetype('ePaperFonts/Nintendo-DS-BIOS.ttf', 16)
-    DSfnt32 = ImageFont.truetype('ePaperFonts/Nintendo-DS-BIOS.ttf', 32)
-    DSfnt64 = ImageFont.truetype('ePaperFonts/Nintendo-DS-BIOS.ttf', 64)
-
-    helveti16 = ImageFont.truetype('ePaperFonts/Habbo.ttf', 16)
-    helveti32 = ImageFont.truetype('ePaperFonts/Habbo.ttf', 32)
-    helveti64 = ImageFont.truetype('ePaperFonts/Habbo.ttf', 64)
-
-    playlist_icon = Image.open('Icons/playlist.png')
-    artist_icon = Image.open('Icons/artist.png')
-    album_icon = Image.open('Icons/album.png')
-
-    # OPEN_WEATHER API SETTUP
-    # generate here: https://openweathermap.org/appid
-    OPENWEATHER_API_KEY = ""
-    OPENWEATHER_BASE_URL = "http://api.openweathermap.org/data/2.5/weather?"
-    OPENWEATHER_CITY_ID = "" # https://openweathermap.org/find
-    OPENWEATHER_COMPLETE_URL = OPENWEATHER_BASE_URL + "appid=" + OPENWEATHER_API_KEY + "&id=" + OPENWEATHER_CITY_ID + ""
-
-    # UNIVERSAL SPOTIPY VARS 
-    SCOPE = "user-read-private, user-read-recently-played, user-read-playback-state, user-read-currently-playing" 
-    REDIRECT_URI = 'http://www.google.com/'
-
-    # ALEX SPOTIPY 
-    # generate here: https://developer.spotify.com/dashboard/
-    A_SPOT_CLIENT_ID = 'yourClientID'
-    A_SPOT_CLIENT_SECRET = 'yourClientSecret'
-    A_SPOT_CONTEXT_TYPE = ""
-    A_SPOT_CONTEXT_NAME = ""
-    A_CACHE = '.yourSpotAuthCache'
-    A_USERNAME = 'yourSpotUsername'
-
-    # EMMA SPOTIPY 
-    E_SPOT_CLIENT_ID = 'secondClientID'
-    E_SPOT_CLIENT_SECRET = 'secondClientSecret'
-    E_SPOT_CONTEXT_TYPE = ""
-    E_SPOT_CONTEXT_NAME = ""
-    E_CACHE = '.secondSpotAuthCache'
-    E_USERNAME = 'secondSpotUsername'
+def main_loop(DID_EPD_INIT, A_SPOT_CONTEXT_TYPE, E_SPOT_CONTEXT_TYPE, A_SPOT_CONTEXT_NAME, E_SPOT_CONTEXT_NAME):
+    TIME_ELAPSED = 15.0
+    oldTime = None
+    temp = None
+    countToFive = 0 # get weather every 5 minutes
 
     try:
-        # ePAPER init and clear
-        epd = epd4in2.EPD()
-        epd.init()
-        epd.Clear()
-        WIDTH, HEIGHT = epd.width, epd.height
-        TIME_ELAPSED = 15.0
-
-        oldTime = None
-        temp = None
-        countToFive = 0 # get weather every 5 minutes
-
         while True:
             # GET REGULAR TIME
             seconds_left, military_time, date_str, oldTime = getTimeFromDatetime(TIME_ELAPSED, oldTime)
             print(military_time)
 
-            # DEBUG TIMER
+            # DELAYish TIMER
             start = time.time()
             
             # OPENWEATHER API CALL
@@ -396,11 +375,11 @@ if __name__ == '__main__':
                 alex_track_name, alex_artist_name = "", ""
 
             # ALEX TRACK TITLES CONTEXT ----------------------------------------------------------------
-            text_x, text_y = (WIDTH // 50, - (HEIGHT // 1.125) + HEIGHT )
+            text_x, text_y = (WIDTH // 50, - (HEIGHT // 1.095) + HEIGHT )
             track_line_count, track_text_size = drawTrackText(draw, alex_track_name, alex_artist_name, text_x, text_y)
             drawArtistText(draw, alex_track_name, alex_artist_name, track_line_count, track_text_size, text_x, text_y)
             alex_context_x, alex_context_y = WIDTH // 100, 195 
-            drawSpotContext(draw, A_SPOT_CONTEXT_TYPE, A_SPOT_CONTEXT_NAME, alex_context_x, alex_context_y)
+            drawSpotContext(draw, Himage, A_SPOT_CONTEXT_TYPE, A_SPOT_CONTEXT_NAME, alex_context_x, alex_context_y)
 
             # GET EMMAS's SPOTIFY TOKEN
             emma_sp_oauth = spotipy.oauth2.SpotifyOAuth(E_SPOT_CLIENT_ID, E_SPOT_CLIENT_SECRET, REDIRECT_URI, scope = SCOPE, cache_path = E_CACHE, requests_timeout = 10)
@@ -415,53 +394,125 @@ if __name__ == '__main__':
                 emma_track_name, emma_artist_name = "", ""          
 
             # EMMA TRACK TITLES ----------------------------------------------------------------
-            text_x, text_y = (WIDTH // 50 + 203, - (HEIGHT // 1.125) + HEIGHT )
+            text_x, text_y = (WIDTH // 50 + 203, - (HEIGHT // 1.095) + HEIGHT )
             track_line_count, track_text_size = drawTrackText(draw, emma_track_name, emma_artist_name, text_x, text_y)
             drawArtistText(draw, emma_track_name, emma_artist_name, track_line_count, track_text_size, text_x, text_y)
             emma_context_x, emma_context_y = 202 + WIDTH // 100, 195 
-            drawSpotContext(draw, E_SPOT_CONTEXT_TYPE, E_SPOT_CONTEXT_NAME, emma_context_x, emma_context_y)
+            drawSpotContext(draw, Himage, E_SPOT_CONTEXT_TYPE, E_SPOT_CONTEXT_NAME, emma_context_x, emma_context_y)
 
             # DRAW NAMES TIME SINCE ----------------------------------------------------------------
-            alex_x, alex_y = (WIDTH // 50), (HEIGHT // 50) 
+            alex_x, alex_y = (WIDTH // 50), 0
             alex_width, alex_height = drawName(draw, "Alex", alex_x, alex_y)
             drawUserTimeAgo(draw, alex_time_passed, alex_x + 10 + alex_width, + alex_y + alex_height // 2)
-            emma_x, emma_y = 202 + (WIDTH // 50), (HEIGHT // 50) 
+            emma_x, emma_y = 202 + (WIDTH // 50), 0
             emma_width, emma_height = drawName(draw, "Emma", emma_x, emma_y)
             drawUserTimeAgo(draw, emma_time_passed, emma_x + 10 + emma_width, + emma_y + emma_height // 2) 
-
-            # HIDDEN DARK MODE
-            # Himage = ImageMath.eval('255-(a)',a=Himage)
 
             # DRAW LINES DATE TIME TEMP ----------------------------------------------------------------
             drawBoarderLines(draw)
             drawDateTimeTemp(draw, military_time, date_str, temp)
-            epd.display(epd.getbuffer(Himage)) 
 
-            # DEBUG TIMER 
+            # HIDDEN DARK MODE
+            # Himage = ImageMath.eval('255-(a)',a=Himage)
+
+            # from 2 - 5:59am, don't init the display, return from main, and have .sh script run again in 3 mins
+            hour = int(military_time.split(":")[0])
+            if (military_time[-2:] == 'am' and (hour >= 2 and hour <= 5)):
+                if DID_EPD_INIT == True:
+                    # epd.sleep() is not called because I cannot wake up the screen after sleeping
+                    # I'm using GPIO pins, and not the epd header, so maybe that's my problem?
+                    # I hope this does not create long term damage 🤞
+                    # If you're reading this and have insight for this problem email me @ atscott@ucsc.edu
+                    print("EPD Sleep(ish) ....")
+                    break
+                else:
+                    print("Don't Wake")
+                    break
+            elif DID_EPD_INIT == False:
+                print("EPD INIT")
+                epd.init()
+                epd.Clear()
+                DID_EPD_INIT = True
+
+            if DID_EPD_INIT:
+                image_buffer = epd.getbuffer(Himage)
+                print("\tDrawing Image to EPD")
+                epd.display(image_buffer)
+
+            # DELAYish TIMER 
             stop = time.time()
             TIME_ELAPSED = stop - start
+
             remaining_time = seconds_left - TIME_ELAPSED
-            if remaining_time > 0:
-                # From midnight - 6:59am, update every 5 minutes to 'save' the screen some labor
-                hour = int(military_time.split(":")[0])
-                if military_time[-2:] == 'am' and (hour == 12 or hour < 7):
-                    print("\t", round(TIME_ELAPSED, 2), "\tseconds per loop\t", "sleeping for {} seconds".format(int(remaining_time) + 300))
-                    time.sleep(remaining_time + 600)
-                # Otherwise, update every 3 minutes as per Waveshare specs to not damage display in the long term
-                else:
-                    print("\t", round(TIME_ELAPSED, 2), "\tseconds per loop\t", "sleeping for {} seconds".format(int(remaining_time) + 180))
-                    time.sleep(remaining_time + 180)
+            if remaining_time < 0: remaining_time = 60
+
+            if (military_time[-2:] == 'am' and (hour >= 6 and hour != 12)) or (military_time[-2:] == 'pm' and (hour < 8 or hour == 12)):
+                # 6:00am - 7:59pm update screen every 3 minutes
+                print("\t", round(TIME_ELAPSED, 2), "\tseconds per loop\t", "sleeping for {} seconds".format(int(remaining_time) + 120))
+                time.sleep(remaining_time + 120)
+            elif ((military_time[-2:] == 'am' and (hour < 2)) or military_time[-2:] == 'pm' and (hour >= 8 or hour == 12)):
+                # 7pm - 1:59am update screen every 5ish minutes
+                print("\t", round(TIME_ELAPSED, 2), "\tseconds per loop\t", "sleeping for {} seconds".format(int(remaining_time) + 240))
+                time.sleep(remaining_time + 240)
+            else:
+                # 12:00am - 7:59am, don't update screen, check time every 15 minutes
+                print("\t", round(TIME_ELAPSED, 2), "\tseconds per loop\t", "sleeping for {} seconds".format(int(remaining_time) + 840))
+                time.sleep(remaining_time + 840)
 
             # Increment counter for Weather requests
             if countToFive == 4:
                 countToFive = 0
             else:
                 countToFive += 1
-
-            # Please note epd.sleep() is not being called, and the Waveshare display might see damage as a result
-            # I'm still working on this issue, lmk if you the reader have insight on this issue
-            # I have found that epd.sleep() takes ~10 minutes to reinitiate after epd.init()
-
     except Exception as e:
         print(e)
-        exit()
+        print("Retrying main_loop() in 20 seconds...")
+        time.sleep(20)
+        main_loop(DID_EPD_INIT)
+
+if __name__ == '__main__':
+    # Load local resources. Fonts and Icons from /ePaperFonts and /Icons
+    DSfnt16 = ImageFont.truetype('ePaperFonts/Nintendo-DS-BIOS.ttf', 16)
+    DSfnt32 = ImageFont.truetype('ePaperFonts/Nintendo-DS-BIOS.ttf', 32)
+    DSfnt64 = ImageFont.truetype('ePaperFonts/Nintendo-DS-BIOS.ttf', 64)
+
+    helveti16 = ImageFont.truetype('ePaperFonts/Habbo.ttf', 16)
+    helveti32 = ImageFont.truetype('ePaperFonts/Habbo.ttf', 32)
+    helveti64 = ImageFont.truetype('ePaperFonts/Habbo.ttf', 64)
+
+    playlist_icon = Image.open('Icons/playlist.png')
+    artist_icon = Image.open('Icons/artist.png')
+    album_icon = Image.open('Icons/album.png')
+
+    # OPEN_WEATHER API SETTUP
+    OPENWEATHER_API_KEY = "e27024cc7780a6212ab876ac38c9d90f"
+    OPENWEATHER_BASE_URL = "http://api.openweathermap.org/data/2.5/weather?"
+    OPENWEATHER_CITY_ID = "5334223" # {SANTACRUZ:5393052, CARLSBAD:5334223, VENTURA:5405878}
+    OPENWEATHER_COMPLETE_URL = OPENWEATHER_BASE_URL + "appid=" + OPENWEATHER_API_KEY + "&id=" + OPENWEATHER_CITY_ID + ""
+
+    # UNIVERSAL SPOTIPY VARS 
+    SCOPE = "user-read-private, user-read-recently-played, user-read-playback-state, user-read-currently-playing" 
+    REDIRECT_URI = 'http://www.google.com/'
+
+    # ALEX SPOTIPY 
+    A_SPOT_CLIENT_ID = ''
+    A_SPOT_CLIENT_SECRET = ''
+    A_SPOT_CONTEXT_TYPE = ""
+    A_SPOT_CONTEXT_NAME = ""
+    A_CACHE = '.alexspotipyoauthcache'
+    A_USERNAME = 'bassguitar1234'
+
+    # EMMA SPOTIPY 
+    E_SPOT_CLIENT_ID = ''
+    E_SPOT_CLIENT_SECRET = ''
+    E_SPOT_CONTEXT_TYPE = ""
+    E_SPOT_CONTEXT_NAME = ""
+    E_CACHE = '.emmaspotipyoauthcache'
+    E_USERNAME = 'ermisk'
+
+    epd = epd4in2.EPD()
+    WIDTH, HEIGHT = epd.width, epd.height
+
+    # First loop, init EPD
+    DID_EPD_INIT = False
+    main_loop(DID_EPD_INIT, A_SPOT_CONTEXT_TYPE, E_SPOT_CONTEXT_TYPE, A_SPOT_CONTEXT_NAME, E_SPOT_CONTEXT_NAME)
