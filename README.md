@@ -14,3 +14,6 @@ https://github.com/plamere/spotipy/blob/master/docs/index.rst
 https://spotipy.readthedocs.io/en/latest/
 
 **This project supports the Waveshare 4.2inch B&W display, and has been tested with Python 3.7.3**
+
+The Python library used in this project was provided by Waveshare, and can be found here:
+https://github.com/waveshare/e-Paper
