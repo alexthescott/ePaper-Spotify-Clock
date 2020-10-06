@@ -179,7 +179,7 @@ def mainLoop():
                 error_file.write(str(e) + "\n")
         print("Retrying mainLoop() in 20 seconds...")
         time.sleep(20)
-        mainLoop(DID_EPD_INIT)
+        mainLoop()
 
 # Spotify Functions
 def getSpotipyToken(sp_oauth, token_info):
