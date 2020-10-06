@@ -296,7 +296,7 @@ def getTimeSincePlayed(hours, minutes):
         return str(hours // 24) + "  days ago"
 
 def getWeather():
-    OW_KEY = "e27024cc7780a6212ab876ac38c9d90f"
+    OW_KEY = ""
     OW_CITYID = "5334223" # {SANTACRUZ:5393052, CARLSBAD:5334223, VENTURA:5405878}
 
     # Get current weather
