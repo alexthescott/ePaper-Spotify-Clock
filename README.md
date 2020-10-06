@@ -6,9 +6,13 @@ Written for Waveshare's 4.2 e-paper display, this project connects with Spotify'
 
 ## Files
 mainSpotifyEPD.py -> Drives the epd, and calls all functions
+
 drawToEPD.py -> Functions to write to our PILLOW image object
+
 localJsonIO.py -> Write to a local .txt JSON file for contextual info
+
 ePaperFonts & Icons -> Resources used to draw to the screen
+
  
 ### OpenWeatherMap API 
 This project samples the weather from a given city every 15 minutes at no cost. More information can be found at https://openweathermap.org/api
