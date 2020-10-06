@@ -3,7 +3,7 @@
 # navigate to directory then execute python script 
 
 runscript(){
-	python3 spotify_epd.py
+	python3 mainSpotifyEPD.py
 }
 
 cd /home/alex/e-Paper/Pi/python/examples/
