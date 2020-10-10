@@ -153,6 +153,7 @@ def combineWords(text_size_list, text_list, size):
                 # Only one word, return whole word to be hypenated later
                 else:
                     temp_text_list.append(text_list[i])
+    temp_text_list[:] = [word for word in temp_text_list if word != '']
     return temp_text_list
 
 def hyphenWords(word, size):
