@@ -1,5 +1,5 @@
 """ drawToEPD.py by Alex Scott 2020
-Companion functions for mainSpotifyEPD.py
+Companion functions for spotifyEPD.py
 
 Functions here rely on PIL to draw to an existing draw object
 Draw context, date time temp, artist and track info, time since, and names
@@ -237,10 +237,15 @@ def drawSpotContext(img_draw_obj, Himage, context_type, context_text, context_x,
             Himage.paste(artist_icon, (context_x - 22, context_y - 1))
 
 def drawDateTimeTemp(img_draw_obj, military_time, date_str, temp_tuple):
-    temp, temp_high, temp_low = temp_tuple
+    temp, temp_high, temp_low, other_temp = temp_tuple
     temp_x, temp_y = 292, 240
     # CHECK for triple digit weather :( and adjust temp print location
     if temp >= 100: temp_x -= 10 
+
+    # Draw "upper temp" next to name of right user
+    high_temp_x = 387 - findTextWidth(str(other_temp), 1)
+    img_draw_obj.text((high_temp_x, 0), str(other_temp), font = DSfnt32)
+    img_draw_obj.text((high_temp_x + 2 + findTextWidth(str(other_temp), 1), 2), "F", font = DSfnt16)
     
     # Draw main temp
     img_draw_obj.text((temp_x, 240), str(temp), font = DSfnt64)
@@ -261,6 +266,7 @@ def drawDateTimeTemp(img_draw_obj, military_time, date_str, temp_tuple):
     date_width, date_height = img_draw_obj.textsize(date_str, DSfnt32)
     date_x, date_y = ((10 + time_width + temp_x) // 2) - (date_width // 2), 240 + date_height // 1.05
     img_draw_obj.text((date_x, date_y), date_str, font = DSfnt32)
+
 
 def drawTrackText(img_draw_obj, track_name, track_x, track_y):
     # After deciding the size of text, split words into lines, and draw to img_draw_obj
@@ -311,14 +317,13 @@ def drawTrackText(img_draw_obj, track_name, track_x, track_y):
     return len(track_lines), 13
 
 def drawArtistText(img_draw_obj, artist_name, track_line_count, track_height, artist_x, artist_y):
-    # After deciding the size of text, split words into lines, and draw to img_draw_obj
     # Always ensure bottom of text is always at 190 pixels after draw height
 
     # Large Text Format Check
     l_artist_split = artist_name.split(" ")
     l_artist_size = list(map(findTextWidth, l_artist_split, [2] * len(l_artist_split)))
     if sum(l_artist_size) <= 366 and canFullWordsFit(l_artist_size) and len(l_artist_size) <= 2:
-        if track_height == 55 and track_line_count + len(l_artist_size) <= 3 or track_height < 55:
+        if track_height == 55 and track_line_count + len(l_artist_size) <= 3 or track_height < 55 and track_line_count < 4:
             artist_lines = combineWords(l_artist_size, l_artist_split, 2)
             artist_y = 190 - (42 * len(artist_lines)) # y nudge to fit bottom constraint
             for line in artist_lines:
@@ -334,8 +339,8 @@ def drawArtistText(img_draw_obj, artist_name, track_line_count, track_height, ar
         m_artist_split.append(artist_name)
     m_title_size = list(map(findTextWidth, m_artist_split, [1] * len(m_artist_split)))
     artist_lines = combineWords(m_title_size, m_artist_split, 1)
-    artist_size = list(map(findTextWidth, artist_lines, [1] * len(m_artist_split)))
-    if sum(artist_size) <= 760 and track_line_count <= 4:
+    artist_size = list(map(findTextWidth, artist_lines, [1] * len(m_artist_split))) 
+    if sum(artist_size) <= 760 and track_line_count + len(artist_lines) <= 6:
         artist_y = 190 - (25 * len(artist_lines)) # y nudge to fit bottom constraint
         if not canFullWordsFit(m_title_size):
             artist_lines = hyphenWords(str(m_artist_split)[2:-2], 1)
@@ -349,10 +354,10 @@ def drawArtistText(img_draw_obj, artist_name, track_line_count, track_height, ar
     if len(artist_name.split(" ")) > 1:
         s_artist_split = artist_name.split(" ")
     else:
-        s_artist_split.append(s_artist_split)
+        s_artist_split.append(artist_name)
     s_artist_size = list(map(findTextWidth, s_artist_split, [0] * len(s_artist_split)))
     artist_lines = combineWords(s_artist_size, s_artist_split, 0)
-    artist_size = list(map(findTextWidth, artist_lines, [1] * len(s_artist_split)))
+    artist_size = list(map(findTextWidth, artist_lines, [0] * len(s_artist_split)))
     artist_y = 190 - (12 * len(artist_lines)) # y nudge to fit bottom constraint
     if not canFullWordsFit(s_artist_size):
         artist_lines = hyphenWords(str(s_artist_split)[2:-2], 1)

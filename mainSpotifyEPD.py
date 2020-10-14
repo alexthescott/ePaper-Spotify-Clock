@@ -296,8 +296,9 @@ def getTimeSincePlayed(hours, minutes):
         return str(hours // 24) + "  days ago"
 
 def getWeather():
-    OW_KEY = ""
-    OW_CITYID = "5334223" # {SANTACRUZ:5393052, CARLSBAD:5334223, VENTURA:5405878}
+    OW_KEY = "" # https://openweathermap.org/
+    OW_CITYID = "" 
+    OW_OTHER_CITYID = "" 
 
     # Get current weather
     OW_CURRENT_URL = "http://api.openweathermap.org/data/2.5/weather?"
@@ -307,6 +308,14 @@ def getWeather():
     if weather_json["cod"] != "404":
         temp = round(weather_json['main']['feels_like'])
         temp_min, temp_max = temp, temp
+
+    # get current weather for user on the right
+    OW_CURRENT_URL = "http://api.openweathermap.org/data/2.5/weather?"
+    OW_CURRENT_COMPLETE = OW_CURRENT_URL + "appid=" + OW_KEY + "&id=" + OW_OTHER_CITYID + "&units=imperial"
+    weather_response = requests.get(OW_CURRENT_COMPLETE)
+    weather_json = weather_response.json()
+    if weather_json["cod"] != "404":
+        other_temp = round(weather_json['main']['feels_like'])
 
     # Get forecasted weather from feels_like and temp_min, temp_max
     OW_FORECAST_URL = "http://api.openweathermap.org/data/2.5/forecast?"
@@ -320,7 +329,7 @@ def getWeather():
             min_predicted = min(i_temp, round(l['main']['temp_max']))
             if temp_min > min_predicted: temp_min = min_predicted
             if temp_max < max_predicted: temp_max = max_predicted
-    return temp, temp_max, temp_min
+    return temp, temp_max, temp_min, other_temp
 
 if __name__ == '__main__':
     # UNIVERSAL SPOTIPY VARS 
