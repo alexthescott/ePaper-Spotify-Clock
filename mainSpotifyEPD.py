@@ -26,8 +26,8 @@ in the event of a crash. That bash script can be found here:
 https://github.com/alexthescott/4.2in-ePaper-Spotify-Clock/blob/master/launch_epaper.sh
 """
 
-import time, requests
 import spotipy
+from time import time, sleep
 from random import randint
 from datetime import timedelta, datetime as dt
 from requests import get as getRequest
@@ -60,7 +60,7 @@ def mainLoop():
 
             # Firstly, this is for my own edifice to know how long a loop takes for the Pi
             # Secondly, this is used to 'push' our clock forward such that our clock update is exactly on time
-            start = time.time()
+            start = time()
             
             # OPENWEATHER API CALL
             if temp_tuple == None or countTo5 == 4:
@@ -147,7 +147,7 @@ def mainLoop():
                 epd.display(image_buffer)
 
             # Look @ start variable above. find out how long it takes to compute our image
-            stop = time.time()
+            stop = time()
             time_elapsed = stop - start
 
             remaining_time = sec_left - time_elapsed
@@ -156,15 +156,15 @@ def mainLoop():
             if (time_str[-2:] == 'am' and (hour >= 6 and hour != 12)) or (time_str[-2:] == 'pm' and (hour < 8 or hour == 12)):
                 # 6:00am - 7:59pm update screen every 3 minutes
                 print("\t", round(time_elapsed, 2), "\tseconds per loop\t", "sleeping for {} seconds".format(int(remaining_time) + 120))
-                time.sleep(remaining_time + 120)
+                sleep(remaining_time + 120)
             elif ((time_str[-2:] == 'am' and (hour < 2)) or time_str[-2:] == 'pm' and (hour >= 8 or hour == 12)):
                 # 7pm - 1:59am update screen every 5ish minutes
                 print("\t", round(time_elapsed, 2), "\tseconds per loop\t", "sleeping for {} seconds".format(int(remaining_time) + 240))
-                time.sleep(remaining_time + 240)
+                sleep(remaining_time + 240)
             else:
                 # 12:00am - 7:59am, don't update screen, check time every 15 minutes
                 print("\t", round(time_elapsed, 2), "\tseconds per loop\t", "sleeping for {} seconds".format(int(remaining_time) + 840))
-                time.sleep(remaining_time + 840)
+                sleep(remaining_time + 840)
 
             # Increment counter for Weather requests
             countTo5 = 0 if countTo5 == 4 else countTo5 + 1
@@ -178,7 +178,7 @@ def mainLoop():
                 print("new bug caught\n" + str(e))
                 error_file.write(str(e) + "\n")
         print("Retrying mainLoop() in 20 seconds...")
-        time.sleep(20)
+        sleep(20)
         mainLoop()
 
 # Spotify Functions
@@ -265,13 +265,13 @@ def getTimeFromDatetime(time_elapsed, oldMinute):
         while int(abs(oldMinute - newMinute)) < 3:
             date = dt.now() + timedelta(seconds = time_elapsed)
             newMinute = int(date.strftime("%M")[-1])
-            time.sleep(2)
+            sleep(2)
     # 8:00pm - 2:00am update screen every 5 mins at least
     elif oldMinute != None and ((time_str[-2:] == 'am' and (hour < 2)) or time_str[-2:] == 'pm' and (hour >= 8 or hour == 12)):
         while int(abs(oldMinute - newMinute)) < 5:
             date = dt.now() + timedelta(seconds = time_elapsed)
             newMinute = int(date.strftime("%M")[-1])
-            time.sleep(2)
+            sleep(2)
     # 2:00am - 5:59am check time every 15ish minutes, but granularity here is not paramount
     sec_left = 60 - int(date.strftime("%S")) 
     date_str, am_pm = date.strftime("%a, %b %-d"), date.strftime("%p")
@@ -312,7 +312,7 @@ def getWeather():
     # get current weather for user on the right
     OW_CURRENT_URL = "http://api.openweathermap.org/data/2.5/weather?"
     OW_CURRENT_COMPLETE = OW_CURRENT_URL + "appid=" + OW_KEY + "&id=" + OW_OTHER_CITYID + "&units=imperial"
-    weather_response = requests.get(OW_CURRENT_COMPLETE)
+    weather_response = getRequest(OW_CURRENT_COMPLETE)
     weather_json = weather_response.json()
     if weather_json["cod"] != "404":
         other_temp = round(weather_json['main']['feels_like'])
@@ -341,12 +341,12 @@ if __name__ == '__main__':
     # Left SPOTIPY 
     l_spot_client_id = ''
     l_spot_client_secret = ''
-    l_cache = '.lspotauthcache'
+    l_cache = ''
     l_username = ''
 
     # Right SPOTIPY 
     r_spot_client_id = ''
     r_spot_client_secret = ''
-    r_cache = '.rspotauthcache'
+    r_cache = ''
     r_username = ''
     mainLoop()
