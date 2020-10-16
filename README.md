@@ -1,6 +1,8 @@
 # 4.2in E-Paper Spotify Weather Clock 
 
-<img src="spotify_epaper_preview.jpg">
+<p>
+	<img src="spotify_epaper_preview.jpg" width="800">
+</p>
 
 Written for Waveshare's 4.2 e-paper display, this project connects with Spotify's API to display the most recent listening information, including the title, artist, context, and time since the track was played. There is a left and right panel so that two folk's listening can be displayed at the same time. The forcast and current weather are also displayed via the OpenWeatherMap api. The e-paper display updates in full every 3 minutes per Waveshare's recommendations. After 8pm, the display updates every 5 minutes, and does not update from 2am - 6am. Open invite to email me, atscott@ucsc.edu, if you have any questions regarding my implementation, or comments regaring how to improve this project. Before you ask, I am using the Nintendo DS BIOS font for this project because it looks beautiful.
 
