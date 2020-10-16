@@ -1,6 +1,6 @@
 # 4.2in E-Paper Spotify Weather Clock 
 
-<p>
+<p align="center">
 	<img src="spotify_epaper_preview.jpg" width="800">
 </p>
 
