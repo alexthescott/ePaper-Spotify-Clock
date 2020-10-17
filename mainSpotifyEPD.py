@@ -26,8 +26,8 @@ in the event of a crash. That bash script can be found here:
 https://github.com/alexthescott/4.2in-ePaper-Spotify-Clock/blob/master/launch_epaper.sh
 """
 
-import time, requests
 import spotipy
+from time import time, sleep
 from random import randint
 from datetime import timedelta, datetime as dt
 from requests import get as getRequest
@@ -60,7 +60,7 @@ def mainLoop():
 
             # Firstly, this is for my own edifice to know how long a loop takes for the Pi
             # Secondly, this is used to 'push' our clock forward such that our clock update is exactly on time
-            start = time.time()
+            start = time()
             
             # OPENWEATHER API CALL
             if temp_tuple == None or countTo5 == 4:
@@ -147,7 +147,7 @@ def mainLoop():
                 epd.display(image_buffer)
 
             # Look @ start variable above. find out how long it takes to compute our image
-            stop = time.time()
+            stop = time()
             time_elapsed = stop - start
 
             remaining_time = sec_left - time_elapsed
@@ -174,7 +174,7 @@ def mainLoop():
                 print("new bug caught\n" + str(e))
                 error_file.write(str(e) + "\n")
         print("Retrying mainLoop() in 20 seconds...")
-        time.sleep(20)
+        sleep(20)
         mainLoop()
 
 # Spotify Functions
