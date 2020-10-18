@@ -118,7 +118,7 @@ def mainLoop():
             epdDraw.drawUserTimeAgo(draw, r_time_since, 220 + r_name_width, r_name_height // 2) 
 
             # DRAW LINES DATE TIME TEMP ----------------------------------------------------------------
-            epdDraw.drawBoarderLines(draw)
+            epdDraw.drawBorderLines(draw)
             epdDraw.drawDateTimeTemp(draw, time_str, date_str, temp_tuple)
 
             # HIDDEN DARK MODE

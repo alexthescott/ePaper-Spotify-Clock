@@ -191,7 +191,7 @@ def canFullWordsFit(text_size_list):
     return all(word_len < 189 for word_len in text_size_list)
 
 # ---- DRAWING FUNCs
-def drawBoarderLines(img_draw_obj):
+def drawBorderLines(img_draw_obj):
     # draw vertical and horizontal lines of width 3
     for i in range(3):
         img_draw_obj.line([(0, 224 + i), (400, 224 + i)], fill = 0)
