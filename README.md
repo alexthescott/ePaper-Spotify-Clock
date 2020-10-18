@@ -1,5 +1,5 @@
 # 4.2in E-Paper Spotify Weather Clock 
-This project uses Python3 to display [two](https://open.spotify.com/user/bassguitar1234?si=hHnnqHUGTe25liNezp9cJQ) [users'](https://open.spotify.com/user/ermisk?si=0G5DmMxCRLuUm1G6-EWhFA) recent Spotify history, weather for two cities (local and away), and the current time 
+This project uses Python3 to display [two](https://open.spotify.com/user/bassguitar1234?si=hHnnqHUGTe25liNezp9cJQ) users' recent Spotify history, weather for two cities (local and away), and the current time 
 
 <p align="center">
 	<img src="spotify_epaper_preview.jpg" width="400">
