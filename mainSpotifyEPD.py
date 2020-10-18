@@ -337,12 +337,12 @@ if __name__ == '__main__':
     # Left SPOTIPY 
     l_spot_client_id = ''
     l_spot_client_secret = ''
-    l_cache = ''
+    l_cache = '.leftauthcache'
     l_username = ''
 
     # Right SPOTIPY 
     r_spot_client_id = ''
     r_spot_client_secret = ''
-    r_cache = ''
+    r_cache = '.rightauthcache'
     r_username = ''
     mainLoop()
