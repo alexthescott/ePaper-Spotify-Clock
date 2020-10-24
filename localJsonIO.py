@@ -12,24 +12,27 @@ events. This ensures that our program always knows the most recent context
 
 import json
 
+
 def writeJsonContext(left_ctx, right_ctx):
     # if we have already written context info, don't rewrite file
     left_temp_ctx, right_tmp_ctx = left_ctx, right_ctx
-    with open('context.txt') as j_ctx:
+    with open('context.txt', "w+") as j_ctx:
         write_l_ctx, write_r_ctx = True, True
-        data = json.load(j_ctx)
 
-        # check left ctx, assign tmp ctx if our pulled data is new
-        if left_ctx[0] == data['context'][0]['type'] and left_ctx[1] == data['context'][0]['title']:
-            write_l_ctx = False
-        # check right ctx, assign tmp ctx if our pulled data is new
-        if right_ctx[0] == data['context'][1]['type'] and right_ctx[1] == data['context'][1]['title']:
-            write_r_ctx = False
+        try:
+            data = json.load(j_ctx)
 
-        if not write_l_ctx and not write_r_ctx:
-            return
-        print("Update context.txt")
-        print("left_ctx: {} right_ctx: {}".format(left_ctx, right_ctx))
+            # check left ctx, assign tmp ctx if our pulled data is new
+            if left_ctx[0] == data['context'][0]['type'] and left_ctx[1] == data['context'][0]['title']:
+                write_l_ctx = False
+            # check right ctx, assign tmp ctx if our pulled data is new
+            if right_ctx[0] == data['context'][1]['type'] and right_ctx[1] == data['context'][1]['title']:
+                write_r_ctx = False
+
+            if not write_l_ctx and not write_r_ctx:
+                return
+            print("Update context.txt")
+            print("left_ctx: {} right_ctx: {}".format(left_ctx, right_ctx))
 
     context_data = {}
     context_data['context'] = []

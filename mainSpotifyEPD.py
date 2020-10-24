@@ -71,9 +71,9 @@ def mainLoop():
             draw = ImageDraw.Draw(Himage)
 
             # GET left user's SPOTIPY AUTH OBJECT, TOKEN
+            print("Get left user's Spotify Token")
             l_oauth = spotipy.oauth2.SpotifyOAuth(l_spot_client_id, l_spot_client_secret, REDIRECT_URI, scope = SPOT_SCOPE, cache_path = l_cache, requests_timeout = 10)
             l_token_info = l_oauth.get_cached_token()
-
             l_token = getSpotipyToken(l_oauth, l_token_info)
             if l_token:
                 l_track, l_artist, l_time_since, temp_context_type, temp_context_name = getSpotipyInfo(l_token)
@@ -84,6 +84,7 @@ def mainLoop():
                 l_track, l_artist = "", ""
 
             # GET right user's SPOTIFY TOKEN
+            print("Get right user's Spotify Token")
             r_oauth = spotipy.oauth2.SpotifyOAuth(r_spot_client_id, r_spot_client_secret, REDIRECT_URI, scope = SPOT_SCOPE, cache_path = r_cache, requests_timeout = 10)
             r_token_info = r_oauth.get_cached_token()
             r_token = getSpotipyToken(r_oauth, r_token_info)
@@ -308,7 +309,7 @@ def getWeather():
     # get current weather for user on the right
     OW_CURRENT_URL = "http://api.openweathermap.org/data/2.5/weather?"
     OW_CURRENT_COMPLETE = OW_CURRENT_URL + "appid=" + OW_KEY + "&id=" + OW_OTHER_CITYID + "&units=imperial"
-    weather_response = requests.get(OW_CURRENT_COMPLETE)
+    weather_response = getRequest(OW_CURRENT_COMPLETE)
     weather_json = weather_response.json()
     if weather_json["cod"] != "404":
         other_temp = round(weather_json['main']['feels_like'])
