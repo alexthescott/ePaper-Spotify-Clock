@@ -70,7 +70,7 @@ def mainLoop():
             Himage = Image.new('1', (WIDTH, HEIGHT), 128)
             draw = ImageDraw.Draw(Himage)
 
-            # GET Left's SPOTIPY AUTH OBJECT, TOKEN
+            # GET left user's SPOTIPY AUTH OBJECT, TOKEN
             l_oauth = spotipy.oauth2.SpotifyOAuth(l_spot_client_id, l_spot_client_secret, REDIRECT_URI, scope = SPOT_SCOPE, cache_path = l_cache, requests_timeout = 10)
             l_token_info = l_oauth.get_cached_token()
 
@@ -83,7 +83,7 @@ def mainLoop():
                 print(":( Left's access token unavailable")
                 l_track, l_artist = "", ""
 
-            # GET EMMAS's SPOTIFY TOKEN
+            # GET right user's SPOTIFY TOKEN
             r_oauth = spotipy.oauth2.SpotifyOAuth(r_spot_client_id, r_spot_client_secret, REDIRECT_URI, scope = SPOT_SCOPE, cache_path = r_cache, requests_timeout = 10)
             r_token_info = r_oauth.get_cached_token()
             r_token = getSpotipyToken(r_oauth, r_token_info)
@@ -92,7 +92,7 @@ def mainLoop():
                 r_ctx_type = temp_context_type if temp_context_type != "" else r_ctx_type
                 r_ctx_title = temp_context_name if temp_context_name != "" else r_ctx_title
             else:
-                print(":( Emma's access token unavailable")
+                print(":( Right's access token unavailable")
                 r_track, r_artist = "", ""
 
             # If we have no context read, grab context our context.txt json file 
