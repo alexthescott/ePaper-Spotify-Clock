@@ -16,9 +16,9 @@ import json
 def writeJsonContext(left_ctx, right_ctx):
     # if we have already written context info, don't rewrite file
     left_temp_ctx, right_tmp_ctx = left_ctx, right_ctx
-    with open('context.txt', "w+") as j_ctx:
-        write_l_ctx, write_r_ctx = True, True
-        try:
+    try:
+        with open('context.txt') as j_ctx:
+            write_l_ctx, write_r_ctx = True, True
             data = json.load(j_ctx)
 
             # check left ctx, assign tmp ctx if our pulled data is new
@@ -32,8 +32,9 @@ def writeJsonContext(left_ctx, right_ctx):
                 return
             print("Update context.txt")
             print("left_ctx: {} right_ctx: {}".format(left_ctx, right_ctx))
-        except:
-            print("Writing to new context.txt")
+    except Exception as e:
+        print("writeJsonContext() Failed:", e)
+        print("writing to new context.txt")
 
     context_data = {}
     context_data['context'] = []
