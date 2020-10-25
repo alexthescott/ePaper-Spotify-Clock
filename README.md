@@ -53,7 +53,7 @@ sudo python3 epd4in2.py
 ```bash
 sudo git clone https://github.com/alexthescott/ePaper-Spotify-Clock
 ```
-7) Use a text editor such as Vim, Emacs or nano [launch_epaper.sh](https://github.com/alexthescott/ePaper-Spotify-Clock/blob/master/launch_epaper.sh) and replace YOUR_USERNAME, then move file into your home directory
+7) Use a text editor such as Vim, Emacs or nano open [launch_epaper.sh](https://github.com/alexthescott/ePaper-Spotify-Clock/blob/master/launch_epaper.sh) and replace YOUR_USERNAME, then move file into your home directory
 ```bash
 # If you choose Vim, first open the file
 vim launch_epaper.sh
