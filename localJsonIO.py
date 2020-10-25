@@ -33,6 +33,8 @@ def writeJsonContext(left_ctx, right_ctx):
                 return
             print("Update context.txt")
             print("left_ctx: {} right_ctx: {}".format(left_ctx, right_ctx))
+        except:
+            print("Writing to new context.txt")
 
     context_data = {}
     context_data['context'] = []
