@@ -18,7 +18,6 @@ def writeJsonContext(left_ctx, right_ctx):
     left_temp_ctx, right_tmp_ctx = left_ctx, right_ctx
     with open('context.txt', "w+") as j_ctx:
         write_l_ctx, write_r_ctx = True, True
-
         try:
             data = json.load(j_ctx)
 

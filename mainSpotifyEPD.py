@@ -97,10 +97,15 @@ def mainLoop():
                 r_track, r_artist = "", ""
 
             # If we have no context read, grab context our context.txt json file 
-            if l_ctx_type == "" and l_ctx_title == "" or r_ctx_type == "" and r_ctx_title == "":
-                l_ctx_type, l_ctx_title, r_ctx_type, r_ctx_title = contextIO.readJsonContext((l_ctx_type,l_ctx_title), (r_ctx_type,r_ctx_title))
+            if (l_ctx_type == "" and l_ctx_title == "") or (r_ctx_type == "" and r_ctx_title == ""):
+                try:
+                    fh = open('context.txt')
+                    l_ctx_type, l_ctx_title, r_ctx_type, r_ctx_title = contextIO.readJsonContext((l_ctx_type,l_ctx_title), (r_ctx_type,r_ctx_title))
+                    fh.close()
+                except:
+                    print("context.txt doesn't exist")
             # Afterwords, if we have to write a new context to our context.txt json file, do so
-            if l_ctx_type != "" and l_ctx_title != "" or r_ctx_type != "" and r_ctx_title != "":
+            if (l_ctx_type != "" and l_ctx_title != "") or (r_ctx_type != "" and r_ctx_title != ""):
                 contextIO.writeJsonContext((l_ctx_type,l_ctx_title), (r_ctx_type,r_ctx_title))
 
             # USER 1 & 2 TRACK TITLES CONTEXT ----------------------------------------------------------------
