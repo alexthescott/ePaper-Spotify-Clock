@@ -490,7 +490,8 @@ if __name__ == '__main__':
     r_username = ''
 
     WIDTH, HEIGHT = 400, 300
-
+    r_ctx_type, r_ctx_title, l_ctx_type, l_ctx_title = "", "", "", ""
+    
     start = time()
 
     # OPENWEATHER API CALL
