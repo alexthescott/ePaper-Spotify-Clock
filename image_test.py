@@ -500,9 +500,9 @@ if __name__ == '__main__':
 
     # OPENWEATHER API CALL
     # temp_tuple = (temperature, temperature_high, temperature_low)
-    temp_tuple = getWeather()
+    temp_tuple = getWeather(metric_units)
 
-    seconds_left, military_time, date_str = getTimeFromDatetime()
+    seconds_left, military_time, date_str = getTimeFromDatetime(twenty_four_clock)
     print("time", military_time)
 
     # CREATE BLANK IMAGE
