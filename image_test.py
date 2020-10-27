@@ -152,13 +152,13 @@ def getContextFromJson(context_json, spotipy_object):
     return context_type, context_name 
 
 # Time Functions
-def getTimeFromDatetime():
+def getTimeFromDatetime(twenty_four_clock = False):
     # much simpler than final epd version, which accounts for time interval necessities
     date = dt.now()
     print("\t" + date.strftime("%M"))
     seconds_left = 60 - int(date.strftime("%S")) 
     date_str, am_pm = date.strftime("%a, %b %-d"), date.strftime("%p")
-    time_str = date.strftime("%-I:%M") + am_pm.lower()
+    time_str = date.strftime("%-H:%M") if twenty_four_clock else date.strftime("%-I:%M") + am_pm.lower()
     return seconds_left, time_str, date_str
 def getTimeFromTimeDelta(td):
     # Returns hours and minutes as ints
@@ -293,29 +293,31 @@ def drawSpotContext(img_draw_obj, Himage, context_type, context_text, context_x,
             Himage.paste(album_icon, (context_x - 24, context_y - 4))
         elif context_type == 'artist':
             Himage.paste(artist_icon, (context_x - 22, context_y - 1))
-def drawDateTimeTemp(img_draw_obj, military_time, date_str, temp_tuple):
+def drawDateTimeTemp(img_draw_obj, military_time, date_str, temp_tuple, metric_units = False):
     temp, temp_high, temp_low, other_temp = temp_tuple
+    temperature_type = "C" if metric_units else "F"
+
     temp_x, temp_y = 292, 240
     # CHECK for triple digit weather :( and adjust temp print location
     if temp >= 100: temp_x -= 10 
 
-    # Draw "upper temps" next to name
+    # Draw "upper temp" next to name of right user
     high_temp_x = 387 - findTextWidth(str(other_temp), 1)
     img_draw_obj.text((high_temp_x, 0), str(other_temp), font = DSfnt32)
-    img_draw_obj.text((high_temp_x + 2 + findTextWidth(str(other_temp), 1), 2), "F", font = DSfnt16)
+    img_draw_obj.text((high_temp_x + 2 + findTextWidth(str(other_temp), 1), 2), temperature_type, font = DSfnt16)
     
     # Draw main temp
     img_draw_obj.text((temp_x, 240), str(temp), font = DSfnt64)
-    img_draw_obj.text((temp_x + findTextWidth(str(temp), 2), 244), "F", font = DSfnt32)
+    img_draw_obj.text((temp_x + findTextWidth(str(temp), 2), 244), temperature_type, font = DSfnt32)
     if temp >= 100: temp_x += 10 
 
     # Draw high and low temp
     high_temp_x = temp_x + 96 - findTextWidth(str(temp_high), 1)
     img_draw_obj.text((high_temp_x, 240), str(temp_high), font = DSfnt32)
-    img_draw_obj.text((high_temp_x + 2 + findTextWidth(str(temp_high), 1), 242), "F", font = DSfnt16)
+    img_draw_obj.text((high_temp_x + 2 + findTextWidth(str(temp_high), 1), 242), temperature_type, font = DSfnt16)
     low_temp_x = temp_x + 96 - findTextWidth(str(temp_low), 1)
     img_draw_obj.text((low_temp_x, 264), str(temp_low), font = DSfnt32)
-    img_draw_obj.text((low_temp_x + 2 + findTextWidth(str(temp_low), 1), 266), "F", font = DSfnt16)
+    img_draw_obj.text((low_temp_x + 2 + findTextWidth(str(temp_low), 1), 266), temperature_type, font = DSfnt16)
  
     # Draw date and time
     time_width, time_height = img_draw_obj.textsize(military_time, DSfnt64)
@@ -419,34 +421,34 @@ def drawArtistText(img_draw_obj, artist_name, track_line_count, track_height, ar
         img_draw_obj.text((artist_x, artist_y), line, font = DSfnt16)
         artist_y += 12
 
-def getWeather():
+def getWeather(metric_units = False):
     # OPEN_WEATHER API SETTUP
     # https://openweathermap.org/
     OW_KEY = ""
     OW_CITYID = ""
     OW_OTHER_CITYID = ""
+    URL_UNITS = "&units=metric" if metric_units else url_units = "&units=imperial"
 
-    # get current weather
+    # Get current weather
     OW_CURRENT_URL = "http://api.openweathermap.org/data/2.5/weather?"
-    OW_CURRENT_COMPLETE = OW_CURRENT_URL + "appid=" + OW_KEY + "&id=" + OW_CITYID + "&units=imperial"
+    OW_CURRENT_COMPLETE = OW_CURRENT_URL + "appid=" + OW_KEY + "&id=" + OW_CITYID + URL_UNITS
     weather_response = getRequest(OW_CURRENT_COMPLETE)
     weather_json = weather_response.json()
     if weather_json["cod"] != "404":
         temp = round(weather_json['main']['feels_like'])
-        print("Current", temp)
-        temp_max, temp_min = temp, temp
+        temp_min, temp_max = temp, temp
 
     # get current weather for user on the right
     OW_CURRENT_URL = "http://api.openweathermap.org/data/2.5/weather?"
-    OW_CURRENT_COMPLETE = OW_CURRENT_URL + "appid=" + OW_KEY + "&id=" + OW_OTHER_CITYID + "&units=imperial"
+    OW_CURRENT_COMPLETE = OW_CURRENT_URL + "appid=" + OW_KEY + "&id=" + OW_OTHER_CITYID + URL_UNITS
     weather_response = getRequest(OW_CURRENT_COMPLETE)
     weather_json = weather_response.json()
     if weather_json["cod"] != "404":
         other_temp = round(weather_json['main']['feels_like'])
 
-    # get forecasted weather
+    # Get forecasted weather from feels_like and temp_min, temp_max
     OW_FORECAST_URL = "http://api.openweathermap.org/data/2.5/forecast?"
-    OW_FORECAST_COMPLETE = OW_FORECAST_URL + "appid=" + OW_KEY + "&id=" + OW_CITYID + "&units=imperial" + "&cnt=12"
+    OW_FORECAST_COMPLETE = OW_FORECAST_URL + "appid=" + OW_KEY + "&id=" + OW_CITYID + URL_UNITS + "&cnt=12"
     weather_response = getRequest(OW_FORECAST_COMPLETE)
     forecast_json = weather_response.json()
     if forecast_json["cod"] != "404":
@@ -456,7 +458,6 @@ def getWeather():
             min_predicted = min(i_temp, round(l['main']['temp_max']))
             if temp_min > min_predicted: temp_min = min_predicted
             if temp_max < max_predicted: temp_max = max_predicted
-    
     return temp, temp_max, temp_min, other_temp
 
 if __name__ == '__main__':
@@ -491,7 +492,10 @@ if __name__ == '__main__':
 
     WIDTH, HEIGHT = 400, 300
     r_ctx_type, r_ctx_title, l_ctx_type, l_ctx_title = "", "", "", ""
-    
+
+    metric_units = False
+    twenty_four_clock = True
+
     start = time()
 
     # OPENWEATHER API CALL
@@ -507,7 +511,7 @@ if __name__ == '__main__':
 
     # DRAW LINES DATE TIME TEMP ----------------------------------------------------------------
     drawBoarderLines(draw)
-    drawDateTimeTemp(draw, military_time, date_str, temp_tuple)
+    drawDateTimeTemp(draw, military_time, date_str, temp_tuple, metric_units)
 
     # GET Left's SPOTIPY AUTH OBJECT, TOKEN ----------------------------------------------------------------
     l_oauth = spotipy.oauth2.SpotifyOAuth(l_spot_client_id, l_spot_client_secret, REDIRECT_URI, scope = SCOPE, cache_path = l_cache, requests_timeout = 10)

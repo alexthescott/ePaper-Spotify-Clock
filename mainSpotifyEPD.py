@@ -39,6 +39,9 @@ import localJsonIO as contextIO
 import drawToEPD as epdDraw
 
 def mainLoop():
+    metric_units = True
+    twenty_four_clock = True
+
     epd = epd4in2.EPD()
     WIDTH, HEIGHT = epd.width, epd.height
     r_ctx_type, r_ctx_title, l_ctx_type, l_ctx_title = "", "", "", ""
@@ -306,14 +309,15 @@ def getTimeSincePlayed(hours, minutes):
     else: 
         return str(hours // 24) + "  days ago"
 
-def getWeather():
+def getWeather(metric_units = False):
     OW_KEY = "" # https://openweathermap.org/
     OW_CITYID = "" 
     OW_OTHER_CITYID = "" 
+    URL_UNITS = "&units=metric" if metric_units else url_units = "&units=imperial"
 
     # Get current weather
     OW_CURRENT_URL = "http://api.openweathermap.org/data/2.5/weather?"
-    OW_CURRENT_COMPLETE = OW_CURRENT_URL + "appid=" + OW_KEY + "&id=" + OW_CITYID + "&units=imperial"
+    OW_CURRENT_COMPLETE = OW_CURRENT_URL + "appid=" + OW_KEY + "&id=" + OW_CITYID + URL_UNITS
     weather_response = getRequest(OW_CURRENT_COMPLETE)
     weather_json = weather_response.json()
     if weather_json["cod"] != "404":
@@ -322,7 +326,7 @@ def getWeather():
 
     # get current weather for user on the right
     OW_CURRENT_URL = "http://api.openweathermap.org/data/2.5/weather?"
-    OW_CURRENT_COMPLETE = OW_CURRENT_URL + "appid=" + OW_KEY + "&id=" + OW_OTHER_CITYID + "&units=imperial"
+    OW_CURRENT_COMPLETE = OW_CURRENT_URL + "appid=" + OW_KEY + "&id=" + OW_OTHER_CITYID + URL_UNITS
     weather_response = getRequest(OW_CURRENT_COMPLETE)
     weather_json = weather_response.json()
     if weather_json["cod"] != "404":
@@ -330,7 +334,7 @@ def getWeather():
 
     # Get forecasted weather from feels_like and temp_min, temp_max
     OW_FORECAST_URL = "http://api.openweathermap.org/data/2.5/forecast?"
-    OW_FORECAST_COMPLETE = OW_FORECAST_URL + "appid=" + OW_KEY + "&id=" + OW_CITYID + "&units=imperial" + "&cnt=12"
+    OW_FORECAST_COMPLETE = OW_FORECAST_URL + "appid=" + OW_KEY + "&id=" + OW_CITYID + URL_UNITS + "&cnt=12"
     weather_response = getRequest(OW_FORECAST_COMPLETE)
     forecast_json = weather_response.json()
     if forecast_json["cod"] != "404":

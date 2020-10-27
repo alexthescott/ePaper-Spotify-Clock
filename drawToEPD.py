@@ -238,14 +238,7 @@ def drawSpotContext(img_draw_obj, Himage, context_type, context_text, context_x,
 
 def drawDateTimeTemp(img_draw_obj, military_time, date_str, temp_tuple, metric_units = False):
     temp, temp_high, temp_low, other_temp = temp_tuple
-    if metric_units:
-        temp = (temp-32) * 5 // 9
-        temp_high = (temp_high-32) * 5 // 9
-        temp_low = (temp_low-32) * 5 // 9
-        other_temp = (other_temp-32) * 5 // 9
-        temperature_type = "C"
-    else:
-        temperature_type = "F"
+    temperature_type = "C" if metric_units else "F"
 
     temp_x, temp_y = 292, 240
     # CHECK for triple digit weather :( and adjust temp print location
@@ -275,7 +268,6 @@ def drawDateTimeTemp(img_draw_obj, military_time, date_str, temp_tuple, metric_u
     date_width, date_height = img_draw_obj.textsize(date_str, DSfnt32)
     date_x, date_y = ((10 + time_width + temp_x) // 2) - (date_width // 2), 240 + date_height // 1.05
     img_draw_obj.text((date_x, date_y), date_str, font = DSfnt32)
-
 
 def drawTrackText(img_draw_obj, track_name, track_x, track_y):
     # After deciding the size of text, split words into lines, and draw to img_draw_obj
