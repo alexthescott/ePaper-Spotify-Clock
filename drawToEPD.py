@@ -236,8 +236,17 @@ def drawSpotContext(img_draw_obj, Himage, context_type, context_text, context_x,
         elif context_type == 'artist':
             Himage.paste(artist_icon, (context_x - 22, context_y - 1))
 
-def drawDateTimeTemp(img_draw_obj, military_time, date_str, temp_tuple):
+def drawDateTimeTemp(img_draw_obj, military_time, date_str, temp_tuple, metric_units = False):
     temp, temp_high, temp_low, other_temp = temp_tuple
+    if metric_units:
+        temp = (temp-32) * 5 // 9
+        temp_high = (temp_high-32) * 5 // 9
+        temp_low = (temp_low-32) * 5 // 9
+        other_temp = (other_temp-32) * 5 // 9
+        temperature_type = "C"
+    else:
+        temperature_type = "F"
+
     temp_x, temp_y = 292, 240
     # CHECK for triple digit weather :( and adjust temp print location
     if temp >= 100: temp_x -= 10 
@@ -245,20 +254,20 @@ def drawDateTimeTemp(img_draw_obj, military_time, date_str, temp_tuple):
     # Draw "upper temp" next to name of right user
     high_temp_x = 387 - findTextWidth(str(other_temp), 1)
     img_draw_obj.text((high_temp_x, 0), str(other_temp), font = DSfnt32)
-    img_draw_obj.text((high_temp_x + 2 + findTextWidth(str(other_temp), 1), 2), "F", font = DSfnt16)
+    img_draw_obj.text((high_temp_x + 2 + findTextWidth(str(other_temp), 1), 2), temperature_type, font = DSfnt16)
     
     # Draw main temp
     img_draw_obj.text((temp_x, 240), str(temp), font = DSfnt64)
-    img_draw_obj.text((temp_x + findTextWidth(str(temp), 2), 244), "F", font = DSfnt32)
+    img_draw_obj.text((temp_x + findTextWidth(str(temp), 2), 244), temperature_type, font = DSfnt32)
     if temp >= 100: temp_x += 10 
 
     # Draw high and low temp
     high_temp_x = temp_x + 96 - findTextWidth(str(temp_high), 1)
     img_draw_obj.text((high_temp_x, 240), str(temp_high), font = DSfnt32)
-    img_draw_obj.text((high_temp_x + 2 + findTextWidth(str(temp_high), 1), 242), "F", font = DSfnt16)
+    img_draw_obj.text((high_temp_x + 2 + findTextWidth(str(temp_high), 1), 242), temperature_type, font = DSfnt16)
     low_temp_x = temp_x + 96 - findTextWidth(str(temp_low), 1)
     img_draw_obj.text((low_temp_x, 264), str(temp_low), font = DSfnt32)
-    img_draw_obj.text((low_temp_x + 2 + findTextWidth(str(temp_low), 1), 266), "F", font = DSfnt16)
+    img_draw_obj.text((low_temp_x + 2 + findTextWidth(str(temp_low), 1), 266), temperature_type, font = DSfnt16)
  
     # Draw date and time
     time_width, time_height = img_draw_obj.textsize(military_time, DSfnt64)

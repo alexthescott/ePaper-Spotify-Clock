@@ -127,8 +127,13 @@ def mainLoop():
             epdDraw.drawBorderLines(draw)
             epdDraw.drawDateTimeTemp(draw, time_str, date_str, temp_tuple)
 
-            # HIDDEN DARK MODE
-            # Himage = ImageMath.eval('255-(a)',a=Himage)
+            # This reassignment of time_str is to ensure that 24 hour time option doesn't mess up scheduling
+            #   Potentially worth coming back to simplify these scheudling checks assuming 24 hour time
+            #   changing to 12H time only in the draw function...
+            if twenty_four_clock:
+                date = dt.now() + timedelta(seconds = time_elapsed)
+                am_pm = date.strftime("%p")
+                time_str = date.strftime("%-I:%M") + am_pm.lower()
 
             # from 2 - 5:59am, don't init the display, return from main, and have .sh script run again in 3 mins
             hour = int(time_str.split(":")[0])
@@ -146,6 +151,9 @@ def mainLoop():
                 epd.init()
                 epd.Clear()
                 DID_EPD_INIT = True
+
+            # HIDDEN DARK MODE
+            # Himage = ImageMath.eval('255-(a)',a=Himage)
 
             if DID_EPD_INIT:
                 image_buffer = epd.getbuffer(Himage)
@@ -251,7 +259,7 @@ def getContextFromJson(context_json, spotipy_object):
     return context_type, context_name 
 
 # Time Functions
-def getTimeFromDatetime(time_elapsed, oldMinute):
+def getTimeFromDatetime(time_elapsed, oldMinute, twenty_four_clock = False):
     # Returns seconds, time, date, and the minute of update
     # We halt until a proper time window has passed
     date = dt.now() + timedelta(seconds = time_elapsed) 
@@ -277,7 +285,8 @@ def getTimeFromDatetime(time_elapsed, oldMinute):
     # 2:00am - 5:59am check time every 15ish minutes, granularity here is not paramount
     sec_left = 60 - int(date.strftime("%S")) 
     date_str, am_pm = date.strftime("%a, %b %-d"), date.strftime("%p")
-    time_str = date.strftime("%-I:%M") + am_pm.lower()
+
+    time_str = date.strftime("%-H:%M") if twenty_four_clock else date.strftime("%-I:%M") + am_pm.lower()
     return sec_left, time_str, date_str, int(newMinute)
 def getTimeFromTimeDelta(td):
     # Returns hours and minutes as ints
