@@ -313,7 +313,7 @@ def getWeather(metric_units = False):
     OW_KEY = "" # https://openweathermap.org/
     OW_CITYID = "" 
     OW_OTHER_CITYID = "" 
-    URL_UNITS = "&units=metric" if metric_units else url_units = "&units=imperial"
+    URL_UNITS = "&units=metric" if metric_units else "&units=imperial"
 
     # Get current weather
     OW_CURRENT_URL = "http://api.openweathermap.org/data/2.5/weather?"
