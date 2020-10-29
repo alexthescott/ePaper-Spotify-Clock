@@ -297,14 +297,14 @@ def getTimeFromDatetime(time_elapsed, oldMinute, twenty_four_clock = False):
 
     # Here we make some considerations so the screen isn't updated too frequently
     # We air on the side of caution, and would rather add an additional minute than shrink by a minute
-    if oldMinute != None and (5 < time and time < 24):
+    if oldMinute != None and (5 < hour and hour < 24):
         # 6:00am - 11:59pm update screen every 3 mins
         while int(abs(oldMinute - newMinute)) < 3:
             date = dt.now() + timedelta(seconds = time_elapsed)
             newMinute = int(date.strftime("%M")[-1])
             sleep(2)
     # 12:00am - 1:59am update screen every 5 mins at least
-    elif oldMinute != None and (time < 2):
+    elif oldMinute != None and (hour < 2):
         while int(abs(oldMinute - newMinute)) < 5:
             date = dt.now() + timedelta(seconds = time_elapsed)
             newMinute = int(date.strftime("%M")[-1])
