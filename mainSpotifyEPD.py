@@ -12,8 +12,7 @@ displays the track title, artist name, and context.
 In addition, this program uses the OpenWeatherMap api to retrieve and
 display the current 'feels-like' temperature, along with the date and time
 
-6:00am - 8:00pm the display updates every 3 minutes
-8:00pm - 12:00pm the display updates every 5 minutes
+6:00am - 11:59pm the display updates every 3 minutes
 12:00pm - 2:00am the display updates every 15 minutes
 2:00am - 6:00am the display does not update
 This is all in an effort to ensure the display does not see long term damage
@@ -196,6 +195,7 @@ def mainLoop():
 
 # Spotify Functions
 def getSpotipyToken(sp_oauth, token_info):
+    # Returns Spotify Token from sp_oauth if token_ifo is stale
     token = None
     if token_info:
         token = token_info['access_token']
@@ -210,7 +210,16 @@ def getSpotipyToken(sp_oauth, token_info):
             token = sp_oauth['access_token']
     return token
 def getSpotipyInfo(token):
-    # GRAB CURRENT OR RECENT TRACK OBJECT
+    """ Returns Spotify Listening Information from Spotify AUTH Token
+        Parameters:
+            token: Spotify Auth Token generated from OAuth object
+        Returns:
+            track_name: track name to be displayed
+            artist_name: artist name to be displayed
+            time_passed: used to calculate time since played, or if currently playing
+            context_type: used to determine context icon -> pulled from getContextFromJson()
+            context_name: context name to be displayed -> pulled from getContextFromJson()
+    """
     sp = spotipy.Spotify(auth=token)
     recent = sp.current_user_playing_track()
     context_type, context_name, time_passed = "", "", ""
@@ -246,6 +255,14 @@ def getSpotipyInfo(token):
         context_type, context_name = getContextFromJson(track['context'], sp)
     return track_name, artist_name, time_passed, context_type, context_name 
 def getContextFromJson(context_json, spotipy_object):
+    """ Returns Spotify Context info
+        Parameters:
+            context_json: json to be parsed
+            spotipy_object: used to retreive name of spotify context
+        Returns:
+            context_type: Either a playlist, artist, or album
+            context_name: Context name to be displayed 
+    """
     context_type, context_name = "", ""
     if context_json != None:
         context_type = context_json['type']
@@ -263,8 +280,17 @@ def getContextFromJson(context_json, spotipy_object):
 
 # Time Functions
 def getTimeFromDatetime(time_elapsed, oldMinute, twenty_four_clock = False):
-    # Returns seconds, time, date, and the minute of update
-    # We halt until a proper time window has passed
+    """ Returns time information from datetime including seconds, time, date, and the minute of update
+        Parameters:
+            time_elapsed: 'jump us forward in time to anticipate compute time'
+            oldMinute: used to ensure a proper update interval
+            twenty_four_clock: Bool to determine if AM/PM or not
+        Returns:
+            sec_left: used to know how long we should sleep for before next update on the minute
+            time_str: time text to be displayed
+            date_str: date text to be displayed
+            newMinute: will become the oldMinute var in next call for proper interval
+    """
     date = dt.now() + timedelta(seconds = time_elapsed) 
     am_pm = date.strftime("%p")
     time_str = date.strftime("%-I:%M") + am_pm.lower()
@@ -292,10 +318,23 @@ def getTimeFromDatetime(time_elapsed, oldMinute, twenty_four_clock = False):
     time_str = date.strftime("%-H:%M") if twenty_four_clock else date.strftime("%-I:%M") + am_pm.lower()
     return sec_left, time_str, date_str, int(newMinute)
 def getTimeFromTimeDelta(td):
-    # Returns hours and minutes as ints
-    return td.days * 24 + td.seconds // 3600, (td.seconds % 3600) // 60
+    """ Determine time since last played in terms of hours and minutes 
+        Parameters:
+            td: our timedelta
+        Returns:
+            hours: hours as int since last played 
+            minutes: minutes as int since last played
+    """
+    hours, minutes = td.days * 24 + td.seconds // 3600, (td.seconds % 3600) // 60
+    return hours, minutes
 def getTimeSincePlayed(hours, minutes):
-    # From the hours and minutes passed, return a string representation  
+    """ Get str representation of time since last played 
+        Parameters:
+            hours: int counting hours since last played
+            minutes: int counting minutes since last played
+        Returns:
+            "is listening to" or "# ___ ago" 
+    """
     if hours == 0 and minutes <=4: 
         return " is listening to"
     elif hours == 0: 
@@ -310,8 +349,23 @@ def getTimeSincePlayed(hours, minutes):
         return str(hours // 24) + "  days ago"
 
 def getWeather(metric_units = False):
-    OW_KEY = "" # https://openweathermap.org/
-    OW_CITYID = "" 
+    """ Get Weather information 
+
+        Parameters:
+            metric_units: Bool if we want C or F
+        Returns:
+            temp: Current 'feels_like' temp
+            temp_max: Low temp 1.5 days in the future
+            temp_min: High temp 1.5 days in the future
+            other_temp: Temp to be displayed in top right of other user (another city perhaps?)
+
+        Fun Fact:
+            America is a strange country with broken proclamations
+            https://en.wikipedia.org/wiki/Metric_Conversion_Act
+            https://www.geographyrealm.com/the-only-metric-highway-in-the-united-states/
+    """
+    OW_KEY = ""  # https://openweathermap.org/ -> create account and generate key
+    OW_CITYID = "" # https://openweathermap.org/find? -> find your city id
     OW_OTHER_CITYID = "" 
     URL_UNITS = "&units=metric" if metric_units else "&units=imperial"
 
