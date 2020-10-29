@@ -129,17 +129,12 @@ def mainLoop():
             epdDraw.drawBorderLines(draw)
             epdDraw.drawDateTimeTemp(draw, time_str, date_str, temp_tuple)
 
-            # This reassignment of time_str is to ensure that 24 hour time option doesn't mess up scheduling
-            #   Potentially worth coming back to simplify these scheudling checks assuming 24 hour time
-            #   changing to 12H time only in the draw function...
-            if twenty_four_clock:
-                date = dt.now() + timedelta(seconds = time_elapsed)
-                am_pm = date.strftime("%p")
-                time_str = date.strftime("%-I:%M") + am_pm.lower()
+            # Get 24H clock hour to determine sleep duration before refresh
+            date = dt.now() + timedelta(seconds = time_elapsed)
+            hour = int(date.strftime("%-H"))
 
-            # from 2 - 5:59am, don't init the display, return from main, and have .sh script run again in 3 mins
-            hour = int(time_str.split(":")[0])
-            if (time_str[-2:] == 'am' and (hour >= 2 and hour <= 5)):
+            # from 2:01 - 5:59am, don't init the display, return from main, and have .sh script run again in 3 mins
+            if 2 <= hour and hour <= 5:
                 if DID_EPD_INIT == True:
                     # in sleep() from epd4in2.py, epdconfig.module_exit() is never called
                     # I hope this does not create long term damage 🤞 
@@ -153,6 +148,10 @@ def mainLoop():
                 epd.init()
                 epd.Clear()
                 DID_EPD_INIT = True
+
+            # 11PM - 2AM, Change to darkmode
+            if 23 <= hour or hour < 2:
+                Himage = ImageMath.eval('255-(a)',a=Himage)
 
             # HIDDEN DARK MODE
             # Himage = ImageMath.eval('255-(a)',a=Himage)
@@ -169,11 +168,11 @@ def mainLoop():
             remaining_time = sec_left - time_elapsed
             if remaining_time < 0: remaining_time = 60
 
-            if (time_str[-2:] == 'am' and (hour >= 6 and hour != 12)) or (time_str[-2:] == 'pm' and hour <= 12):
-                # 6:00am - 11:59pm update screen every 3 minutes
+            if 5 < hour and hour < 24:
+                # 6:00am - 12:59pm update screen every 3 minutes
                 print("\t", round(time_elapsed, 2), "\tseconds per loop\t", "sleeping for {} seconds".format(int(remaining_time) + 120))
                 sleep(remaining_time + 120)
-            elif (time_str[-2:] == 'am' and (hour < 2 or hour == 12)):
+            elif hour < 2:
                 # 12:00am - 1:59am update screen every 5ish minutes
                 print("\t", round(time_elapsed, 2), "\tseconds per loop\t", "sleeping for {} seconds".format(int(remaining_time) + 240))
                 sleep(remaining_time + 240)
@@ -293,20 +292,19 @@ def getTimeFromDatetime(time_elapsed, oldMinute, twenty_four_clock = False):
     """
     date = dt.now() + timedelta(seconds = time_elapsed) 
     am_pm = date.strftime("%p")
-    time_str = date.strftime("%-I:%M") + am_pm.lower()
-    hour = int(time_str.split(":")[0])
+    hour = int(date.strftime("%-H"))
     newMinute = int(date.strftime("%M")[-1])
 
     # Here we make some considerations so the screen isn't updated too frequently
     # We air on the side of caution, and would rather add an additional minute than shrink by a minute
-    if oldMinute != None and ((time_str[-2:] == 'am' and (hour >= 6 and hour != 12)) or (time_str[-2:] == 'pm' and hour <= 12)):
+    if oldMinute != None and (5 < time and time < 24):
         # 6:00am - 11:59pm update screen every 3 mins
         while int(abs(oldMinute - newMinute)) < 3:
             date = dt.now() + timedelta(seconds = time_elapsed)
             newMinute = int(date.strftime("%M")[-1])
             sleep(2)
     # 12:00am - 1:59am update screen every 5 mins at least
-    elif oldMinute != None and (time_str[-2:] == 'am' and (hour < 2 or hour == 12)):
+    elif oldMinute != None and (time < 2):
         while int(abs(oldMinute - newMinute)) < 5:
             date = dt.now() + timedelta(seconds = time_elapsed)
             newMinute = int(date.strftime("%M")[-1])
@@ -318,13 +316,7 @@ def getTimeFromDatetime(time_elapsed, oldMinute, twenty_four_clock = False):
     time_str = date.strftime("%-H:%M") if twenty_four_clock else date.strftime("%-I:%M") + am_pm.lower()
     return sec_left, time_str, date_str, int(newMinute)
 def getTimeFromTimeDelta(td):
-    """ Determine time since last played in terms of hours and minutes 
-        Parameters:
-            td: our timedelta
-        Returns:
-            hours: hours as int since last played 
-            minutes: minutes as int since last played
-    """
+    """ Determine time since last played in terms of hours and minutes from timedelta"""
     hours, minutes = td.days * 24 + td.seconds // 3600, (td.seconds % 3600) // 60
     return hours, minutes
 def getTimeSincePlayed(hours, minutes):

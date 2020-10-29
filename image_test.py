@@ -84,6 +84,7 @@ lfDict = {' ': '9', '!': '9', '"': '17', '#': '33', '$': '25', '%': '33',
 
 # Spotify Functions
 def getSpotipyToken(sp_oauth, token_info):
+    # Returns Spotify Token from sp_oauth if token_ifo is stale
     token = None
     if token_info:
         print("Found cache token!")
@@ -99,7 +100,16 @@ def getSpotipyToken(sp_oauth, token_info):
             token = sp_oauth['access_token']
     return token
 def getSpotipyInfo(token):
-    # GRAB CURRENT OR RECENT TRACK OBJECT
+    """ Returns Spotify Listening Information from Spotify AUTH Token
+        Parameters:
+            token: Spotify Auth Token generated from OAuth object
+        Returns:
+            track_name: track name to be displayed
+            artist_name: artist name to be displayed
+            time_passed: used to calculate time since played, or if currently playing
+            context_type: used to determine context icon -> pulled from getContextFromJson()
+            context_name: context name to be displayed -> pulled from getContextFromJson()
+    """
     sp = spotipy.Spotify(auth=token)
     recent = sp.current_user_playing_track()
     context_type, context_name, time_passed = "", "", ""
@@ -136,6 +146,14 @@ def getSpotipyInfo(token):
 
     return track_name, artist_name, time_passed, context_type, context_name 
 def getContextFromJson(context_json, spotipy_object):
+    """ Returns Spotify Context info
+        Parameters:
+            context_json: json to be parsed
+            spotipy_object: used to retreive name of spotify context
+        Returns:
+            context_type: Either a playlist, artist, or album
+            context_name: Context name to be displayed 
+    """
     context_type, context_name = "", ""
     if context_json != None:
         context_type = context_json['type']
@@ -153,7 +171,15 @@ def getContextFromJson(context_json, spotipy_object):
 
 # Time Functions
 def getTimeFromDatetime(twenty_four_clock = False):
-    # much simpler than final epd version, which accounts for time interval necessities
+    """ Returns time information from datetime including seconds, time, date, and the minute of update
+        Much simpler than final epd version, which accounts for time interval necessities
+        Parameters:
+            twenty_four_clock: Bool to determine if AM/PM or not
+        Returns:
+            sec_left: used to know how long we should sleep for before next update on the minute
+            time_str: time text to be displayed
+            date_str: date text to be displayed
+    """
     date = dt.now()
     print("\t" + date.strftime("%M"))
     seconds_left = 60 - int(date.strftime("%S")) 
@@ -161,10 +187,16 @@ def getTimeFromDatetime(twenty_four_clock = False):
     time_str = date.strftime("%-H:%M") if twenty_four_clock else date.strftime("%-I:%M") + am_pm.lower()
     return seconds_left, time_str, date_str
 def getTimeFromTimeDelta(td):
-    # Returns hours and minutes as ints
+    """ Determine time since last played in terms of hours and minutes from timedelta"""
     return td.days * 24 + td.seconds // 3600, (td.seconds % 3600) // 60
 def getTimeSincePlayed(hours, minutes):
-    # From the hours and minutes passed, return a string representation  
+    """ Get str representation of time since last played 
+        Parameters:
+            hours: int counting hours since last played
+            minutes: int counting minutes since last played
+        Returns:
+            "is listening to" or "# ___ ago" 
+    """
     if hours == 0 and minutes <=4:
         return " is listening to"
     elif hours == 0:
@@ -422,12 +454,25 @@ def drawArtistText(img_draw_obj, artist_name, track_line_count, track_height, ar
         artist_y += 12
 
 def getWeather(metric_units = False):
-    # OPEN_WEATHER API SETTUP
-    # https://openweathermap.org/
-    OW_KEY = ""
-    OW_CITYID = ""
+    """ Get Weather information 
+
+        Parameters:
+            metric_units: Bool if we want C or F
+        Returns:
+            temp: Current 'feels_like' temp
+            temp_max: Low temp 1.5 days in the future
+            temp_min: High temp 1.5 days in the future
+            other_temp: Temp to be displayed in top right of other user (another city perhaps?)
+
+        Fun Fact:
+            America is a strange country with broken proclamations
+            https://en.wikipedia.org/wiki/Metric_Conversion_Act
+            https://www.geographyrealm.com/the-only-metric-highway-in-the-united-states/
+    """
+    OW_KEY = ""  # https://openweathermap.org/ -> create account and generate key
+    OW_CITYID = "" # https://openweathermap.org/find? -> find your city id
     OW_OTHER_CITYID = ""
-    URL_UNITS = "&units=metric" if metric_units else url_units = "&units=imperial"
+    URL_UNITS = "&units=metric" if metric_units else "&units=imperial"
 
     # Get current weather
     OW_CURRENT_URL = "http://api.openweathermap.org/data/2.5/weather?"
