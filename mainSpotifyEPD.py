@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding:utf-8 -*-
 
-""" spotify_epd.py by Alex Scott 2020
+""" spotify_epd.py by alexthescott 2020
 
 Made for the Waveshare 4.2inch e-Paper Module
 https://www.waveshare.com/wiki/4.2inch_e-Paper_Module
@@ -38,8 +38,8 @@ import localJsonIO as contextIO
 import drawToEPD as epdDraw
 
 def mainLoop():
-    metric_units = True
-    twenty_four_clock = True
+    metric_units = False
+    twenty_four_clock = False
 
     epd = epd4in2.EPD()
     WIDTH, HEIGHT = epd.width, epd.height
@@ -57,7 +57,7 @@ def mainLoop():
     try:
         while True:
             # Get time variables. old_time is used to ensure even time difference intervals between updates
-            sec_left, time_str, date_str, old_time = getTimeFromDatetime(time_elapsed, old_time)
+            sec_left, time_str, date_str, old_time = getTimeFromDatetime(time_elapsed, old_time, twenty_four_clock)
             print(time_str)
 
             # Firstly, this is for my own edifice to know how long a loop takes for the Pi
@@ -66,7 +66,7 @@ def mainLoop():
             
             # OPENWEATHER API CALL
             if temp_tuple == None or countTo5 == 4:
-                temp_tuple = getWeather()
+                temp_tuple = getWeather(metric_units)
 
             # CREATE BLANK IMAGE
             Himage = Image.new('1', (WIDTH, HEIGHT), 128)
@@ -127,7 +127,7 @@ def mainLoop():
 
             # DRAW LINES DATE TIME TEMP ----------------------------------------------------------------
             epdDraw.drawBorderLines(draw)
-            epdDraw.drawDateTimeTemp(draw, time_str, date_str, temp_tuple)
+            epdDraw.drawDateTimeTemp(draw, time_str, date_str, temp_tuple, metric_units)
 
             # Get 24H clock hour to determine sleep duration before refresh
             date = dt.now() + timedelta(seconds = time_elapsed)
