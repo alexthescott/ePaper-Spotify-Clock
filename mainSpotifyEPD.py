@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding:utf-8 -*-
 
-""" spotify_epd.py by alexthescott 2020
+""" spotify_epd.py by Alex Scott 2020
 
 Made for the Waveshare 4.2inch e-Paper Module
 https://www.waveshare.com/wiki/4.2inch_e-Paper_Module
@@ -26,7 +26,7 @@ https://github.com/alexthescott/4.2in-ePaper-Spotify-Clock/blob/master/launch_ep
 """
 
 import spotipy
-from time import time, sleep
+from time import time, sleep, strftime, localtime
 from random import randint
 from datetime import timedelta, datetime as dt
 from requests import get as getRequest
@@ -50,6 +50,7 @@ def mainLoop():
 
     # countTo5 is used to get weather every 5 minutes
     countTo5 = 0 
+    sunset_time_tuple = None
 
     # First loop, init EPD
     DID_EPD_INIT = False
@@ -66,7 +67,7 @@ def mainLoop():
             
             # OPENWEATHER API CALL
             if temp_tuple == None or countTo5 == 4:
-                temp_tuple = getWeather(metric_units)
+                temp_tuple, sunset_time_tuple = getWeather(metric_units)
 
             # CREATE BLANK IMAGE
             Himage = Image.new('1', (WIDTH, HEIGHT), 128)
@@ -120,21 +121,22 @@ def mainLoop():
             epdDraw.drawSpotContext(draw, Himage, r_ctx_type, r_ctx_title, 227, 204)
 
             # DRAW NAMES TIME SINCE ----------------------------------------------------------------
-            l_name_width, l_name_height = epdDraw.drawName(draw, "Batman", 8, 0)
+            l_name_width, l_name_height = epdDraw.drawName(draw, "Alex", 8, 0)
             epdDraw.drawUserTimeAgo(draw, l_time_since, 18 + l_name_width, l_name_height // 2)
-            r_name_width, r_name_height = epdDraw.drawName(draw, "Robin", 210, 0)
+            r_name_width, r_name_height = epdDraw.drawName(draw, "Emma", 210, 0)
             epdDraw.drawUserTimeAgo(draw, r_time_since, 220 + r_name_width, r_name_height // 2) 
 
             # DRAW LINES DATE TIME TEMP ----------------------------------------------------------------
             epdDraw.drawBorderLines(draw)
             epdDraw.drawDateTimeTemp(draw, time_str, date_str, temp_tuple, metric_units)
 
-            # Get 24H clock hour to determine sleep duration before refresh
+            # Get 24H clock current_hour to determine sleep duration before refresh
             date = dt.now() + timedelta(seconds = time_elapsed)
-            hour = int(date.strftime("%-H"))
+            current_hour = int(date.strftime("%-H"))
+            current_minute = int(date.strftime("%-M"))
 
             # from 2:01 - 5:59am, don't init the display, return from main, and have .sh script run again in 3 mins
-            if 2 <= hour and hour <= 5:
+            if 2 <= current_hour and current_hour <= 5:
                 if DID_EPD_INIT == True:
                     # in sleep() from epd4in2.py, epdconfig.module_exit() is never called
                     # I hope this does not create long term damage 🤞 
@@ -147,14 +149,20 @@ def mainLoop():
                 print("EPD INIT")
                 epd.init()
                 epd.Clear()
+                sunsetTimeTuple = None
                 DID_EPD_INIT = True
 
-            # 11PM - 2AM, Change to darkmode
-            if 23 <= hour or hour < 2:
-                Himage = ImageMath.eval('255-(a)',a=Himage)
 
             # HIDDEN DARK MODE
             # Himage = ImageMath.eval('255-(a)',a=Himage)
+            
+            # HIDDEN sunset DARK MODE. if sunsetFlip = True invert display 24 mintues after sunset 
+            sunsetFlip = True
+            if sunsetFlip:
+                sunset_hour, sunset_minute = sunset_time_tuple
+                if (sunset_hour < current_hour or current_hour < 2) or (sunset_hour == current_hour and sunset_minute <= current_minute):
+                    print("Night Time Dark Mode @ {} {}".format(current_hour, current_minute))
+                    Himage = ImageMath.eval('255-(a)', a=Himage)
 
             if DID_EPD_INIT:
                 image_buffer = epd.getbuffer(Himage)
@@ -168,11 +176,11 @@ def mainLoop():
             remaining_time = sec_left - time_elapsed
             if remaining_time < 0: remaining_time = 60
 
-            if 5 < hour and hour < 24:
+            if 5 < current_hour and current_hour < 24:
                 # 6:00am - 12:59pm update screen every 3 minutes
                 print("\t", round(time_elapsed, 2), "\tseconds per loop\t", "sleeping for {} seconds".format(int(remaining_time) + 120))
                 sleep(remaining_time + 120)
-            elif hour < 2:
+            elif current_hour < 2:
                 # 12:00am - 1:59am update screen every 5ish minutes
                 print("\t", round(time_elapsed, 2), "\tseconds per loop\t", "sleeping for {} seconds".format(int(remaining_time) + 240))
                 sleep(remaining_time + 240)
@@ -278,14 +286,14 @@ def getContextFromJson(context_json, spotipy_object):
     return context_type, context_name 
 
 # Time Functions
-def getTimeFromDatetime(time_elapsed, oldMinute, twenty_four_clock = False):
-    """ Returns time information from datetime including seconds, time, date, and the minute of update
+def getTimeFromDatetime(time_elapsed, oldMinute, twenty_four_clock):
+    """ Returns time information from datetime including seconds, time, date, and the current_minute of update
         Parameters:
             time_elapsed: 'jump us forward in time to anticipate compute time'
             oldMinute: used to ensure a proper update interval
             twenty_four_clock: Bool to determine if AM/PM or not
         Returns:
-            sec_left: used to know how long we should sleep for before next update on the minute
+            sec_left: used to know how long we should sleep for before next update on the current_minute
             time_str: time text to be displayed
             date_str: date text to be displayed
             newMinute: will become the oldMinute var in next call for proper interval
@@ -296,7 +304,7 @@ def getTimeFromDatetime(time_elapsed, oldMinute, twenty_four_clock = False):
     newMinute = int(date.strftime("%M")[-1])
 
     # Here we make some considerations so the screen isn't updated too frequently
-    # We air on the side of caution, and would rather add an additional minute than shrink by a minute
+    # We air on the side of caution, and would rather add an additional current_minute than shrink by a current_minute
     if oldMinute != None and (5 < hour and hour < 24):
         # 6:00am - 11:59pm update screen every 3 mins
         while int(abs(oldMinute - newMinute)) < 3:
@@ -340,7 +348,7 @@ def getTimeSincePlayed(hours, minutes):
     else: 
         return str(hours // 24) + "  days ago"
 
-def getWeather(metric_units = False):
+def getWeather(metric_units):
     """ Get Weather information 
 
         Parameters:
@@ -366,9 +374,15 @@ def getWeather(metric_units = False):
     OW_CURRENT_COMPLETE = OW_CURRENT_URL + "appid=" + OW_KEY + "&id=" + OW_CITYID + URL_UNITS
     weather_response = getRequest(OW_CURRENT_COMPLETE)
     weather_json = weather_response.json()
+
     if weather_json["cod"] != "404":
         temp = round(weather_json['main']['feels_like'])
         temp_min, temp_max = temp, temp
+
+        sunset_unix = int(weather_json['sys']['sunset']) + 1440
+        sunset_hour = int(strftime('%H', localtime(sunset_unix)))
+        sunset_minute = int(strftime('%-M', localtime(sunset_unix)))
+        # print(strftime("%H:%M:%S", localtime(sunset_unix)))
 
     # get current weather for user on the right
     OW_CURRENT_URL = "http://api.openweathermap.org/data/2.5/weather?"
@@ -390,7 +404,7 @@ def getWeather(metric_units = False):
             min_predicted = min(i_temp, round(l['main']['temp_max']))
             if temp_min > min_predicted: temp_min = min_predicted
             if temp_max < max_predicted: temp_max = max_predicted
-    return temp, temp_max, temp_min, other_temp
+    return (temp, temp_max, temp_min, other_temp), (sunset_hour, sunset_minute)
 
 if __name__ == '__main__':
     # UNIVERSAL SPOTIPY VARS 

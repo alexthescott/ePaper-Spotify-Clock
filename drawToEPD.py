@@ -236,7 +236,7 @@ def drawSpotContext(img_draw_obj, Himage, context_type, context_text, context_x,
         elif context_type == 'artist':
             Himage.paste(artist_icon, (context_x - 22, context_y - 1))
 
-def drawDateTimeTemp(img_draw_obj, military_time, date_str, temp_tuple, metric_units = False):
+def drawDateTimeTemp(img_draw_obj, military_time, date_str, temp_tuple, metric_units):
     temp, temp_high, temp_low, other_temp = temp_tuple
     temperature_type = "C" if metric_units else "F"
 
@@ -263,8 +263,18 @@ def drawDateTimeTemp(img_draw_obj, military_time, date_str, temp_tuple, metric_u
     img_draw_obj.text((low_temp_x + 2 + findTextWidth(str(temp_low), 1), 266), temperature_type, font = DSfnt16)
  
     # Draw date and time
-    time_width, time_height = img_draw_obj.textsize(military_time, DSfnt64)
-    img_draw_obj.text((10, 240), military_time, font = DSfnt64)
+    # Draw date and time
+    if "am" in military_time or "pm" in military_time:
+        am_pm = military_time[-2:]
+        current_time = military_time[:-2]
+        current_time_width, _ = img_draw_obj.textsize(current_time, DSfnt64)
+        img_draw_obj.text((10, 240), current_time, font = DSfnt64)
+        current_am_pm_width, _ = img_draw_obj.textsize(am_pm, DSfnt32)
+        img_draw_obj.text((current_time_width + 10, 262), am_pm, font = DSfnt32)
+        time_width = current_time_width + current_am_pm_width
+    else:
+        time_width, time_height = img_draw_obj.textsize(military_time, DSfnt64)
+        img_draw_obj.text((10, 240), military_time, font = DSfnt64)
     date_width, date_height = img_draw_obj.textsize(date_str, DSfnt32)
     date_x, date_y = ((10 + time_width + temp_x) // 2) - (date_width // 2), 240 + date_height // 1.05
     img_draw_obj.text((date_x, date_y), date_str, font = DSfnt32)
