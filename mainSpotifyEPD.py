@@ -343,7 +343,7 @@ def getTimeSincePlayed(hours, minutes):
         return str(hours) + "  hour ago"
     elif hours < 24: 
         return str(hours) + "  hours ago"
-    elif 24 <= hours and hours > 24: 
+    elif hours < 48: 
         return str(hours // 24) + "  day ago"
     else: 
         return str(hours // 24) + "  days ago"
