@@ -34,7 +34,11 @@ sudo apt-get install python3-pil
 sudo apt-get install python3-numpy
 sudo pip3 install RPi.GPIO
 sudo pip3 install spidev
+sudo pip3 install spotipy
+sudo pip3 install requests
 ```
+As an aside, sudo pip install is generally frowned upon, but these are popular and vetted packages which won't pose security threats to your system
+
 3) Download Waveshare Examples and Python Libraries
 ```bash
 sudo git clone https://github.com/waveshare/e-Paper
