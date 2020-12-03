@@ -70,11 +70,11 @@ mv launch_epaper.sh /$HOME
 9) On the Spotify Developer Portal, add http://www.google.com/ as the Redirect URI, and save at the bottom
 10) Create a free [OpenWeatherMap account](https://home.openweathermap.org/users/sign_in), and navigate to your profile, and then [API keys](https://home.openweathermap.org/api_keys). Generate and store a new key as it will be inserted into mainSpotifyEPD.py
 11) Using a text editor, at the bottom of mainSpotifyEPD.py, insert both Spotify user's username, Client Secret, and Client ID. Additionally, in the getWeather function, insert your OpenWeatherMap API, and City Id's which can be found [here](https://openweathermap.org/find?)
-12) Navigate to your home directory, make launch_epaper.sh an executable, and then run it
+12) Navigate to your home directory, make launch_epaper.sh an executable, and then run it as the super user
 ```bash
 cd $HOME
 chmod +x launch_epaper.sh
-./launch_epaper.sh
+sudo ./launch_epaper.sh
 ```
 13) You will be asked to paste two URLs into a web browser to link the Spotify accounts to the project. The first request corresponds with the user on the left, and the second request corresponds with the user on the right. After accepting Spotify's terms, copy and paste the full Google url back into the terminal.
 14) If everything runs well, consider adding launch_epaper.sh to rc.local which runs at boot
