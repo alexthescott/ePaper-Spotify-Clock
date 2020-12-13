@@ -236,6 +236,10 @@ def drawSpotContext(img_draw_obj, Himage, context_type, context_text, context_x,
         elif context_type == 'artist':
             Himage.paste(artist_icon, (context_x - 22, context_y - 1))
 
+def drawAlbumImage(Himage, imageFileName):
+    albumImage = Image.open(imageFileName)
+    Himage.paste(albumImage,(0,0))
+
 def drawDateTimeTemp(img_draw_obj, military_time, date_str, temp_tuple, metric_units):
     temp, temp_high, temp_low, other_temp = temp_tuple
     temperature_type = "C" if metric_units else "F"
