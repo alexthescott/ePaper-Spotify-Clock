@@ -33,6 +33,14 @@ from requests import get as getRequest
 from waveshare_epd import epd4in2
 from PIL import Image, ImageDraw, ImageMath
 
+#--------------------------------
+import requests
+import numpy as np
+import os 
+import os.path
+from os import path
+#--------------------------------
+#Test
 # Local .py dependencies
 import localJsonIO as contextIO
 import drawToEPD as epdDraw
@@ -47,7 +55,7 @@ def mainLoop():
 
     time_elapsed = 15.0
     old_time, temp_tuple = None, None
-
+    print(temp_tuple)
     # countTo5 is used to get weather every 5 minutes
     countTo5 = 0 
     sunset_time_tuple = None
@@ -72,33 +80,50 @@ def mainLoop():
             # CREATE BLANK IMAGE
             Himage = Image.new('1', (WIDTH, HEIGHT), 128)
             draw = ImageDraw.Draw(Himage)
-
+            
+            
             # GET left user's SPOTIPY AUTH OBJECT, TOKEN
-            print("Get left user's Spotify Token")
-            l_oauth = spotipy.oauth2.SpotifyOAuth(l_spot_client_id, l_spot_client_secret, REDIRECT_URI, scope = SPOT_SCOPE, cache_path = l_cache, requests_timeout = 10)
-            l_token_info = l_oauth.get_cached_token()
-            l_token = getSpotipyToken(l_oauth, l_token_info)
-            if l_token:
-                l_track, l_artist, l_time_since, temp_context_type, temp_context_name = getSpotipyInfo(l_token)
-                l_ctx_type = temp_context_type if temp_context_type != "" else l_ctx_type
-                l_ctx_title = temp_context_name if temp_context_name != "" else l_ctx_title
-            else:
-                print(":( Left's access token unavailable")
-                l_track, l_artist = "", ""
-
+            if singleUser == False: 
+                print("Get left user's Spotify Token")
+                l_oauth = spotipy.oauth2.SpotifyOAuth(l_spot_client_id, l_spot_client_secret, REDIRECT_URI, scope = SPOT_SCOPE, cache_path = l_cache, requests_timeout = 10)
+                l_token_info = l_oauth.get_cached_token()
+                l_token = getSpotipyToken(l_oauth, l_token_info)
+                if l_token:
+                    l_track, l_artist, l_time_since, temp_context_type, temp_context_name = getSpotipyInfo(l_token)
+                    l_ctx_type = temp_context_type if temp_context_type != "" else l_ctx_type
+                    l_ctx_title = temp_context_name if temp_context_name != "" else l_ctx_title
+                else:
+                    print(":( Left's access token unavailable")
+                    l_track, l_artist = "", ""
+                
+            
+            
             # GET right user's SPOTIFY TOKEN
             print("Get right user's Spotify Token")
             r_oauth = spotipy.oauth2.SpotifyOAuth(r_spot_client_id, r_spot_client_secret, REDIRECT_URI, scope = SPOT_SCOPE, cache_path = r_cache, requests_timeout = 10)
             r_token_info = r_oauth.get_cached_token()
             r_token = getSpotipyToken(r_oauth, r_token_info)
             if r_token:
-                r_track, r_artist, r_time_since, temp_context_type, temp_context_name = getSpotipyInfo(r_token)
+                if singleUser == True:
+                    r_track, r_artist, r_time_since, temp_context_type, temp_context_name, trackImageLink,albumName = getSpotipyInfo(r_token)
+                else:
+                    r_track, r_artist, r_time_since, temp_context_type, temp_context_name = getSpotipyInfo(r_token)
+                    
                 r_ctx_type = temp_context_type if temp_context_type != "" else r_ctx_type
                 r_ctx_title = temp_context_name if temp_context_name != "" else r_ctx_title
             else:
                 print(":( Right's access token unavailable")
                 r_track, r_artist = "", ""
-
+            
+            
+            if singleUser == True:
+                albumImageName = "AlbumImage.PNG"
+                newImageName = albumImageName.split('.')[0] + "_resize.PNG"
+                saveImageFromURL(trackImageLink, albumImageName)
+                resizeImage(albumImageName)
+                
+            
+            
             # If we have no context read, grab context our context.txt json file 
             if (l_ctx_type == "" and l_ctx_title == "") or (r_ctx_type == "" and r_ctx_title == ""):
                 try:
@@ -110,22 +135,30 @@ def mainLoop():
             # Afterwords, if we have to write a new context to our context.txt json file, do so
             if (l_ctx_type != "" and l_ctx_title != "") or (r_ctx_type != "" and r_ctx_title != ""):
                 contextIO.writeJsonContext((l_ctx_type,l_ctx_title), (r_ctx_type,r_ctx_title))
-
-            # USER 1 & 2 TRACK TITLES CONTEXT ----------------------------------------------------------------
-            track_line_count, track_text_size = epdDraw.drawTrackText(draw, l_track, 5, 26)
-            epdDraw.drawArtistText(draw, l_artist, track_line_count, track_text_size, 5, 26)
-            epdDraw.drawSpotContext(draw, Himage, l_ctx_type, l_ctx_title, 25, 204)      
-
+            
+            if singleUser == True:
+                # ALBUM ART COVER FOR USER        ----------------------------------------------------------------
+                epdDraw.drawAlbumImage(Himage, newImageName)
+                epdDraw.drawSpotContext(draw, Himage, "album", albumName, 25, 204) 
+            else:
+            # USER 1 TRACK TITLES CONTEXT ----------------------------------------------------------------
+                track_line_count, track_text_size = epdDraw.drawTrackText(draw, l_track, 5, 26)
+                epdDraw.drawArtistText(draw, l_artist, track_line_count, track_text_size, 5, 26)
+                epdDraw.drawSpotContext(draw, Himage, l_ctx_type, l_ctx_title, 25, 204)      
+            
+            # USER 2 TRACK TITLES CONTEXT ----------------------------------------------------------------
             track_line_count, track_text_size = epdDraw.drawTrackText(draw, r_track, 207, 26)
             epdDraw.drawArtistText(draw, r_artist, track_line_count, track_text_size, 207, 26)
             epdDraw.drawSpotContext(draw, Himage, r_ctx_type, r_ctx_title, 227, 204)
 
             # DRAW NAMES TIME SINCE ----------------------------------------------------------------
-            l_name_width, l_name_height = epdDraw.drawName(draw, "Alex", 8, 0)
-            epdDraw.drawUserTimeAgo(draw, l_time_since, 18 + l_name_width, l_name_height // 2)
-            r_name_width, r_name_height = epdDraw.drawName(draw, "Emma", 210, 0)
+            if singleUser == False:
+                l_name_width, l_name_height = epdDraw.drawName(draw, l_username, 8, 0)
+                epdDraw.drawUserTimeAgo(draw, l_time_since, 18 + l_name_width, l_name_height // 2)
+            
+            r_name_width, r_name_height = epdDraw.drawName(draw, r_username, 210, 0)
             epdDraw.drawUserTimeAgo(draw, r_time_since, 220 + r_name_width, r_name_height // 2) 
-
+            
             # DRAW LINES DATE TIME TEMP ----------------------------------------------------------------
             epdDraw.drawBorderLines(draw)
             epdDraw.drawDateTimeTemp(draw, time_str, date_str, temp_tuple, metric_units)
@@ -134,7 +167,11 @@ def mainLoop():
             date = dt.now() + timedelta(seconds = time_elapsed)
             current_hour = int(date.strftime("%-H"))
             current_minute = int(date.strftime("%-M"))
-
+            
+            
+            #SAVE INSTANCE OF IMAGE
+            Himage.save("screenCapture.png")
+            
             # from 2:01 - 5:59am, don't init the display, return from main, and have .sh script run again in 3 mins
             if 2 <= current_hour and current_hour <= 5:
                 if DID_EPD_INIT == True:
@@ -157,7 +194,7 @@ def mainLoop():
             # Himage = ImageMath.eval('255-(a)',a=Himage)
             
             # HIDDEN sunset DARK MODE. if sunsetFlip = True invert display 24 mintues after sunset 
-            sunsetFlip = True
+            sunsetFlip = False
             if sunsetFlip:
                 sunset_hour, sunset_minute = sunset_time_tuple
                 if (sunset_hour < current_hour or current_hour < 2) or (sunset_hour == current_hour and sunset_minute <= current_minute):
@@ -187,7 +224,7 @@ def mainLoop():
 
             # Increment counter for Weather requests
             countTo5 = 0 if countTo5 == 4 else countTo5 + 1
-
+            
     except Exception as e:
         with open("bugs.txt", "a+") as error_file:
             file_text = error_file.read()
@@ -237,6 +274,10 @@ def getSpotipyInfo(token):
         # GET TRACK && ARTIST
         track_name, artists = recent['item']['name'], recent['item']['artists']
         artist_name = ""
+        
+        trackImageLink = recent['item']['album']['images'][0]['url']
+        albumName = recent['item']['album']['name']
+        #print(trackImageLink)
         for i in range(len(artists)):
             artist_name += artists[i]['name'] + ", "
         artist_name = artist_name[:-2]
@@ -248,6 +289,8 @@ def getSpotipyInfo(token):
         tracks = recent["items"]
         track = tracks[0]
         track_name, artists = track['track']['name'], track['track']['artists']
+        trackImageLink = tracks[0]['track']['album']['images'][0]['url']
+        albumName = track['track']['album']['name']
         # Concatinate artist names
         artist_name = ""
         for i in range(len(artists)):
@@ -260,7 +303,11 @@ def getSpotipyInfo(token):
         hours_passed, minutes_passed = getTimeFromTimeDelta(dt.utcnow() - timestamp)
         time_passed = getTimeSincePlayed(hours_passed, minutes_passed)
         context_type, context_name = getContextFromJson(track['context'], sp)
-    return track_name, artist_name, time_passed, context_type, context_name 
+    if singleUser == True:
+        return track_name, artist_name, time_passed, context_type, context_name,trackImageLink,albumName
+    else :
+        return track_name, artist_name, time_passed, context_type, context_name
+
 def getContextFromJson(context_json, spotipy_object):
     """ Returns Spotify Context info
         Parameters:
@@ -406,19 +453,55 @@ def getWeather(metric_units):
             if temp_max < max_predicted: temp_max = max_predicted
     return (temp, temp_max, temp_min, other_temp), (sunset_hour, sunset_minute)
 
+#-----------------------------------------------------------------------------
+# Below is used to pull album artwork.
+#-----------------------------------------------------------------------------
+def getAlbumURL(user):
+    recent = user.current_user_recently_played(limit = 1)
+    tracks = recent["items"]
+    track = tracks[0]
+    trackImageLink = tracks[0]['track']['album']['images'][0]['url']
+    return trackImageLink 
+
+def saveImageFromURL(trackImageLink, fileName):
+    img_data = requests.get(trackImageLink).content
+    with open(fileName, 'wb') as handler:
+        handler.write(img_data)
+
+def resizeImage(imageName):
+    #198 = width
+    #223 = height
+    size = 199, 199
+    outfile = os.path.splitext(imageName)[0] + "_resize.PNG"
+    if imageName != outfile:
+        try:
+            im = Image.open(imageName)
+            im.thumbnail(size, Image.ANTIALIAS)
+            im.save(outfile, "PNG")
+        except IOError:
+            print ("cannot create thumbnail for '%s'" % imageName)           
+#-----------------------------------------------------------------------------
+
 if __name__ == '__main__':
     # UNIVERSAL SPOTIPY VARS 
     SPOT_SCOPE = "user-read-private, user-read-recently-played, user-read-playback-state, user-read-currently-playing" 
     REDIRECT_URI = 'http://www.google.com/'
 
     # Generate Spotify clinet_id and client_secret @ https://developer.spotify.com/dashboard/
-
+    
+    # -------------------------------------
+    # True  --> Album artwork on Left side
+    # False --> User info on each side
+    # -------------------------------------
+    singleUser = True
+    
+    #If above is true, only fill out r's info
     # Left SPOTIPY 
     l_spot_client_id = ''
     l_spot_client_secret = ''
     l_cache = '.leftauthcache'
     l_username = ''
-
+    
     # Right SPOTIPY 
     r_spot_client_id = ''
     r_spot_client_secret = ''
