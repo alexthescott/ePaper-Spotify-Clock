@@ -8,7 +8,8 @@ Made for the Waveshare 4.2inch e-Paper Module
 https://www.waveshare.com/wiki/4.2inch_e-Paper_Module
 """
 
-from PIL import Image, ImageFont
+from PIL import Image, ImageFont, ImageDraw, ImageMath
+from datetime import timedelta, datetime as dt
 from random import randint
 
 WIDTH, HEIGHT = 400, 300
@@ -103,7 +104,7 @@ artist_icon = Image.open('Icons/artist.png')
 album_icon = Image.open('Icons/album.png')
 
 # ---- FORMATTING FUNCs
-def findTextWidth(text, size):
+def get_text_width(text, size):
     """ Returns an int representing the size of a word
         
         Requires three dictionaries, defining the width of each char 
@@ -116,7 +117,7 @@ def findTextWidth(text, size):
     elif size == 0:
         return sum(int(sfDict.get(c, 6)) for c in text)
 
-def combineWords(text_size_list, text_list, size):
+def format_x_word(text_size_list, text_list, size):
     """ Returns a list of 'squished' words to fit exact width dimensions
         Parameters:
             text_size_list: a list of ints representing the width of each word
@@ -127,6 +128,7 @@ def combineWords(text_size_list, text_list, size):
     """
     temp_text_list = []
     phrase_width, floor_index = 0, 0
+    max_width = 189 # Widest width we will allow as we build word by word
     # Correlation between size{0, 1, 2} and the pixel count of a ' ' char
     space_size = (1 + size // .6) * 2
 
@@ -134,7 +136,7 @@ def combineWords(text_size_list, text_list, size):
         # Not our last word
         if i != len(text_size_list) - 1:
             # Can fit word in last row
-            if phrase_width + word_width + space_size < 189:
+            if phrase_width + word_width + space_size < max_width:
                 phrase_width += word_width + space_size
             # Cannot fit word in last row
             else:
@@ -142,7 +144,7 @@ def combineWords(text_size_list, text_list, size):
                 floor_index, phrase_width = i, word_width
         else:
             # Can fit last word in last row
-            if phrase_width + word_width + space_size < 189:
+            if phrase_width + word_width + space_size < max_width:
                 temp_text_list.append(" ".join(text_list[floor_index:i+1]))
             # Cannot fit last word in last row
             else:
@@ -156,7 +158,7 @@ def combineWords(text_size_list, text_list, size):
     temp_text_list[:] = [word for word in temp_text_list if word != '']
     return temp_text_list
 
-def hyphenWords(word, size):
+def hyphenate_words(word, size):
     """ Returns a list of 'spliced' word segments to fit exact width dimensions
         Parameters:
             word: our string to hyphenate
@@ -167,6 +169,7 @@ def hyphenWords(word, size):
     temp_text_list = []
     phrase_width, floor_index = 0, 0
     char_size = 0
+    max_width = 177 # Widest width we will allow as we build char by char
     # Iterate over every character in the word
     for i, c in enumerate(word): 
         # Find relative char width. Will never hyphenate Large text
@@ -179,7 +182,7 @@ def hyphenWords(word, size):
         if len(word) - 1 == i:
             temp_text_list.append(word[floor_index:i+1])
         # We can add more characters to our split string
-        elif phrase_width + char_size < 177:
+        elif phrase_width + char_size < max_width:
             phrase_width += char_size
         # Attach hyphen and start building new split string
         else:
@@ -187,32 +190,59 @@ def hyphenWords(word, size):
             floor_index, phrase_width = i, char_size
     return temp_text_list
 
-def canFullWordsFit(text_size_list):
+def can_full_words_fit(text_size_list):
     return all(word_len < 189 for word_len in text_size_list)
 
-# ---- DRAWING FUNCs
-def drawBorderLines(img_draw_obj):
+# ---- DRAWING FUNCs ----------------------------------------------------------------------------
+def create_time_text(img_draw_obj, military_time, date_str, temp_tuple, metric_units):
+    Himage = Image.new('1', (400, 300), 128)
+    draw = ImageDraw.Draw(Himage)
+    draw_date_time_temp(draw, military_time, date_str, temp_tuple, metric_units)
+    if "am" in military_time or "pm" in military_time:
+        current_time_width = img_draw_obj.textsize(military_time[:-2], DSfnt64)[0]
+        current_am_pm_width = img_draw_obj.textsize(military_time[-2:], DSfnt32)[0]
+        partial_width = current_time_width + current_am_pm_width
+    else:
+        partial_width = img_draw_obj.textsize(military_time, DSfnt64)[0]
+
+    date = dt.now() - timedelta(minutes = 1)
+    time_str = date.strftime("%-I:%M") + date.strftime("%p").lower() if "am" in military_time or "pm" in military_time else date.strftime("%-H:%M")
+    if "am" in time_str or "pm" in time_str:
+        current_time_width = img_draw_obj.textsize(time_str[:-2], DSfnt64)[0]
+        current_am_pm_width = img_draw_obj.textsize(time_str[-2:], DSfnt32)[0]
+        old_partial_width = current_time_width + current_am_pm_width
+    else:
+        old_partial_width = img_draw_obj.textsize(time_str, DSfnt64)[0]
+
+    # unclear why this must be present... but without it we are always incorrectly inverted
+    Himage = ImageMath.eval('255-(a)', a=Himage)
+        
+    return Himage, max(partial_width, old_partial_width)+3
+
+def draw_border_lines(img_draw_obj):
     # draw vertical and horizontal lines of width 3
     for i in range(3):
         img_draw_obj.line([(0, 224 + i), (400, 224 + i)], fill = 0)
         img_draw_obj.line([(199 + i, 0), (199 + i, 225)], fill = 0)
 
-def drawName(img_draw_obj, text, name_x, name_y):
+def draw_name(img_draw_obj, text, name_x, name_y):
     # move_x and move_y are here to slightly adjust the position of the text
     # maybe this might stop 'burn in' on the epd?
     move_x, move_y = randint(-1, 1), randint(-1, 1)
     name_width, name_height = img_draw_obj.textsize(text, font = helveti32)
     img_draw_obj.text((name_x + move_x, name_y + move_y), text, font = helveti32)
-    img_draw_obj.line([(name_x - 1 + move_x, name_y + name_height + 3 + move_y), (name_x + name_width - 1 + move_x, name_y + name_height + 3 + move_y)], fill = 0)
+    line_start_x, line_start_y = name_x - 1 + move_x, name_y + name_height + 3 + move_y
+    line_end_x, line_end_y = name_x + name_width - 1 + move_x, name_y + name_height + 3 + move_y 
+    img_draw_obj.line([(line_start_x, line_start_y), (line_end_x, line_end_y)], fill = 0)
     return name_width, name_height
 
-def drawUserTimeAgo(img_draw_obj, text, time_x, time_y):
+def draw_user_time_ago(img_draw_obj, text, time_x, time_y):
     # draw text next to name displaying time since last played track
     move_x, move_y = randint(-2, 1), randint(-2, 1)
     time_width, time_height = img_draw_obj.textsize(text, font = DSfnt16)
     img_draw_obj.text((time_x + move_x, time_y + move_y), text, font = DSfnt16)
 
-def drawSpotContext(img_draw_obj, Himage, context_type, context_text, context_x, context_y):
+def draw_spot_context(img_draw_obj, Himage, context_type, context_text, context_x, context_y):
     # Draws both icon {playlist, album, artist} and context text in the bottom of Spot box
     moveLine = randint(-1, 1)
     if context_type != None:
@@ -236,11 +266,14 @@ def drawSpotContext(img_draw_obj, Himage, context_type, context_text, context_x,
         elif context_type == 'artist':
             Himage.paste(artist_icon, (context_x - 22, context_y - 1))
 
-def drawAlbumImage(Himage, imageFileName):
+def draw_album_image(img_draw_obj, imageFileName, dark_mode):
     albumImage = Image.open(imageFileName)
-    Himage.paste(albumImage,(0,0))
+    if dark_mode: 
+        albumImage = albumImage.convert("1")
+        albumImage = ImageMath.eval('255-(a)', a=albumImage)
+    img_draw_obj.paste(albumImage,(0,0))
 
-def drawDateTimeTemp(img_draw_obj, military_time, date_str, temp_tuple, metric_units):
+def draw_date_time_temp(img_draw_obj, military_time, date_str, temp_tuple, metric_units):
     temp, temp_high, temp_low, other_temp = temp_tuple
     temperature_type = "C" if metric_units else "F"
 
@@ -249,22 +282,22 @@ def drawDateTimeTemp(img_draw_obj, military_time, date_str, temp_tuple, metric_u
     if temp >= 100: temp_x -= 10 
 
     # Draw "upper temp" next to name of right user
-    high_temp_x = 387 - findTextWidth(str(other_temp), 1)
+    high_temp_x = 387 - get_text_width(str(other_temp), 1)
     img_draw_obj.text((high_temp_x, 0), str(other_temp), font = DSfnt32)
-    img_draw_obj.text((high_temp_x + 2 + findTextWidth(str(other_temp), 1), 2), temperature_type, font = DSfnt16)
+    img_draw_obj.text((high_temp_x + 2 + get_text_width(str(other_temp), 1), 2), temperature_type, font = DSfnt16)
     
     # Draw main temp
     img_draw_obj.text((temp_x, 240), str(temp), font = DSfnt64)
-    img_draw_obj.text((temp_x + findTextWidth(str(temp), 2), 244), temperature_type, font = DSfnt32)
+    img_draw_obj.text((temp_x + get_text_width(str(temp), 2), 244), temperature_type, font = DSfnt32)
     if temp >= 100: temp_x += 10 
 
     # Draw high and low temp
-    high_temp_x = temp_x + 96 - findTextWidth(str(temp_high), 1)
+    high_temp_x = temp_x + 96 - get_text_width(str(temp_high), 1)
     img_draw_obj.text((high_temp_x, 240), str(temp_high), font = DSfnt32)
-    img_draw_obj.text((high_temp_x + 2 + findTextWidth(str(temp_high), 1), 242), temperature_type, font = DSfnt16)
-    low_temp_x = temp_x + 96 - findTextWidth(str(temp_low), 1)
+    img_draw_obj.text((high_temp_x + 2 + get_text_width(str(temp_high), 1), 242), temperature_type, font = DSfnt16)
+    low_temp_x = temp_x + 96 - get_text_width(str(temp_low), 1)
     img_draw_obj.text((low_temp_x, 264), str(temp_low), font = DSfnt32)
-    img_draw_obj.text((low_temp_x + 2 + findTextWidth(str(temp_low), 1), 266), temperature_type, font = DSfnt16)
+    img_draw_obj.text((low_temp_x + 2 + get_text_width(str(temp_low), 1), 266), temperature_type, font = DSfnt16)
  
     # Draw date and time
     # Draw date and time
@@ -283,15 +316,15 @@ def drawDateTimeTemp(img_draw_obj, military_time, date_str, temp_tuple, metric_u
     date_x, date_y = ((10 + time_width + temp_x) // 2) - (date_width // 2), 240 + date_height // 1.05
     img_draw_obj.text((date_x, date_y), date_str, font = DSfnt32)
 
-def drawTrackText(img_draw_obj, track_name, track_x, track_y):
+def draw_track_text(img_draw_obj, track_name, track_x, track_y):
     # After deciding the size of text, split words into lines, and draw to img_draw_obj
 
     # Large Text Format Check
     l_title_split = track_name.split(" ")
-    l_title_size = list(map(findTextWidth, l_title_split, [2] * len(l_title_split)))
-    track_lines = combineWords(l_title_size, l_title_split, 2)
-    track_size = list(map(findTextWidth, track_lines, [2] * len(l_title_split)))
-    if sum(track_size) <= 378 and canFullWordsFit(track_size) and len(track_size) <= 2:
+    l_title_size = list(map(get_text_width, l_title_split, [2] * len(l_title_split)))
+    track_lines = format_x_word(l_title_size, l_title_split, 2)
+    track_size = list(map(get_text_width, track_lines, [2] * len(l_title_split)))
+    if sum(track_size) <= 378 and can_full_words_fit(track_size) and len(track_size) <= 2:
         for line in track_lines:
             img_draw_obj.text((track_x, track_y), line, font = DSfnt64)
             track_y += 43
@@ -303,12 +336,12 @@ def drawTrackText(img_draw_obj, track_name, track_x, track_y):
         m_title_split = track_name.split(" ")
     else:
         m_title_split.append(track_name)
-    m_title_size = list(map(findTextWidth, m_title_split, [1] * len(m_title_split)))
-    track_lines = combineWords(m_title_size, m_title_split, 1)
-    track_size = list(map(findTextWidth, track_lines, [1] * len(track_lines)))
+    m_title_size = list(map(get_text_width, m_title_split, [1] * len(m_title_split)))
+    track_lines = format_x_word(m_title_size, m_title_split, 1)
+    track_size = list(map(get_text_width, track_lines, [1] * len(track_lines)))
     if sum(track_size) <= 945:
-        if not canFullWordsFit(track_size):
-            track_lines = hyphenWords(str(m_title_split)[2:-2], 1)
+        if not can_full_words_fit(track_size):
+            track_lines = hyphenate_words(str(m_title_split)[2:-2], 1)
         for line in track_lines:
             img_draw_obj.text((track_x, track_y), line, font = DSfnt32)
             track_y += 26
@@ -320,26 +353,26 @@ def drawTrackText(img_draw_obj, track_name, track_x, track_y):
         s_title_split = track_name.split(" ")
     else:
         s_title_split.append(track_name)
-    s_title_size = list(map(findTextWidth, s_title_split, [0] * len(s_title_split)))
-    track_lines = combineWords(s_title_size, s_title_split, 0)
-    track_size = list(map(findTextWidth, track_lines, [1] * len(s_title_split)))
+    s_title_size = list(map(get_text_width, s_title_split, [0] * len(s_title_split)))
+    track_lines = format_x_word(s_title_size, s_title_split, 0)
+    track_size = list(map(get_text_width, track_lines, [1] * len(s_title_split)))
     track_y += 5
-    if not canFullWordsFit(s_title_size):
-        track_lines = hyphenWords(str(s_title_split)[2:-2], 1)
+    if not can_full_words_fit(s_title_size):
+        track_lines = hyphenate_words(str(s_title_split)[2:-2], 1)
     for line in track_lines:
         img_draw_obj.text((track_x, track_y), line, font = DSfnt16)
         track_y += 12
     return len(track_lines), 13
 
-def drawArtistText(img_draw_obj, artist_name, track_line_count, track_height, artist_x, artist_y):
+def draw_artist_text(img_draw_obj, artist_name, track_line_count, track_height, artist_x, artist_y):
     # Always ensure bottom of text is always at 190 pixels after draw height
 
     # Large Text Format Check
     l_artist_split = artist_name.split(" ")
-    l_artist_size = list(map(findTextWidth, l_artist_split, [2] * len(l_artist_split)))
-    if sum(l_artist_size) <= 366 and canFullWordsFit(l_artist_size) and len(l_artist_size) <= 2:
+    l_artist_size = list(map(get_text_width, l_artist_split, [2] * len(l_artist_split)))
+    if sum(l_artist_size) <= 366 and can_full_words_fit(l_artist_size) and len(l_artist_size) <= 2:
         if track_height == 55 and track_line_count + len(l_artist_size) <= 3 or track_height < 55 and track_line_count < 4:
-            artist_lines = combineWords(l_artist_size, l_artist_split, 2)
+            artist_lines = format_x_word(l_artist_size, l_artist_split, 2)
             artist_y = 190 - (42 * len(artist_lines)) # y nudge to fit bottom constraint
             for line in artist_lines:
                 img_draw_obj.text((artist_x, artist_y), line, font = DSfnt64)
@@ -352,13 +385,13 @@ def drawArtistText(img_draw_obj, artist_name, track_line_count, track_height, ar
         m_artist_split = artist_name.split(" ")
     else:
         m_artist_split.append(artist_name)
-    m_title_size = list(map(findTextWidth, m_artist_split, [1] * len(m_artist_split)))
-    artist_lines = combineWords(m_title_size, m_artist_split, 1)
-    artist_size = list(map(findTextWidth, artist_lines, [1] * len(m_artist_split))) 
+    m_title_size = list(map(get_text_width, m_artist_split, [1] * len(m_artist_split)))
+    artist_lines = format_x_word(m_title_size, m_artist_split, 1)
+    artist_size = list(map(get_text_width, artist_lines, [1] * len(m_artist_split))) 
     if sum(artist_size) <= 760 and track_line_count + len(artist_lines) <= 6:
         artist_y = 190 - (25 * len(artist_lines)) # y nudge to fit bottom constraint
-        if not canFullWordsFit(m_title_size):
-            artist_lines = hyphenWords(str(m_artist_split)[2:-2], 1)
+        if not can_full_words_fit(m_title_size):
+            artist_lines = hyphenate_words(str(m_artist_split)[2:-2], 1)
         for line in artist_lines:
             img_draw_obj.text((artist_x, artist_y), line, font = DSfnt32)
             artist_y += 26
@@ -370,12 +403,12 @@ def drawArtistText(img_draw_obj, artist_name, track_line_count, track_height, ar
         s_artist_split = artist_name.split(" ")
     else:
         s_artist_split.append(artist_name)
-    s_artist_size = list(map(findTextWidth, s_artist_split, [0] * len(s_artist_split)))
-    artist_lines = combineWords(s_artist_size, s_artist_split, 0)
-    artist_size = list(map(findTextWidth, artist_lines, [0] * len(s_artist_split)))
+    s_artist_size = list(map(get_text_width, s_artist_split, [0] * len(s_artist_split)))
+    artist_lines = format_x_word(s_artist_size, s_artist_split, 0)
+    artist_size = list(map(get_text_width, artist_lines, [0] * len(s_artist_split)))
     artist_y = 190 - (12 * len(artist_lines)) # y nudge to fit bottom constraint
-    if not canFullWordsFit(s_artist_size):
-        artist_lines = hyphenWords(str(s_artist_split)[2:-2], 1)
+    if not can_full_words_fit(s_artist_size):
+        artist_lines = hyphenate_words(str(s_artist_split)[2:-2], 1)
     for line in artist_lines:
         img_draw_obj.text((artist_x, artist_y), line, font = DSfnt16)
         artist_y += 12

@@ -12,8 +12,7 @@ events. This ensures that our program always knows the most recent context
 
 import json
 
-
-def writeJsonContext(left_ctx, right_ctx):
+def write_json_ctx(left_ctx, right_ctx):
     # if we have already written context info, don't rewrite file
     left_temp_ctx, right_tmp_ctx = left_ctx, right_ctx
     try:
@@ -33,7 +32,7 @@ def writeJsonContext(left_ctx, right_ctx):
             print("Update context.txt")
             print("left_ctx: {} right_ctx: {}".format(left_ctx, right_ctx))
     except Exception as e:
-        print("writeJsonContext() Failed:", e)
+        print("write_json_ctx() Failed:", e)
         print("writing to new context.txt")
 
     context_data = {}
@@ -46,15 +45,15 @@ def writeJsonContext(left_ctx, right_ctx):
     })
     # attach right ctx
     context_data['context'].append({
-        'position': 'left',
+        'position': 'right',
         'type': right_tmp_ctx[0],
         'title': right_tmp_ctx[1]
     })
 
-    with open('context.txt', 'w') as j_cxt:
+    with open('context.txt', 'w+') as j_cxt:
         json.dump(context_data, j_cxt)
 
-def readJsonContext(left_ctx, right_ctx):
+def read_json_ctx(left_ctx, right_ctx):
     with open('context.txt') as j_cxt:
         context_data = json.load(j_cxt)
         data = context_data['context']
