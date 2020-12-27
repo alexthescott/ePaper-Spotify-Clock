@@ -2,8 +2,8 @@
 This project uses Python3 to display [two](https://open.spotify.com/user/bassguitar1234?si=hHnnqHUGTe25liNezp9cJQ) [users'](https://open.spotify.com/user/ermisk?si=0G5DmMxCRLuUm1G6-EWhFA) recent Spotify history, weather for two cities (local and away), and the current time 
 
 <p align="center">
-	<img src="spotify_epaper_preview.jpg" width="400">
-	<img src="spotify_epaper_preview2.jpg" width="400">
+	<img src="spotify_epaper_preview.png" width="400">
+	<img src="spotify_epaper_preview2.png" width="400">
 </p>
 
 Written for [Waveshare's 4.2 e-paper display](https://www.waveshare.com/product/4.2inch-e-paper-module.htm), this project connects with Spotify's API to display the most recent listening information, including the title, artist, context, and time since the track was played. There is a left and right panel so that two folk's listening can be displayed at the same time. The forcast and current weather are also displayed via the OpenWeatherMap api. The e-paper display updates in full every 3 minutes per Waveshare's recommendations. After 8pm, the display updates every 5 minutes, and does not update from 2am - 6am. Before you ask, I am using the Nintendo DS BIOS font for this project because it looks beautiful. Email me, atscott@ucsc.edu, if you have any questions regarding the implementation, suggestions to improve the project, or if you built one yourself!
