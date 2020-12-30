@@ -1,8 +1,8 @@
 """ localJsonIO.py by Alex Scott 2020
 Companion functions for mainSpotifyEPD.py
 
-In this file, the two functions allow us to read and write 
-to a local text file, holding json data representing the most 
+In this file, the two functions allow us to read and write
+to a local text file, holding json data representing the most
 recent context (ctx_type, ctx_name) from spotify
 
 This was done becasue the Spotify API request can provide no context
@@ -12,7 +12,10 @@ events. This ensures that our program always knows the most recent context
 
 import json
 
+
 def write_json_ctx(left_ctx, right_ctx):
+    """ creates, writes to context.txt a json object containing the ctx of left and right users. """
+
     # if we have already written context info, don't rewrite file
     left_temp_ctx, right_tmp_ctx = left_ctx, right_ctx
     try:
@@ -53,14 +56,16 @@ def write_json_ctx(left_ctx, right_ctx):
     with open('context.txt', 'w+') as j_cxt:
         json.dump(context_data, j_cxt)
 
+
 def read_json_ctx(left_ctx, right_ctx):
+    """ Read context.txt, returning ctx found if left_ctx, or right_ctx is empty. """
     with open('context.txt') as j_cxt:
         context_data = json.load(j_cxt)
         data = context_data['context']
         # Only update an empty context side. Either update the left ctx, the right ctx, or both ctx files
         if left_ctx[0] != "" and left_ctx[1] != "" and right_ctx[0] == "" and right_ctx[1] == "":
             return left_ctx[0], left_ctx[1], data[1]['type'], data[1]['title']
-        elif left_ctx[0] == "" and left_ctx[1] == "" and right_ctx[0] != "" and right_ctx[1] !="":
+        elif left_ctx[0] == "" and left_ctx[1] == "" and right_ctx[0] != "" and right_ctx[1] != "":
             return data[0]['type'], data[0]['title'], right_ctx[0], right_ctx[1]
         else:
             return data[0]['type'], data[0]['title'], data[1]['type'], data[1]['title']
