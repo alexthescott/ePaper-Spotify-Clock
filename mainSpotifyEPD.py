@@ -205,7 +205,6 @@ def main_loop():
                 print("EPD INIT")
                 epd.init()
                 epd.Clear()
-                sunset_time_tuple = None
                 did_epd_init = True
 
             if did_epd_init:
