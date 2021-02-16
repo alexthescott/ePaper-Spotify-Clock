@@ -36,45 +36,46 @@ from requests import get as get_request
 from waveshare_epd import epd4in2
 from PIL import Image, ImageFont, ImageDraw, ImageMath
 
+# EPD Settings just for you! --------------------------------------------------------------------------------
+single_user = False        # (True -> Left side album art False -> two user mode)
+metric_units = False       # (True -> C°, False -> F°)
+twenty_four_clock = False  # (True -> 10:53pm, False -> 22:53)
+partial_updates = True     # (True -> 1/60HZ Screen_Update, False -> 1/180HZ Screen_Update)
+time_on_right = True       # (True -> time is displayed on the right, False -> time is displayed on the left)
+hide_other_weather = False # (True -> weather not shown in top right, False -> weather is shown in top right)
+sunset_flip = True         # (True -> darkmode 24m after main sunset, False -> Light mode 24/7)
+# -----------------------------------------------------------------------------------------------------------
+
+# Generate Spotify client_id and client_secret
+# https://developer.spotify.com/dashboard/
+spot_scope = "user-read-private, user-read-recently-played, user-read-playback-state, user-read-currently-playing"
+redirect_uri = 'http://www.google.com/'
+
+# if single_user is True, Left Spotify info is never shown
+l_spot_client_id = ''
+l_spot_client_secret = ''
+l_cache = '.leftauthcache'
+l_name = '' # drawn at the top of the screen
+
+# Right Spotify
+r_spot_client_id = ''
+r_spot_client_secret = ''
+r_cache = '.rightauthcache'
+r_name = '' # drawn at the top of the screen
+
+WIDTH, HEIGHT = 400, 300
+
 def main_loop():
     """ Our main_loop enters a while loop, updating the EPD every 3 mins using spotify, weather, and dt information. """
 
-    # Generate Spotify client_id and client_secret
-    # https://developer.spotify.com/dashboard/
-    spot_scope = "user-read-private, user-read-recently-played, user-read-playback-state, user-read-currently-playing"
-    redirect_uri = 'http://www.google.com/'
-
-    # if single_user is True, Left Spotify info is never shown
-    l_spot_client_id = ''
-    l_spot_client_secret = ''
-    l_cache = '.leftauthcache'
-    l_name = '' # drawn at the top of the screen
-
-    # Right Spotify
-    r_spot_client_id = ''
-    r_spot_client_secret = ''
-    r_cache = '.rightauthcache'
-    r_name = '' # drawn at the top of the screen
-
-    # EPD Settings just for you! --------------------------------------------------------------------------------
-    single_user = False        # (True -> Left side album art False -> two user mode)
-    metric_units = False       # (True -> C°, False -> F°)
-    twenty_four_clock = False  # (True -> 10:53pm, False -> 22:53)
-    partial_updates = True     # (True -> 1/60HZ Screen_Update, False -> 1/180HZ Screen_Update)
-    time_on_right = True       # (True -> time is displayed on the right, False -> time is displayed on the left)
-    hide_other_weather = False # (True -> weather not shown in top right, False -> weather is shown in top right)
-    sunset_flip = True         # (True -> darkmode 24m after main sunset, False -> Light mode 24/7)
-    # -----------------------------------------------------------------------------------------------------------
-
     epd = epd4in2.EPD()
-    WIDTH, HEIGHT = epd.width, epd.height
-    r_ctx_type, r_ctx_title, l_ctx_type, l_ctx_title = "", "", "", ""
 
     # count_to_5 is used to get weather every 5 minutes
     count_to_5 = 0
     time_elapsed = 15.0
     old_time, temp_tuple = None, None
     sunset_time_tuple = None
+    r_ctx_type, r_ctx_title, l_ctx_type, l_ctx_title = "", "", "", ""
 
     # First loop, init EPD
     did_epd_init = False
@@ -528,7 +529,7 @@ def resize_image(imageName):
 
 class DrawToEPD():
     """ DrawToEPD by Alex Scott 2021
-    Companion functions for main.py
+    Companion functions for mainSpotifyEPD.py
 
     Functions here rely on PIL to draw to an existing draw object
     Draw context, date time temp, artist and track info, time since, and names
@@ -1080,4 +1081,70 @@ class LocalJsonIO():
                 return data[0]['type'], data[0]['title'], data[1]['type'], data[1]['title']
 
 if __name__ == '__main__':
-    main_loop()
+    # local_test is for debugging. If local_test is true, show the EPD image locally 
+    # local test ignores dark mode
+    local_test = False
+    if not local_test:
+        main_loop()
+    else:
+        start = time()
+        epd_draw = DrawToEPD()
+
+        temp_tuple = getWeather(metric_units)
+        seconds_left, military_time, date_str = getTimeFromDatetime(twenty_four_clock)
+
+        # CREATE BLANK IMAGE
+        Himage = Image.new('1', (WIDTH, HEIGHT), 128)
+        draw = ImageDraw.Draw(Himage)
+
+        # DRAW LINES DATE TIME TEMP ----------------------------------------------------------------
+        epd_draw.drawBoarderLines(draw)
+        epd_draw.drawDateTimeTemp(draw, military_time, date_str, temp_tuple, metric_units)
+
+        # GET Left's SPOTIPY AUTH OBJECT, TOKEN ----------------------------------------------------------------
+        l_oauth = spotipy.oauth2.SpotifyOAuth(l_spot_client_id, l_spot_client_secret, REDIRECT_URI, scope = SCOPE, cache_path = l_cache, requests_timeout = 10)
+        l_token_info = l_oauth.get_cached_token()
+        l_token = getSpotipyToken(l_oauth, l_token_info)
+        if l_token:
+            print("Left's access token available")
+            l_track, l_artist, l_time_since, l_ctx_type, l_ctx_title = getSpotipyInfo(l_token)
+        else:
+            print(":( Left's access token unavailable")
+            l_track, l_artist = "", ""
+
+        # GET Right's SPOTIFY TOKEN
+        r_oauth = spotipy.oauth2.SpotifyOAuth(r_spot_client_id, r_spot_client_secret, REDIRECT_URI, scope = SCOPE, cache_path = r_cache, requests_timeout = 10)
+        r_token_info = r_oauth.get_cached_token()
+        r_token = getSpotipyToken(r_oauth, r_token_info)
+        if r_token:
+            r_track, r_artist, r_time_since, temp_context_type, temp_context_name = getSpotipyInfo(r_token)
+            r_ctx_type = temp_context_type if temp_context_type != "" else r_ctx_type
+            r_ctx_title = temp_context_name if temp_context_name != "" else r_ctx_title
+        else:
+            print(":( Right's access token unavailable")
+            r_track, r_artist = "", ""
+
+        # USER 1 & 2 TRACK TITLES CONTEXT ----------------------------------------------------------------
+        track_line_count, track_text_size = drawTrackText(draw, l_track, 5, 26)
+        drawArtistText(draw, l_artist, track_line_count, track_text_size, 5, 26)
+        drawSpotContext(draw, Himage, l_ctx_type, l_ctx_title, 25, 204)
+        track_line_count, track_text_size = drawTrackText(draw, r_track, 207, 26)
+        drawArtistText(draw, r_artist, track_line_count, track_text_size, 207, 26)
+        drawSpotContext(draw, Himage, r_ctx_type, r_ctx_title, 227, 204)
+
+        # NAMES ----------------------------------------------------------------
+        l_name_width, l_name_height = drawName(draw, "Batman", 8, 0)
+        drawUserTimeAgo(draw, l_time_since, 18 + l_name_width, l_name_height // 2)
+        r_name_width, r_name_height = drawName(draw, "Robin", 210, 0)
+        drawUserTimeAgo(draw, r_time_since, 220 + r_name_width, r_name_height // 2) 
+
+        # HIDDEN DARK MODE 
+        # Himage = ImageMath.eval('255-(a)',a=Himage)
+        Himage.show()
+
+        stop = time()
+        time_elapsed = stop - start
+        print("Completed in {} seconds".format(time_elapsed))
+
+
+
