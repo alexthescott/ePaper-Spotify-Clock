@@ -227,19 +227,19 @@ def main_loop():
                 # if we do partial updates and darkmode, you get a worrisome zebra stripe artifact on the EPD
                 if partial_updates and not flip_to_dark:
                     # Create new time image, push to display, full update after 2 partials
-                    partial_updates = 0
-                    while partial_updates < 3:
+                    partial_update_count = 0
+                    while partial_update_count < 3:
                         date = dt.now()
                         sec_left = 62 - int(date.strftime("%S"))
 
-                        if partial_updates < 2:
+                        if partial_update_count < 2:
                             print("\t{}s sleep, partial_update".format(round(sec_left, 2)))
                             sleep(sec_left)
                         else:
                             print("\t{}s sleep, full refresh".format(round(sec_left - time_elapsed, 2)))
                             sleep(sec_left - time_elapsed)
 
-                        if sec_left > 5 and partial_updates < 2:
+                        if sec_left > 5 and partial_update_count < 2:
                             date = dt.now()
                             time_str = date.strftime("%-H:%M") if twenty_four_clock else date.strftime("%-I:%M") + date.strftime("%p").lower()
                             print("\ttimestr:{}".format(time_str))
@@ -248,7 +248,7 @@ def main_loop():
                                 epd.EPD_4IN2_PartialDisplay(WIDTH - 5 - time_width, 245, WIDTH - 5, 288, epd.getbuffer(time_image))
                             else:
                                 epd.EPD_4IN2_PartialDisplay(5, 245, 5 + time_width, 288, epd.getbuffer(time_image))
-                        partial_updates += 1
+                        partial_update_count += 1
                 else:
                     sleep(remaining_time + 120)
             elif c_hour < 2:
@@ -1084,6 +1084,7 @@ if __name__ == '__main__':
     # local_test is for debugging. If local_test is true, show the EPD image locally 
     # local test ignores dark mode
     local_test = False
+    
     if not local_test:
         main_loop()
     else:
