@@ -39,7 +39,7 @@ from PIL import Image, ImageFont, ImageDraw, ImageMath
 # EPD Settings just for you! --------------------------------------------------------------------------------
 single_user = False        # (True -> Left side album art False -> two user mode)
 metric_units = False       # (True -> C°, False -> F°)
-twenty_four_clock = False  # (True -> 10:53pm, False -> 22:53)
+twenty_four_clock = False  # (True -> 22:53, False -> 10:53pm) 
 partial_updates = True     # (True -> 1/60HZ Screen_Update, False -> 1/180HZ Screen_Update)
 time_on_right = True       # (True -> time is displayed on the right, False -> time is displayed on the left)
 hide_other_weather = False # (True -> weather not shown in top right, False -> weather is shown in top right)
