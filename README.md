@@ -96,8 +96,11 @@ sudo ./launch_epaper.sh
 13) You will be asked to paste two URLs into a web browser to link the Spotify accounts to the project. The first request corresponds with the user on the left, and the second request corresponds with the user on the right. After accepting Spotify's terms, copy and paste the full Google url back into the terminal.
 
 14) If everything runs well, consider adding launch_epaper.sh to rc.local which runs at boot
+
 ```bash
 sudo vim /etc/rc.local
 # above exit 0, add 'bash /home/YOUR_USERNAME/launch_epaper.sh &'
 ```
-15) Give yourself three cheers for following along and building the project! Huzzah 🖥️ 
+15) Give yourself three cheers for following along and building the project! Huzzah  🎉
+
+If you made this project, I'd love to see it! Send me an [email](atscott@ucsc.edu) with a photo of your finished project. If you're a hiring manager looking for a remote junior developer who is eager to learn new skills, shoot me an email too!  🖥️
