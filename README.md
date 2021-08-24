@@ -103,4 +103,4 @@ sudo vim /etc/rc.local
 ```
 15) Give yourself three cheers for following along and building the project! Huzzah  🎉
 
-If you made this project, I'd love to see it! Send me an [email](atscott@ucsc.edu) with a photo of your finished project. If you're a hiring manager looking for a remote junior developer who is eager to learn new skills, shoot me an email too!  🖥️
+If you made this project, I'd love to see it! Send me an [email](atscott@ucsc.edu) with a photo of your finished project
