@@ -29,9 +29,7 @@ sudo raspi-config
 
 ```bash
 sudo apt-get update
-sudo apt-get install python3-pip
-sudo apt-get install python3-pil
-sudo apt-get install python3-numpy
+sudo apt-get install git python3-pip python3-pil python3-numpy
 sudo pip3 install RPi.GPIO
 sudo pip3 install spidev
 sudo pip3 install spotipy
