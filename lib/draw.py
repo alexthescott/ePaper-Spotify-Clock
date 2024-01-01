@@ -304,8 +304,8 @@ class Draw():
             elif context_type == 'artist':
                 self.image_obj.paste(self.artist_icon, (context_x - 22, context_y - 1))
 
-    def draw_album_image(self, image_file_name, dark_mode):
-        album_image = Image.open(image_file_name)
+    def draw_album_image(self, dark_mode, image_file_name="AlbumImage_resize.PNG"):
+        album_image = Image.open(f"album_art/{image_file_name}")
         if dark_mode:
             album_image = album_image.convert("1")
             album_image = ImageMath.eval('255-(a)', a=album_image)

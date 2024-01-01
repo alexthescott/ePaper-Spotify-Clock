@@ -7,7 +7,7 @@ from PIL import Image, ImageFont, ImageDraw, ImageMath
 from lib.draw import Draw
 from lib.weather import Weather
 from lib.spotify_user import SpotifyUser
-from lib.misc import save_image_from_URL, resize_image
+from lib.misc import Misc
 
 with open('config/display_settings.json') as display_settings:
     display_settings = json.load(display_settings)
@@ -20,17 +20,14 @@ if __name__ == "__main__":
     # CREATE BLANK IMAGE
     image_obj = Draw()
     weather = Weather()
+    misc = Misc()
     image_obj.draw_border_lines()
     
     weather_info, sunset_info = weather.get_weather_and_sunset_info()
     image_obj.draw_date_time_temp(weather_info)
 
     # Should we go into darkmode?
-    date = dt.now()
-    c_hour = int(date.strftime("%-H"))
-    c_minute = int(date.strftime("%-M"))
-    sun_h, sun_m = sunset_info
-    flip_to_dark = SUNSET_FLIP and ((sun_h < c_hour or c_hour < 2) or (sun_h == c_hour and sun_m <= c_minute))
+    flip_to_dark = misc.has_sun_set(sunset_info, SUNSET_FLIP)
 
     if not SINGLE_USER:
         spotify_user = SpotifyUser()
@@ -38,12 +35,9 @@ if __name__ == "__main__":
         r_name = "Alex"
         spotify_user = SpotifyUser(single_user=True)
         r_track, r_artist, r_time_since, temp_ctx_type, temp_ctx_name, track_image_link, album_name = spotify_user.get_spotipy_info()
-        
-        album_image_name = "AlbumImage.PNG"
-        new_image_name = album_image_name.split('.')[0] + "_resize.PNG"
-        save_image_from_URL(track_image_link, album_image_name)
-        resize_image(album_image_name)
-        image_obj.draw_album_image(new_image_name, flip_to_dark)
+
+        misc.get_album_art(track_image_link)
+        image_obj.draw_album_image(flip_to_dark)
         image_obj.draw_spot_context("album", album_name, 25, 204)
         
         r_ctx_type = temp_ctx_type if temp_ctx_type != "" else r_ctx_type
