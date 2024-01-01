@@ -253,9 +253,8 @@ class Clock():
 
 if __name__ == "__main__":
     clock = Clock()
-    if False and clock.local_run:
+    if clock.local_run:
         clock.build_local_image()
-        import pdb; pdb.set_trace()
         clock.save_local_file()
     else:
         clock.tick_tock()
