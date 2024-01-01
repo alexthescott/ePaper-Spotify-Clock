@@ -1,6 +1,5 @@
 album_art/
 test_output/
 config/secrets.txt
-.leftauthcache
-.rightauthcache
+.*cache*
 *.pyc
