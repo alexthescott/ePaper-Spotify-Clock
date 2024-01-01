@@ -55,7 +55,7 @@ def get_context_from_json(context_json, spotipy_object):
     return context_type, context_name
 
 class SpotifyUser():
-    def __init__(self, single_user=False):
+    def __init__(self, name, single_user=False):
         # Generate Spotify client_id and client_secret
         # https://developer.spotify.com/dashboard/
         self.scope = "user-read-private, user-read-recently-played, user-read-playback-state, user-read-currently-playing"
@@ -75,8 +75,8 @@ class SpotifyUser():
 
         self.spot_client_id = ''  
         self.spot_client_secret = '' 
-        self.cache = '.' 
-        self.name = '' # drawn at the top of the screen
+        self.cache = '.leftauthcache' 
+        self.name = name # drawn at the top of the screen
         self.oauth = None
         self.oauth_token_info = None
 

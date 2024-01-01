@@ -14,42 +14,43 @@ with open('config/display_settings.json') as display_settings:
     SINGLE_USER = display_settings["single_user"]
     SUNSET_FLIP = display_settings["sunset_flip"]
 
-r_ctx_type, r_ctx_title = "", ""
+name_1 = "Alex"
+ctx_type_1, ctx_title_1 = "", ""
+
+othe = "Emma"
 
 if __name__ == "__main__":
-    # CREATE BLANK IMAGE
+    # Initialize Libs/Users
     image_obj = Draw()
     weather = Weather()
     misc = Misc()
-    image_obj.draw_border_lines()
-    
-    weather_info, sunset_info = weather.get_weather_and_sunset_info()
-    image_obj.draw_date_time_temp(weather_info)
+    spotify_user_1 = SpotifyUser("Alex", single_user=SINGLE_USER)
+    if not SINGLE_USER:
+        spotify_user_2 = SpotifyUser("Emma")
 
-    # Should we go into darkmode?
+    # Get current weather + Should we go into dark mode?
+    weather_info, sunset_info = weather.get_weather_and_sunset_info()
     flip_to_dark = misc.has_sun_set(sunset_info, SUNSET_FLIP)
 
-    if not SINGLE_USER:
-        spotify_user = SpotifyUser()
-    else:
-        r_name = "Alex"
-        spotify_user = SpotifyUser(single_user=True)
-        r_track, r_artist, r_time_since, temp_ctx_type, temp_ctx_name, track_image_link, album_name = spotify_user.get_spotipy_info()
+    # Get and Draw Spotify Info for User 1
+    track_1, artist_1, time_since_1, tmp_ctx_type, tmp_ctn_name, track_image_link, album_name_1 = spotify_user_1.get_spotipy_info()
+    track_line_count, track_text_size = image_obj.draw_track_text(track_1, 207, 26)
+    image_obj.draw_artist_text(artist_1, track_line_count, track_text_size, 207, 26)
 
+    ctx_type_1 = tmp_ctx_type if tmp_ctx_type != "" else ctx_type_1
+    ctx_title_1 = tmp_ctn_name if tmp_ctn_name != "" else ctx_title_1
+    image_obj.draw_spot_context(ctx_type_1, ctx_title_1, 227, 204)
+
+    r_name_width, r_name_height = image_obj.draw_name(name_1, 210, 0)
+    image_obj.draw_user_time_ago(time_since_1, 220 + r_name_width, r_name_height // 2)
+
+    # Draw collected info
+    image_obj.draw_date_time_temp(weather_info)
+    image_obj.draw_border_lines()
+    if SINGLE_USER:
         misc.get_album_art(track_image_link)
         image_obj.draw_album_image(flip_to_dark)
-        image_obj.draw_spot_context("album", album_name, 25, 204)
-        
-        r_ctx_type = temp_ctx_type if temp_ctx_type != "" else r_ctx_type
-        r_ctx_title = temp_ctx_name if temp_ctx_name != "" else r_ctx_title
-        
-    # RIGHT USER TRACK TITLES CONTEXT ----------------------------------------------------------------
-    track_line_count, track_text_size = image_obj.draw_track_text(r_track, 207, 26)
-    image_obj.draw_artist_text(r_artist, track_line_count, track_text_size, 207, 26)
-    image_obj.draw_spot_context(r_ctx_type, r_ctx_title, 227, 204)
-
-    r_name_width, r_name_height = image_obj.draw_name(r_name, 210, 0)
-    image_obj.draw_user_time_ago(r_time_since, 220 + r_name_width, r_name_height // 2)
+        image_obj.draw_spot_context("album", album_name_1, 25, 204)
 
     # Darkmode ~25 minutes after the sunsets. Determined by the bool sunset_flip
     if flip_to_dark:
