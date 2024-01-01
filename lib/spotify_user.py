@@ -55,7 +55,7 @@ def get_context_from_json(context_json, spotipy_object):
     return context_type, context_name
 
 class SpotifyUser():
-    def __init__(self, name, single_user=False):
+    def __init__(self, name="CHANGE_ME", single_user=False, main=True):
         # Generate Spotify client_id and client_secret
         # https://developer.spotify.com/dashboard/
         self.scope = "user-read-private, user-read-recently-played, user-read-playback-state, user-read-currently-playing"
@@ -64,18 +64,14 @@ class SpotifyUser():
         # if single_user is True, Left Spotify info is never shown
         # self.l_spot_client_id = ''  
         # self.l_spot_client_secret = '' 
-        # self.l_cache = '.leftauthcache' 
-        # self.l_name = '' # drawn at the top of the screen
 
         # Right Spotify 
         # self.r_spot_client_id = '' 
         # self.r_spot_client_secret = '' 
-        # self.r_cache = '.rightauthcache' 
-        # self.r_name = '' # drawn at the top of the screen
 
         self.spot_client_id = ''  
         self.spot_client_secret = '' 
-        self.cache = '.leftauthcache' 
+        self.cache = '.authcache1' if main else '.authcache2'
         self.name = name # drawn at the top of the screen
         self.oauth = None
         self.oauth_token_info = None

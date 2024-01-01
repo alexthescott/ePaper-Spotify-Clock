@@ -1,5 +1,5 @@
 {
-    "single_user": true,
+    "single_user": false,
     "metric_units": false,
     "twenty_four_clock": false,
     "partial_update": true,
