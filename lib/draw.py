@@ -7,8 +7,10 @@ from datetime import timedelta, datetime as dt
 class Draw():
     """ Draw to EPaper - Alex Scott 2024
     Companion functions for mainSpotifyClock.py
+
     Functions here rely on PIL to draw to an existing draw object
     Draw context, date time temp, artist and track info, time since, and names
+
     Made for the Waveshare 4.2inch e-Paper Module
     https://www.waveshare.com/wiki/4.2inch_e-Paper_Module
     """
@@ -18,10 +20,6 @@ class Draw():
         self.image_obj = Image.new('1', (self.WIDTH, self.HEIGHT), 128)
         self.image_draw = ImageDraw.Draw(self.image_obj)
 
-        # dictionaries hold pixel width for each char, given the three font sizes
-        self.sfDict = None
-        self.mfDict = None
-        self.lfDict = None
         self.set_dictionaries()
         self.load_display_settings()
         self.load_resources()
@@ -143,6 +141,7 @@ class Draw():
     # ---- Formatting Funcs ----------------------------------------------------------------------------
     def get_text_width(self, text, size):
         """ Return an int representing the size of a word
+
             Requires three dictionaries, defining the width of each char
             for our given font, Nintendo-DS-BIOS.ttf
         """
@@ -159,6 +158,7 @@ class Draw():
 
     def format_x_word(self, text_size_list, text_list, size):
         """ Return a list of 'squished' words to fit exact width dimensions
+
             Parameters:
                 text_size_list: a list of ints representing the width of each word
                 text_list: a list of strs to be combined as to print neater words
@@ -200,6 +200,7 @@ class Draw():
 
     def hyphenate_words(self, word, size):
         """ Return a list of 'spliced' word segments to fit exact width dimensions
+
             Parameters:
                 word: our string to hyphenate
                 size: {0, 1, 2} to denote DS font sizes {16, 32, 64}
@@ -240,7 +241,7 @@ class Draw():
             self.image_draw.line([(0, 224 + i), (400, 224 + i)], fill=0)
             self.image_draw.line([(199 + i, 0), (199 + i, 225)], fill=0)
     
-    def create_time_text(self, image_obj, military_time, temp_tuple):
+    def create_time_text(self, image_obj, military_time, weather_info):
         new_draw_obj = Image.new('1', (400, 300), 128)
         draw = ImageDraw.Draw(new_draw_obj)
         date_time_now = dt.now()
@@ -267,20 +268,20 @@ class Draw():
 
         return new_draw_obj, max(partial_width, old_partial_width) + 3
 
-    def draw_name(self, image_obj, text, name_x, name_y):
-        name_width, name_height = self.image_obj.textsize(text, font=self.helveti32)
-        self.image_obj.text((name_x, name_y), text, font=self.helveti32)
+    def draw_name(self, text, name_x, name_y):
+        name_width, name_height = self.image_draw.textlength(text, font=self.helveti32), self.helveti32.size/1.3
+        self.image_draw.text((name_x, name_y), text, font=self.helveti32)
         line_start_x, line_start_y = name_x - 1, name_y + name_height + 3
         line_end_x, line_end_y = name_x + name_width - 1, name_y + name_height + 3
-        self.image_obj.line([(line_start_x, line_start_y), (line_end_x, line_end_y)], fill=0)
+        self.image_draw.line([(line_start_x, line_start_y), (line_end_x, line_end_y)], fill=0)
         return name_width, name_height
 
-    def draw_user_time_ago(self, image_obj, text, time_x, time_y):
+    def draw_user_time_ago(self, text, time_x, time_y):
         # draw text next to name displaying time since last played track
-        time_width, time_height = self.image_obj.textsize(text, font=self.DSfnt16)
-        self.image_obj.text((time_x, time_y), text, font=self.DSfnt16)
+        time_width, time_height = self.image_draw.textlength(text, font=self.DSfnt16), self.helveti32.size/1.3
+        self.image_draw.text((time_x, time_y), text, font=self.DSfnt16)
 
-    def draw_spot_context(self, image_obj, new_draw_obj, context_type, context_text, context_x, context_y):
+    def draw_spot_context(self, context_type, context_text, context_x, context_y):
         # Draws both icon {playlist, album, artist} and context text in the bottom of Spot box
         if context_type is not None:
             context_width, temp_context = 0, ""
@@ -293,17 +294,17 @@ class Draw():
                 else:
                     temp_context += "..."
                     break
-            self.image_obj.text((context_x, context_y), temp_context, font=self.DSfnt16)
+            self.image_draw.text((context_x, context_y), temp_context, font=self.DSfnt16)
 
             # ATTACH ICONS
             if context_type == 'playlist':
-                new_draw_obj.paste(self.playlist_icon, (context_x - 21, context_y - 1))
+                self.image_obj.paste(self.playlist_icon, (context_x - 21, context_y - 1))
             elif context_type == 'album':
-                new_draw_obj.paste(self.album_icon, (context_x - 24, context_y - 4))
+                self.image_obj.paste(self.album_icon, (context_x - 24, context_y - 4))
             elif context_type == 'artist':
-                new_draw_obj.paste(self.artist_icon, (context_x - 22, context_y - 1))
+                self.image_obj.paste(self.artist_icon, (context_x - 22, context_y - 1))
 
-    def draw_album_image(self, image_obj, image_file_name, dark_mode):
+    def draw_album_image(self, image_file_name, dark_mode):
         album_image = Image.open(image_file_name)
         if dark_mode:
             album_image = album_image.convert("1")
@@ -413,7 +414,40 @@ class Draw():
             time_width, time_height = self.image_draw.textlength(self.time_str, font=self.DSfnt64), self.DSfnt64.size/1.3
         return time_width, time_height
 
-    def draw_track_text(self, image_obj, track_name, track_x, track_y):
+    def hyphenate_words(self, word, size):
+        """ Return a list of 'spliced' word segments to fit exact width dimensions
+
+            Parameters:
+                word: our string to hyphenate
+                size: {0, 1, 2} to denote DS font sizes {16, 32, 64}
+            Returns:
+                new text_list: a list of split strs from our word
+        """
+        temp_text_list = []
+        phrase_width, floor_index = 0, 0
+        char_size = 0
+        max_width = 177  # Widest width we will allow as we build char by char
+        # Iterate over every character in the word
+        for i, c in enumerate(word):
+            # Find relative char width. Will never hyphenate Large text
+            if size == 1:
+                char_size = int(self.mfDict.get(c, 12))
+            elif size == 0:
+                char_size = int(self.sfDict.get(c, 25))
+
+            # Our last character
+            if len(word) - 1 == i:
+                temp_text_list.append(word[floor_index:i + 1])
+            # We can add more characters to our split string
+            elif phrase_width + char_size < max_width:
+                phrase_width += char_size
+            # Attach hyphen and start building new split string
+            else:
+                temp_text_list.append(word[floor_index:i] + "-")
+                floor_index, phrase_width = i, char_size
+        return temp_text_list
+
+    def draw_track_text(self, track_name, track_x, track_y):
         # After deciding the size of text, split words into lines, and draw to self.image_obj
 
         # Large Text Format Check
@@ -423,7 +457,7 @@ class Draw():
         track_size = list(map(self.get_text_width, track_lines, [2] * len(l_title_split)))
         if sum(track_size) <= 378 and self.can_full_words_fit(track_size) and len(track_size) <= 2:
             for line in track_lines:
-                self.image_obj.text((track_x, track_y), line, font=self.DSfnt64)
+                self.image_draw.text((track_x, track_y), line, font=self.DSfnt64)
                 track_y += 43
             return len(track_lines), 55
 
@@ -438,9 +472,9 @@ class Draw():
         track_size = list(map(self.get_text_width, track_lines, [1] * len(track_lines)))
         if sum(track_size) <= 945:
             if not self.can_full_words_fit(track_size):
-                track_lines = hyphenate_words(str(m_title_split)[2:-2], 1)
+                track_lines = self.hyphenate_words(str(m_title_split)[2:-2], 1)
             for line in track_lines:
-                self.image_obj.text((track_x, track_y), line, font=self.DSfnt32)
+                self.image_draw.text((track_x, track_y), line, font=self.DSfnt32)
                 track_y += 26
             return len(track_lines), 26
 
@@ -455,14 +489,14 @@ class Draw():
         track_size = list(map(self.get_text_width, track_lines, [1] * len(s_title_split)))
         track_y += 5
         if not self.can_full_words_fit(s_title_size):
-            track_lines = hyphenate_words(str(s_title_split)[2:-2], 1)
+            track_lines = self.hyphenate_words(str(s_title_split)[2:-2], 1)
         for line in track_lines:
-            self.image_obj.text((track_x, track_y), line, font=self.DSfnt16)
+            self.image_draw.text((track_x, track_y), line, font=self.DSfnt16)
             track_y += 12
         return len(track_lines), 13
 
 
-    def draw_artist_text(self, image_obj, artist_name, track_line_count, track_height, artist_x, artist_y):
+    def draw_artist_text(self, artist_name, track_line_count, track_height, artist_x, artist_y):
         # Always ensure bottom of text is always at 190 pixels after draw height
 
         # Large Text Format Check
@@ -473,7 +507,7 @@ class Draw():
                 artist_lines = self.format_x_word(l_artist_size, l_artist_split, 2)
                 artist_y = 190 - (42 * len(artist_lines))  # y nudge to fit bottom constraint
                 for line in artist_lines:
-                    self.image_obj.text((artist_x, artist_y), line, font=self.DSfnt64)
+                    self.image_draw.text((artist_x, artist_y), line, font=self.DSfnt64)
                     artist_y += 43
                 return
 
@@ -489,9 +523,9 @@ class Draw():
         if sum(artist_size) <= 760 and track_line_count + len(artist_lines) <= 6:
             artist_y = 190 - (25 * len(artist_lines))  # y nudge to fit bottom constraint
             if not self.can_full_words_fit(m_title_size):
-                artist_lines = hyphenate_words(str(m_artist_split)[2:-2], 1)
+                artist_lines = self.hyphenate_words(str(m_artist_split)[2:-2], 1)
             for line in artist_lines:
-                self.image_obj.text((artist_x, artist_y), line, font=self.DSfnt32)
+                self.image_draw.text((artist_x, artist_y), line, font=self.DSfnt32)
                 artist_y += 26
             return
 
@@ -506,66 +540,7 @@ class Draw():
         artist_size = list(map(self.get_text_width, artist_lines, [0] * len(s_artist_split)))
         artist_y = 190 - (12 * len(artist_lines))  # y nudge to fit bottom constraint
         if not self.can_full_words_fit(s_artist_size):
-            artist_lines = hyphenate_words(str(s_artist_split)[2:-2], 1)
+            artist_lines = self.hyphenate_words(str(s_artist_split)[2:-2], 1)
         for line in artist_lines:
-            self.image_obj.text((artist_x, artist_y), line, font=self.DSfnt16)
+            self.image_draw.text((artist_x, artist_y), line, font=self.DSfnt16)
             artist_y += 12
-
-
-class LocalJsonIO():
-    def write_json_ctx(self, left_ctx, right_ctx):
-        """ creates, writes to context.txt a json object containing the ctx of left and right users. """
-
-        # if we have already written context info, don't rewrite file
-        left_temp_ctx, right_tmp_ctx = left_ctx, right_ctx
-        try:
-            with open('context.txt') as j_ctx:
-                write_l_ctx, write_r_ctx = True, True
-                data = json.load(j_ctx)
-
-                # check left ctx, assign tmp ctx if our pulled data is new
-                if left_ctx[0] == data['context'][0]['type'] and left_ctx[1] == data['context'][0]['title']:
-                    write_l_ctx = False
-                # check right ctx, assign tmp ctx if our pulled data is new
-                if right_ctx[0] == data['context'][1]['type'] and right_ctx[1] == data['context'][1]['title']:
-                    write_r_ctx = False
-
-                if not write_l_ctx and not write_r_ctx:
-                    return
-                print("Update context.txt")
-                print("left_ctx: {} right_ctx: {}".format(left_ctx, right_ctx))
-        except Exception as e:
-            print("write_json_ctx() Failed:", e)
-            print("writing to new context.txt")
-
-        context_data = {}
-        context_data['context'] = []
-        # attach left ctx
-        context_data['context'].append({
-                'position': 'left',
-                'type': left_temp_ctx[0],
-                'title': left_temp_ctx[1]
-        })
-        # attach right ctx
-        context_data['context'].append({
-            'position': 'right',
-            'type': right_tmp_ctx[0],
-            'title': right_tmp_ctx[1]
-        })
-
-        with open('context.txt', 'w+') as j_cxt:
-            json.dump(context_data, j_cxt)
-
-
-    def read_json_ctx(self, left_ctx, right_ctx):
-        """ Read context.txt, returning ctx found if left_ctx, or right_ctx is empty. """
-        with open('context.txt') as j_cxt:
-            context_data = json.load(j_cxt)
-            data = context_data['context']
-            # Only update an empty context side. Either update the left ctx, the right ctx, or both ctx files
-            if left_ctx[0] != "" and left_ctx[1] != "" and right_ctx[0] == "" and right_ctx[1] == "":
-                return left_ctx[0], left_ctx[1], data[1]['type'], data[1]['title']
-            elif left_ctx[0] == "" and left_ctx[1] == "" and right_ctx[0] != "" and right_ctx[1] != "":
-                return data[0]['type'], data[0]['title'], right_ctx[0], right_ctx[1]
-            else:
-                return data[0]['type'], data[0]['title'], data[1]['type'], data[1]['title']
