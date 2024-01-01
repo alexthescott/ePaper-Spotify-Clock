@@ -1,0 +1,9 @@
+{
+    "single_user": false,
+    "metric_units": false,
+    "twenty_four_clock": false,
+    "partial_update": true,
+    "time_on_right": true,
+    "hide_other_weather": true,
+    "sunset_flip": true
+}
