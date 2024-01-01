@@ -4,6 +4,23 @@ from time import time, sleep, strftime, localtime
 from datetime import timedelta, datetime as dt
 from PIL import Image, ImageFont, ImageDraw, ImageMath
 import logging
+import logging
+from logging.handlers import RotatingFileHandler
+
+# Create a logger
+logger = logging.getLogger('clock_logger')
+logger.setLevel(logging.INFO)
+
+# Create a file handler
+handler = RotatingFileHandler('clock.log', maxBytes=2000000, backupCount=5)
+handler.setLevel(logging.INFO)
+
+# Create a logging format
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+
+# Add the handlers to the logger
+logger.addHandler(handler)
 
 from lib.draw import Draw
 from lib.weather import Weather
@@ -22,6 +39,7 @@ class Clock():
         # -------- Init --------
         self.print_logs = True
         if self.print_logs:
+            logger.info("\t-- Clock Init --\n-----------------------------------------------------------------------------------------------------")
             logging.getLogger().setLevel(logging.INFO)
 
         self.local_run = local_run
@@ -66,8 +84,8 @@ class Clock():
     def set_weather_and_sunset_info(self):
         self.weather_info, self.sunset_info = self.weather.get_weather_and_sunset_info()
         self.flip_to_dark = self.misc.has_sun_set(self.sunset_info, self.sunset_flip)
-        logging.info("Weather: {}".format(self.weather_info))
-        logging.info("Sunset: {}".format(self.sunset_time_tuple))
+        logger.info("Weather: {}".format(self.weather_info))
+        logger.info("Sunset: {}".format(self.sunset_time_tuple))
 
     def save_local_file(self):
         self.image_obj.save_png("{}".format(dt.now().strftime('%H:%M:%S')));clock.image_obj.save_png("now")
@@ -76,7 +94,7 @@ class Clock():
         while True:
             # Get time variables. old_time is used to ensure even time difference intervals between updates
             sec_left, time_str, date_str, old_time = self.get_time_from_date_time(self.old_time)
-            logging.info("Time: {}".format(time_str))
+            logger.info("Time: {}".format(time_str))
 
             # Firstly, this is for my own edifice to know how long a loop takes for the Pi
             # Secondly, this is used to 'push' our clock forward such that our clock update is exactly on time
@@ -116,14 +134,14 @@ class Clock():
                     print("Don't Wake")
                     break
             elif not self.did_epd_init:
-                logging.info("Initializing EPD...")
+                logger.info("Initializing EPD...")
                 self.epd.init()
                 self.epd.Clear()
                 self.did_epd_init = True
 
             if self.did_epd_init:
                 image_buffer = self.epd.getbuffer(self.image_obj.get_image_obj())
-                logging.info("\tDrawing Image to EPD")
+                logger.info("\tDrawing Image to EPD")
                 self.epd.display(image_buffer)
 
             # Look @ start variable above. find out how long it takes to compute our image
@@ -135,7 +153,7 @@ class Clock():
 
             if 5 < c_hour and c_hour < 24:
                 # 6:00am - 12:59pm update screen every 3 minutes
-                logging.info("\t{}\tseconds per loop\tsleeping for {} seconds".format(round(self.time_elapsed, 2), int(remaining_time) + 120))
+                logger.info("\t{}\tseconds per loop\tsleeping for {} seconds".format(round(self.time_elapsed, 2), int(remaining_time) + 120))
                 # if we do partial updates and darkmode, you get a worrisome zebra stripe artifact on the EPD
                 if self.partial_update and not self.flip_to_dark:
                     # Create new time image, push to display, full update after 2 partials
@@ -145,27 +163,29 @@ class Clock():
                         sec_left = 62 - int(date.strftime("%S"))
 
                         if partial_update_count < 2:
-                            logging.info("\t{}s sleep, partial_update".format(round(sec_left, 2)))
+                            logger.info("\t{}s sleep, partial_update".format(round(sec_left, 2)))
                             sleep(sec_left)
                         else:
-                            logging.info("\t{}\tseconds per loop\tsleeping for {} seconds".format(round(self.time_elapsed, 2), int(remaining_time) + 120))
+                            logger.info("\t{}\tseconds per loop\tsleeping for {} seconds".format(round(self.time_elapsed, 2), int(remaining_time) + 120))
                             sleep(sec_left-self.time_elapsed)
 
                         if sec_left > 5 and partial_update_count < 2:
                             date = dt.now()
                             time_str = date.strftime("%-H:%M") if self.twenty_four_hour_clock else date.strftime("%-I:%M") + date.strftime("%p").lower()
-                            logging.info("\ttimestr:{}".format(time_str))
+                            logger.info("\ttimestr:{}".format(time_str))
                             time_image, time_width = self.image_obj.create_time_text(time_str, self.weather_info)
                             if self.time_on_right:
+                                pass
                                 self.epd.EPD_4IN2_PartialDisplay(self.image_obj.WIDTH-5-time_width, 245, self.image_obj.WIDTH-5, 288, self.epd.getbuffer(time_image))
                             else:
+                                pass
                                 self.epd.EPD_4IN2_PartialDisplay(5, 245, 5 + time_width, 288, self.epd.getbuffer(time_image))
                         partial_update_count += 1
                 else:
                     sleep(remaining_time + 120)
             elif c_hour < 2:
                 # 12:00am - 1:59am update screen every 5ish minutes
-                logging.info("\t", round(self.time_elapsed, 2),"\tseconds per loop\t", "sleeping for {} seconds".format(int(remaining_time) + 240))
+                logger.info("\t", round(self.time_elapsed, 2),"\tseconds per loop\t", "sleeping for {} seconds".format(int(remaining_time) + 240))
                 sleep(remaining_time + 240)
 
             # Increment counter for Weather requests
