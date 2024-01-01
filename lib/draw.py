@@ -544,3 +544,6 @@ class Draw():
         for line in artist_lines:
             self.image_draw.text((artist_x, artist_y), line, font=self.DSfnt16)
             artist_y += 12
+
+    def dark_mode_flip(self):
+        self.image_obj.paste(ImageMath.eval('255-(a)', a=self.image_obj), (0, 0))
