@@ -243,7 +243,7 @@ class Draw():
     
     def create_time_text(self, time_str, weather_info):
         new_draw_obj = Image.new('1', (400, 300), 128)
-        draw = ImageDraw.Draw(new_draw_obj)
+        self.image_draw = ImageDraw.Draw(new_draw_obj)
         date_time_now = dt.now()
         date_str = date_time_now.strftime("%a, %b %-d")
         self.draw_date_time_temp(weather_info)
