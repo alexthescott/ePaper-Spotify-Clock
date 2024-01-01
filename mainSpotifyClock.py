@@ -92,6 +92,7 @@ class Clock():
 
     def tick_tock(self):
         while True:
+            self.image_obj.clear_image()
             # Get time variables. old_time is used to ensure even time difference intervals between updates
             sec_left, time_str, date_str, old_time = self.get_time_from_date_time(self.old_time)
             logger.info("Time: {}".format(time_str))
@@ -142,6 +143,7 @@ class Clock():
             if self.did_epd_init:
                 image_buffer = self.epd.getbuffer(self.image_obj.get_image_obj())
                 logger.info("\tDrawing Image to EPD")
+                # self.save_local_file()
                 self.epd.display(image_buffer)
 
             # Look @ start variable above. find out how long it takes to compute our image
@@ -190,9 +192,6 @@ class Clock():
 
             # Increment counter for Weather requests
             self.count_to_5 = 0 if self.count_to_5 == 4 else self.count_to_5 + 1
-
-    def build_local_image(self):
-        self.build_image()
 
     def build_image(self):
         if self.weather_info is None:
@@ -274,7 +273,7 @@ class Clock():
 if __name__ == "__main__":
     clock = Clock()
     if clock.local_run:
-        clock.build_local_image()
+        clock.build_image()
         clock.save_local_file()
     else:
         clock.tick_tock()

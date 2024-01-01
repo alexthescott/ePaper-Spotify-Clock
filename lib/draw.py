@@ -126,6 +126,10 @@ class Draw():
         'û': '25', 'ü': '25', '‘': '13', '’': '13', '“': '21', '”': '21',
         '…': '25', '€': '29', '™': '41', '\x00': '36'}
 
+    def clear_image(self):
+        self.image_obj = Image.new('1', (self.WIDTH, self.HEIGHT), 128)
+        self.image_draw = ImageDraw.Draw(self.image_obj)
+
     def get_time(self):
         self.dt = dt.now()
         if self.TWENTY_FOUR_CLOCK:
@@ -344,7 +348,7 @@ class Draw():
         self.image_draw.text((forcast_temp_x - temp_low_width, 266), str(temp_low), font=self.DSfnt32)
         self.image_draw.text((forcast_temp_x + 2, 268), temp_degrees, font=self.DSfnt16)
 
-    def draw_time(self, pos, time):
+    def draw_time(self, pos):
         """
         Draws the given time at the specified position on the image.
 
@@ -354,8 +358,8 @@ class Draw():
         pos (tuple): A tuple containing the x and y coordinates where the time should be drawn.
         time (str): The time to be drawn. This should be a string in the format "HH:MM" or "HH:MM am/pm".
         """
-        am_pm = time[-2:] if "am" in time or "pm" in time else ""
-        current_time = time[:-2] if am_pm else time
+        am_pm = self.time_str[-2:] if "am" in self.time_str or "pm" in self.time_str else ""
+        current_time = self.time_str[:-2] if am_pm else self.time_str
 
         self.image_draw.text(pos, current_time, font=self.DSfnt64)
 
@@ -383,10 +387,10 @@ class Draw():
 
             right_elem_x = self.WIDTH - time_width - 5
             right_elem_y = self.HEIGHT - (bar_height // 2) - (time_height // 2)
-            self.draw_time((right_elem_x, right_elem_y), self.time_str)
+            self.draw_time((right_elem_x, right_elem_y))
         else:
             left_elem_y = self.HEIGHT - (bar_height // 2) - (time_height // 2)
-            self.draw_time((left_elem_x, left_elem_y), self.time_str)
+            self.draw_time((left_elem_x, left_elem_y))
 
             forecast_temp_x = temp_width + 20
             temp_high_width, temp_low_width = self.get_text_width(str(temp_high), 1), self.get_text_width(str(temp_high), 1)

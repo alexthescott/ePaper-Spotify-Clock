@@ -3,10 +3,10 @@
 # navigate to directory then execute python script 
 
 runscript(){
-	python3 mainSpotifyEPD.py
+	python3 mainSpotifyClock.py
 }
 
-cd /home/alex/e-Paper/Pi/python/examples/
+cd /home/{USER}/e-Paper/Pi/python/examples/
 while true; 
 do
 	runscript

@@ -1,6 +1,8 @@
 import spotipy
+from spotipy.exceptions import SpotifyException
 import json
 from datetime import timedelta, datetime as dt
+import logging
 
 def get_time_from_timedelta(td):
     """ Determine time since last played in terms of hours and minutes from timedelta. """
@@ -75,7 +77,7 @@ class SpotifyUser():
         self.name = name # drawn at the top of the screen
         self.oauth = None
         self.oauth_token_info = None
-
+        self.sp = None
         self.update_spotipy_token()
 
     def get_user_token(self):
@@ -110,6 +112,7 @@ class SpotifyUser():
                 token_info = self.oauth.get_access_token(code)
                 token = token_info['access_token']
         self.token = token
+        self.sp = spotipy.Spotify(auth=self.token)
         return True
     
     def get_spotipy_info(self):
@@ -126,7 +129,16 @@ class SpotifyUser():
         """
         self.dt = dt.now()
         sp = spotipy.Spotify(auth=self.token)
-        recent = sp.current_user_playing_track()
+        for _ in range(3):
+            try:
+                recent = self.sp.current_user_playing_track()
+                break
+            except SpotifyException as e:
+                logging.INFO(e)
+                self.update_spotipy_token()
+        else:
+            return "", "", "", "", "", None, None
+        
         context_type, context_name, time_passed = "", "", ""
         track_image_link, album_name = None, None  # used if single_user
         if recent is not None and recent['item'] is not None:
