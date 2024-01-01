@@ -24,7 +24,9 @@ class Draw():
         self.lfDict = None
         self.set_dictionaries()
         self.load_display_settings()
+        self.load_resources()
 
+    def load_resources(self):
         # Load local resources. Fonts and Icons from /ePaperFonts and /Icons
         self.DSfnt16 = ImageFont.truetype('ePaperFonts/Nintendo-DS-BIOS.ttf', 16)
         self.DSfnt32 = ImageFont.truetype('ePaperFonts/Nintendo-DS-BIOS.ttf', 32)
@@ -37,29 +39,17 @@ class Draw():
         self.artist_icon = Image.open('Icons/artist.png')
         self.album_icon = Image.open('Icons/album.png')
 
-    def get_time(self):
-        self.dt = dt.now()
-        if self.TWENTY_FOUR_CLOCK:
-            self.time_str = self.dt.strftime("%-H:%M")
-        else:
-            self.time_str = self.dt.strftime("%-I:%M") + self.dt.strftime("%p").lower()
-
-    def save_png(self, file_name):
-        if not os.path.exists("test_output"):
-            os.makedirs("test_output")
-        self.image_obj.save("test_output/{}.png".format(file_name))
-
     def load_display_settings(self):
         # EPD Settings imported from config/display_settings.json ---------------------------------------------------
         with open('config/display_settings.json') as display_settings:
             display_settings = json.load(display_settings)
-            self.SINGLE_USER = display_settings["single_user"]        # (True -> Left side album art False -> two user mode)
-            self.METRIC_UNITS = display_settings["metric_units"]       # (True -> C°, False -> F°)
+            self.SINGLE_USER = display_settings["single_user"]               # (True -> Left side album art False -> two user mode)
+            self.METRIC_UNITS = display_settings["metric_units"]             # (True -> C°, False -> F°)
             self.TWENTY_FOUR_CLOCK =   display_settings["twenty_four_clock"] # (True -> 22:53, False -> 10:53pm) 
-            self.PARTIAL_UPDATE = display_settings["partial_update"]     # (True -> 1/60HZ Screen_Update, False -> 1/180HZ Screen_Update)
-            self.TIME_ON_RIGHT = display_settings["time_on_right"]       # (True -> time is displayed on the right, False -> time is displayed on the left)
-            self.HIDE_OTHER_WEATHER = display_settings["hide_other_weather"]  # (True -> weather not shown in top right, False -> weather is shown in top right)
-            self.SUNSET_FLIP =  display_settings["sunset_flip"]        # (True -> darkmode 24m after main sunset, False -> Light mode 24/7)
+            self.PARTIAL_UPDATE = display_settings["partial_update"]         # (True -> 1/60HZ Screen_Update, False -> 1/180HZ Screen_Update)
+            self.TIME_ON_RIGHT = display_settings["time_on_right"]           # (True -> time is displayed on the right, False -> time is displayed on the left)
+            self.HIDE_OTHER_WEATHER = display_settings["hide_other_weather"] # (True -> weather not shown in top right, False -> weather is shown in top right)
+            self.SUNSET_FLIP =  display_settings["sunset_flip"]              # (True -> dark mode 24m after main sunset, False -> Light mode 24/7)
 
     def set_dictionaries(self):
         # Used to get the pixel length of strings as they're built
@@ -138,18 +128,34 @@ class Draw():
         'û': '25', 'ü': '25', '‘': '13', '’': '13', '“': '21', '”': '21',
         '…': '25', '€': '29', '™': '41', '\x00': '36'}
 
+    def get_time(self):
+        self.dt = dt.now()
+        if self.TWENTY_FOUR_CLOCK:
+            self.time_str = self.dt.strftime("%-H:%M")
+        else:
+            self.time_str = self.dt.strftime("%-I:%M") + self.dt.strftime("%p").lower()
+
+    def save_png(self, file_name):
+        if not os.path.exists("test_output"):
+            os.makedirs("test_output")
+        self.image_obj.save("test_output/{}.png".format(file_name))
+
     # ---- Formatting Funcs ----------------------------------------------------------------------------
     def get_text_width(self, text, size):
         """ Return an int representing the size of a word
             Requires three dictionaries, defining the width of each char
             for our given font, Nintendo-DS-BIOS.ttf
         """
-        if size == 2:
-            return sum(int(self.lfDict.get(c, 25)) for c in text)
-        elif size == 1:
-            return sum(int(self.mfDict.get(c, 12)) for c in text)
-        elif size == 0:
-            return sum(int(self.sfDict.get(c, 6)) for c in text)
+        size_dict = {
+            2: (self.lfDict, 25),
+            1: (self.mfDict, 12),
+            0: (self.sfDict, 6)
+        }
+
+        char_dict, default_value = size_dict.get(size)
+        if char_dict is None:
+            raise ValueError(f"Invalid size: {size}")
+        return sum(int(char_dict.get(c, default_value)) for c in text)
 
     def format_x_word(self, text_size_list, text_list, size):
         """ Return a list of 'squished' words to fit exact width dimensions
@@ -233,13 +239,13 @@ class Draw():
         for i in range(3):
             self.image_draw.line([(0, 224 + i), (400, 224 + i)], fill=0)
             self.image_draw.line([(199 + i, 0), (199 + i, 225)], fill=0)
-
+    
     def create_time_text(self, image_obj, military_time, temp_tuple):
         new_draw_obj = Image.new('1', (400, 300), 128)
         draw = ImageDraw.Draw(new_draw_obj)
         date_time_now = dt.now()
         date_str = date_time_now.strftime("%a, %b %-d")
-        self.draw_date_time_temp(draw, military_time, date_str, temp_tuple)
+        self.draw_date_time_temp(draw, military_time, date_str, weather_info)
         if "am" in military_time or "pm" in military_time:
             current_time_width = self.image_obj.textsize(military_time[:-2], self.DSfnt64)[0]
             current_am_pm_width = self.image_obj.textsize(military_time[-2:], self.DSfnt32)[0]
@@ -269,12 +275,10 @@ class Draw():
         self.image_obj.line([(line_start_x, line_start_y), (line_end_x, line_end_y)], fill=0)
         return name_width, name_height
 
-
     def draw_user_time_ago(self, image_obj, text, time_x, time_y):
         # draw text next to name displaying time since last played track
         time_width, time_height = self.image_obj.textsize(text, font=self.DSfnt16)
         self.image_obj.text((time_x, time_y), text, font=self.DSfnt16)
-
 
     def draw_spot_context(self, image_obj, new_draw_obj, context_type, context_text, context_x, context_y):
         # Draws both icon {playlist, album, artist} and context text in the bottom of Spot box
@@ -299,7 +303,6 @@ class Draw():
             elif context_type == 'artist':
                 new_draw_obj.paste(self.artist_icon, (context_x - 22, context_y - 1))
 
-
     def draw_album_image(self, image_obj, image_file_name, dark_mode):
         album_image = Image.open(image_file_name)
         if dark_mode:
@@ -307,20 +310,26 @@ class Draw():
             album_image = ImageMath.eval('255-(a)', a=album_image)
         self.image_obj.paste(album_image, (0, 0))
 
-    def draw_weather(self, pos, temp_tuple):
-        temp, temp_high, temp_low, other_temp = temp_tuple
+    def draw_weather(self, pos, weather_info):
+        """
+        This method draws the current and forecasted temperatures on the image.
+
+        Parameters:
+        pos (tuple): A tuple containing the x and y coordinates where the temperature should be drawn.
+        weather_info (tuple): A tuple containing the current temperature, high forecasted temperature, 
+                            low forecasted temperature, and another temperature value.
+        """
+        temp, temp_high, temp_low, other_temp = weather_info
         temp_degrees = "C" if self.METRIC_UNITS else "F"
 
         # main temp pos calculations
-        temp_start_x = pos[0]
-        temp_width = self.image_draw.textlength(str(temp), font=self.DSfnt64)
+        temp_start_x, temp_width = pos[0], self.image_draw.textlength(str(temp), font=self.DSfnt64)
 
-        # forcast temp pos calculations
-        temp_high_width = self.get_text_width(str(temp_high), 1)
-        temp_low_width = self.get_text_width(str(temp_low), 1)
+        # forecast temp pos calculations
+        temp_high_width, temp_low_width = self.get_text_width(str(temp_high), 1), self.get_text_width(str(temp_low), 1)
         forcast_temp_x = temp_start_x + temp_width + 18 + max(temp_low_width, temp_high_width)
 
-        # I found that negative temps widen the formatting. This 'fixes' that issue 
+        # fixes negative temperature formatting issue
         if temp_high < 0 or temp_low < 0:
             forcast_temp_x -= 5
 
@@ -335,75 +344,56 @@ class Draw():
         self.image_draw.text((forcast_temp_x + 2, 268), temp_degrees, font=self.DSfnt16)
 
     def draw_time(self, pos, time):
-        if "am" in time or "pm" in time:
-            am_pm = time[-2:]
-            current_time = time[:-2]
+        """
+        Draws the given time at the specified position on the image.
 
-            # am_pm pos calculations
+        If the time includes "am" or "pm", it separates these from the main time and draws them separately.
+
+        Parameters:
+        pos (tuple): A tuple containing the x and y coordinates where the time should be drawn.
+        time (str): The time to be drawn. This should be a string in the format "HH:MM" or "HH:MM am/pm".
+        """
+        am_pm = time[-2:] if "am" in time or "pm" in time else ""
+        current_time = time[:-2] if am_pm else time
+
+        self.image_draw.text(pos, current_time, font=self.DSfnt64)
+
+        if am_pm:
             am_pm_x = pos[0] + self.image_draw.textlength(current_time, font=self.DSfnt64)
-
-            # draw time + am_pm
-            self.image_draw.text(pos, current_time, font=self.DSfnt64)
             self.image_draw.text((am_pm_x, pos[1] + 22), am_pm, font=self.DSfnt32)
-        else:
-            # draw time
-            self.image_draw.text(pos, time, font=self.DSfnt64)
 
-    def draw_date_time_temp(self, temp_tuple):
+    def draw_date_time_temp(self, weather_info):
+        """
+        This function draws the date, time, and temperature on the display. 
+        """
         self.get_time()
-        temp, temp_high, temp_low, other_temp = temp_tuple
+        temp, temp_high, temp_low, other_temp = weather_info
         temp_degrees = "C" if self.METRIC_UNITS else "F"
         left_elem_x = 10
+        bar_height = 74  # the height of the bottom bar
 
-        # the height of the bottom bar
-        bar_height = 74
+        # Calculate common elements
+        temp_width, temp_height = self.image_draw.textlength(str(temp), font=self.DSfnt64), self.DSfnt64.size/1.3
+        time_width, time_height = self.calculate_time_dimensions()
 
         if self.TIME_ON_RIGHT:
-            # main temp pos calculations
-            temp_width, temp_height = self.image_draw.textlength(str(temp), font=self.DSfnt64), self.DSfnt64.size/1.3
             left_elem_y = self.HEIGHT - (bar_height // 2) - (temp_height // 2)
-            left_elem_pos = (left_elem_x, left_elem_y)
+            self.draw_weather((left_elem_x, left_elem_y), weather_info)
 
-            self.draw_weather(left_elem_pos, temp_tuple)
-
-            # draw time on the right side of screen after deciding 24H or AM_PM
-            if "am" in self.time_str or "pm" in self.time_str:
-                # time pos calculations; add width of am_pm too
-                time_width, time_height = self.image_draw.textlength(str(self.time_str[:-2]), font=self.DSfnt64), self.DSfnt64.size/1.3
-                time_width += self.image_draw.textlength(str(self.time_str[-2:]), font=self.DSfnt32)
-            else:
-                # time pos calculations without am_pm
-                time_width, time_height = self.image_draw.textlength(self.time_str, self.DSfnt64), self.DSfnt64.size/1.3
             right_elem_x = self.WIDTH - time_width - 5
             right_elem_y = self.HEIGHT - (bar_height // 2) - (time_height // 2)
-            right_elem_pos = (right_elem_x, right_elem_y)
-
-            self.draw_time(right_elem_pos, self.time_str)
-
+            self.draw_time((right_elem_x, right_elem_y), self.time_str)
         else:
-            # draw time on the left screen after deciding 24H or AMPM
-            if "am" in self.time_str or "pm" in self.time_str:
-                # time pos calculations; add width of am_pm too
-                time_width, time_height = self.image_draw.textsize(str(self.time_str[:-2]), font=self.DSfnt64), self.DSfnt64.size/1.3
-                time_width += self.image_draw.textsize(str(self.time_str[-2:]), font=self.DSfnt32)[0]
-            else:
-                # time pos calculations
-                time_width, time_height = self.image_draw.textsize(self.time_str, font=self.DSfnt64), self.DSfnt64.size/1.3
             left_elem_y = self.HEIGHT - (bar_height // 2) - (time_height // 2)
-            left_elem_pos = (left_elem_x, left_elem_y)
+            self.draw_time((left_elem_x, left_elem_y), self.time_str)
 
-            self.draw_time(left_elem_pos, self.time_str)
-
-            temp_width, temp_height = self.image_draw.textsize(str(temp), font=self.DSfnt64), self.DSfnt64.size/1.3
-            forcast_temp_x = temp_width + 20
+            forecast_temp_x = temp_width + 20
             temp_high_width, temp_low_width = self.get_text_width(str(temp_high), 1), self.get_text_width(str(temp_high), 1)
-            right_elem_x = self.WIDTH - (forcast_temp_x + max(temp_high_width, temp_low_width) + 12)
+            right_elem_x = self.WIDTH - (forecast_temp_x + max(temp_high_width, temp_low_width) + 12)
             right_elem_y = self.HEIGHT - (bar_height // 2) - (temp_height // 2)
-            right_elem_pos = (right_elem_x, right_elem_y)
+            self.draw_weather((right_elem_x, right_elem_y), weather_info)
 
-            self.draw_weather(right_elem_pos, temp_tuple)
-
-        # draw the date in the center of the bottom bar
+        # Draw the date in the center of the bottom bar
         date_width, date_height = self.image_draw.textlength(self.dt.strftime("%a, %b %-d"), font=self.DSfnt32), self.DSfnt32.size/1.3
         date_x =  left_elem_x + time_width + (right_elem_x - left_elem_x - time_width) // 2 - date_width // 2
         date_y = 239 + date_height
@@ -414,6 +404,14 @@ class Draw():
             high_temp_x = 387 - self.get_text_width(str(other_temp), 1)
             self.image_draw.text((high_temp_x, 0), str(other_temp), font=self.DSfnt32)
             self.image_draw.text((high_temp_x + 2 + self.get_text_width(str(other_temp), 1), 2), temp_degrees, font=self.DSfnt16)
+
+    def calculate_time_dimensions(self):
+        if "am" in self.time_str or "pm" in self.time_str:
+            time_width, time_height = self.image_draw.textlength(str(self.time_str[:-2]), font=self.DSfnt64), self.DSfnt64.size/1.3
+            time_width += self.image_draw.textlength(str(self.time_str[-2:]), font=self.DSfnt32)
+        else:
+            time_width, time_height = self.image_draw.textlength(self.time_str, font=self.DSfnt64), self.DSfnt64.size/1.3
+        return time_width, time_height
 
     def draw_track_text(self, image_obj, track_name, track_x, track_y):
         # After deciding the size of text, split words into lines, and draw to self.image_obj
