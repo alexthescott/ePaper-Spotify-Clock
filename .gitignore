@@ -1,2 +1,5 @@
 test_output/
 config/secrets.txt
+.leftauthcache
+.rightauthcache
+*.pyc
