@@ -5,9 +5,9 @@ from requests import get as get_request
 class Weather():
     def __init__(self):
         self.load_display_settings()
-        self.OW_KEY = "" # https://openweathermap.org/ -> create account and generate key  
+        self.OW_KEY = "" # https://openweathermap.org/ -> create account and generate key
         self.OW_CITYID = ""  # https://openweathermap.org/find? -> find your city id
-        self.OW_OTHER_CITYID = ""
+        self.OW_OTHER_CITYID = "" # if hide_other_weather is True, this can be ignored 
         self.URL_UNITS = "&units=metric" if self.METRIC_UNITS else "&units=imperial" 
         self.OW_CURRENT_URL = "http://api.openweathermap.org/data/2.5/weather?"
         self.OW_FORECAST_URL = "http://api.openweathermap.org/data/2.5/forecast?"
@@ -18,7 +18,7 @@ class Weather():
             display_settings = json.load(display_settings)
             self.SINGLE_USER = display_settings["single_user"]               # (True -> Left side album art False -> two user mode)
             self.METRIC_UNITS = display_settings["metric_units"]             # (True -> C°, False -> F°)
-            self.TWENTY_FOUR_CLOCK =   display_settings["twenty_four_clock"] # (True -> 22:53, False -> 10:53pm) 
+            self.TWENTY_FOUR_CLOCK =   display_settings["twenty_four_hour_clock"] # (True -> 22:53, False -> 10:53pm) 
             self.PARTIAL_UPDATE = display_settings["partial_update"]         # (True -> 1/60HZ Screen_Update, False -> 1/180HZ Screen_Update)
             self.TIME_ON_RIGHT = display_settings["time_on_right"]           # (True -> time is displayed on the right, False -> time is displayed on the left)
             self.HIDE_OTHER_WEATHER = display_settings["hide_other_weather"] # (True -> weather not shown in top right, False -> weather is shown in top right)

@@ -43,7 +43,7 @@ class Draw():
             display_settings = json.load(display_settings)
             self.SINGLE_USER = display_settings["single_user"]               # (True -> Left side album art False -> two user mode)
             self.METRIC_UNITS = display_settings["metric_units"]             # (True -> C°, False -> F°)
-            self.TWENTY_FOUR_CLOCK =   display_settings["twenty_four_clock"] # (True -> 22:53, False -> 10:53pm) 
+            self.TWENTY_FOUR_CLOCK =   display_settings["twenty_four_hour_clock"] # (True -> 22:53, False -> 10:53pm) 
             self.PARTIAL_UPDATE = display_settings["partial_update"]         # (True -> 1/60HZ Screen_Update, False -> 1/180HZ Screen_Update)
             self.TIME_ON_RIGHT = display_settings["time_on_right"]           # (True -> time is displayed on the right, False -> time is displayed on the left)
             self.HIDE_OTHER_WEATHER = display_settings["hide_other_weather"] # (True -> weather not shown in top right, False -> weather is shown in top right)
@@ -241,27 +241,27 @@ class Draw():
             self.image_draw.line([(0, 224 + i), (400, 224 + i)], fill=0)
             self.image_draw.line([(199 + i, 0), (199 + i, 225)], fill=0)
     
-    def create_time_text(self, image_obj, military_time, weather_info):
+    def create_time_text(self, time_str, weather_info):
         new_draw_obj = Image.new('1', (400, 300), 128)
         draw = ImageDraw.Draw(new_draw_obj)
         date_time_now = dt.now()
         date_str = date_time_now.strftime("%a, %b %-d")
-        self.draw_date_time_temp(draw, military_time, date_str, weather_info)
-        if "am" in military_time or "pm" in military_time:
-            current_time_width = self.image_obj.textsize(military_time[:-2], self.DSfnt64)[0]
-            current_am_pm_width = self.image_obj.textsize(military_time[-2:], self.DSfnt32)[0]
+        self.draw_date_time_temp(weather_info)
+        if "am" in time_str or "pm" in time_str:
+            current_time_width = self.image_draw.textlength(time_str[:-2], self.DSfnt64)
+            current_am_pm_width = self.image_draw.textlength(time_str[-2:], self.DSfnt32)
             partial_width = current_time_width + current_am_pm_width
         else:
-            partial_width = self.image_obj.textsize(military_time, self.DSfnt64)[0]
+            partial_width = self.image_draw.textlength(time_str, self.DSfnt64)[0]
 
         date = date_time_now - timedelta(minutes=1)
-        time_str = date.strftime("%-I:%M") + date.strftime("%p").lower() if "am" in military_time or "pm" in military_time else date.strftime("%-H:%M")
+        time_str = date.strftime("%-I:%M") + date.strftime("%p").lower() if "am" in time_str or "pm" in time_str else date.strftime("%-H:%M")
         if "am" in time_str or "pm" in time_str:
-            current_time_width = self.image_obj.textsize(time_str[:-2], self.DSfnt64)[0]
-            current_am_pm_width = self.image_obj.textsize(time_str[-2:], self.DSfnt32)[0]
+            current_time_width = self.image_draw.textlength(time_str[:-2], self.DSfnt64)
+            current_am_pm_width = self.image_draw.textlength(time_str[-2:], self.DSfnt32)
             old_partial_width = current_time_width + current_am_pm_width
         else:
-            old_partial_width = self.image_obj.textsize(time_str, self.DSfnt64)[0]
+            old_partial_width = self.image_draw.textlength(time_str, self.DSfnt64)
 
         # unclear why this must be present... but without it we are always incorrectly inverted
         new_draw_obj = ImageMath.eval('255-(a)', a=new_draw_obj)
@@ -547,3 +547,6 @@ class Draw():
 
     def dark_mode_flip(self):
         self.image_obj.paste(ImageMath.eval('255-(a)', a=self.image_obj), (0, 0))
+
+    def get_image_obj(self):
+        return self.image_obj

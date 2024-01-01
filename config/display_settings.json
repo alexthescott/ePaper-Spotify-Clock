@@ -1,7 +1,7 @@
 {
-    "single_user": false,
+    "single_user": true,
     "metric_units": false,
-    "twenty_four_clock": false,
+    "twenty_four_hour_clock": false,
     "partial_update": true,
     "time_on_right": true,
     "hide_other_weather": true,

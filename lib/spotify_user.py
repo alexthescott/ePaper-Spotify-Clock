@@ -109,7 +109,6 @@ class SpotifyUser():
                 print("Found Spotify auth code in Request URL! Trying to get valid access token...")
                 token_info = self.oauth.get_access_token(code)
                 token = token_info['access_token']
-        import pdb; pdb.set_trace
         self.token = token
         return True
     
