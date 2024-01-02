@@ -1,8 +1,9 @@
 import spotipy
 from spotipy.exceptions import SpotifyException
+from requests.exceptions import ReadTimeout
 import json
 from datetime import timedelta, datetime as dt
-import logging
+from lib.clock_logging import logger
 
 def get_time_from_timedelta(td):
     """ Determine time since last played in terms of hours and minutes from timedelta. """
@@ -62,19 +63,12 @@ class SpotifyUser():
         # https://developer.spotify.com/dashboard/
         self.scope = "user-read-private, user-read-recently-played, user-read-playback-state, user-read-currently-playing"
         self.redirect_uri = 'http://www.google.com/'
-        self.SINGLE_USER = single_user
-        # if single_user is True, Left Spotify info is never shown
-        # self.l_spot_client_id = ''  
-        # self.l_spot_client_secret = '' 
-
-        # Right Spotify 
-        # self.r_spot_client_id = '' 
-        # self.r_spot_client_secret = '' 
 
         self.spot_client_id = ''  
         self.spot_client_secret = '' 
         self.cache = '.authcache1' if main else '.authcache2'
         self.name = name # drawn at the top of the screen
+        self.SINGLE_USER = single_user
         self.oauth = None
         self.oauth_token_info = None
         self.sp = None
@@ -128,22 +122,22 @@ class SpotifyUser():
                 context_name: context name to be displayed -> pulled from get_context_from_json()
         """
         self.dt = dt.now()
-        sp = spotipy.Spotify(auth=self.token)
         for _ in range(3):
             try:
                 recent = self.sp.current_user_playing_track()
                 break
-            except SpotifyException as e:
-                logging.INFO(e)
+            except (SpotifyException, ReadTimeout) as e:
+                logger.info(e)
                 self.update_spotipy_token()
         else:
+            logger.error(f"Failed to get current {self.name}'s Spotify Info")
             return "", "", "", "", "", None, None
         
         context_type, context_name, time_passed = "", "", ""
         track_image_link, album_name = None, None  # used if single_user
         if recent is not None and recent['item'] is not None:
             # GET CURRENT CONTEXT
-            context_type, context_name = get_context_from_json(recent['context'], sp)
+            context_type, context_name = get_context_from_json(recent['context'], self.sp)
             time_passed = " is listening to"
 
             # GET TRACK && ARTIST
@@ -159,7 +153,7 @@ class SpotifyUser():
                 album_name = recent['item']['album']['name']
         else:
             # GRAB OLD CONTEXT
-            recent = sp.current_user_recently_played(1)
+            recent = self.sp.current_user_recently_played(1)
             tracks = recent["items"]
             track = tracks[0]
             track_name, artists = track['track']['name'], track['track']['artists']
@@ -176,5 +170,5 @@ class SpotifyUser():
             timestamp = dt.strptime(str_timestamp, "%Y-%m-%d %H:%M:%S")
             hours_passed, minutes_passed = get_time_from_timedelta(dt.utcnow() - timestamp)
             time_passed = get_time_since_played(hours_passed, minutes_passed)
-            context_type, context_name = get_context_from_json(track['context'], sp)
+            context_type, context_name = get_context_from_json(track['context'], self.sp)
         return track_name, artist_name, time_passed, context_type, context_name, track_image_link, album_name

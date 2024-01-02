@@ -2,11 +2,13 @@ import json
 from time import time, sleep, strftime, localtime
 from requests import get as get_request
 
+from lib.clock_logging import logger
+
 class Weather():
     def __init__(self):
         self.load_display_settings()
-        self.OW_KEY = "" # https://openweathermap.org/ -> create account and generate key
-        self.OW_CITYID = ""  # https://openweathermap.org/find? -> find your city id
+        self.OW_KEY = ""  # https://openweathermap.org/ -> create account and generate key
+        self.OW_CITYID = "" # https://openweathermap.org/find? -> find your city id
         self.OW_OTHER_CITYID = "" # if hide_other_weather is True, this can be ignored 
         self.URL_UNITS = "&units=metric" if self.METRIC_UNITS else "&units=imperial" 
         self.OW_CURRENT_URL = "http://api.openweathermap.org/data/2.5/weather?"
@@ -75,4 +77,11 @@ class Weather():
             for i, l in enumerate(forecast_json['list']):
                 temp_min = min(round(l['main']['feels_like']), round(l['main']['temp_max']), temp_min)
                 temp_max = max(round(l['main']['feels_like']), round(l['main']['temp_min']), temp_max)
+        
+        # use a logger message to inform all of the variables collected above
+        logger.info(f"Temp: {temp}°")
+        logger.info(f"Temp Min: {temp_min}°")
+        logger.info(f"Temp Max: {temp_max}°")
+        logger.info(f"Sunset Hour: {sunset_hour}")
+        logger.info(f"Sunset Minute: {sunset_minute}")
         return (temp, temp_max, temp_min, other_temp), (sunset_hour, sunset_minute)
