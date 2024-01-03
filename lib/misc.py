@@ -29,7 +29,7 @@ class Misc():
         c_hour = int(date.strftime("%-H"))
         c_minute = int(date.strftime("%-M"))
         sun_h, sun_m = sunset_info
-        flip_to_dark = sunset_flip and ((sun_h < c_hour or c_hour < 2) or (sun_h == c_hour and sun_m <= c_minute))
+        return sunset_flip and ((sun_h < c_hour or c_hour < 2) or (sun_h == c_hour and sun_m <= c_minute))
 
     def get_album_art(self, track_image_link, album_image_name="AlbumImage.PNG"):
         new_image_name = album_image_name.split('.')[0] + "_resize.PNG"
