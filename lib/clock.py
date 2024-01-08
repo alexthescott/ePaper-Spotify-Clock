@@ -142,7 +142,7 @@ class Clock:
                             logger.info("\t{}s sleep, partial_update".format(round(sec_left, 2)))
                             sleep(sec_left)
                         else:
-                            logger.info("\t{}\tseconds per loop\tsleeping for {} seconds".format(round(self.time_elapsed, 2), int(remaining_time/1+120))
+                            logger.info("\t{}\tseconds per loop\tsleeping for {} seconds".format(round(self.time_elapsed, 2), int(remaining_time/1+120)))
                             sleep(sec_left - self.time_elapsed)
 
                         if sec_left > 5 and partial_update_count < 2:
