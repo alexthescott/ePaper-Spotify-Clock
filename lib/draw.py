@@ -270,7 +270,7 @@ class Draw():
         # unclear why this must be present... but without it we are always incorrectly inverted
         new_draw_obj = ImageMath.eval('255-(a)', a=new_draw_obj)
 
-        return new_draw_obj, max(partial_width, old_partial_width) + 3
+        return new_draw_obj, int(max(partial_width, old_partial_width)+3)
 
     def draw_name(self, text, name_x, name_y):
         name_width, name_height = self.image_draw.textlength(text, font=self.helveti32), self.helveti32.size/1.3
