@@ -152,9 +152,9 @@ class Clock:
                             time_image, time_width = self.image_obj.create_time_text(time_str, self.weather_info)
                             if self.epd:
                                 if self.time_on_right:
-                                    self.epd.EPD_4IN2_PartialDisplay(self.image_obj.WIDTH-5-time_width, 245, self.image_obj.WIDTH-5, 288, self.epd.getbuffer(time_image))
+                                    self.epd.EPD_4IN2_PartialDisplay(int(self.image_obj.WIDTH-5-time_width), 245, int(self.image_obj.WIDTH-5), 288, self.epd.getbuffer(time_image))
                                 else:
-                                    self.epd.EPD_4IN2_PartialDisplay(5, 245, 5+time_width, 288, self.epd.getbuffer(time_image))
+                                    self.epd.EPD_4IN2_PartialDisplay(5, 245, int(5+time_width), 288, self.epd.getbuffer(time_image))
                         partial_update_count += 1
                 else:
                     sleep(remaining_time + 120)
