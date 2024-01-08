@@ -129,7 +129,7 @@ class Clock:
 
             if 5 < c_hour and c_hour < 24:
                 # 6:00am - 12:59pm update screen every 3 minutes
-                logger.info("\t{}\tseconds per loop\tsleeping for {} seconds".format(round(self.time_elapsed, 2), round(remaining_time/1+120, 2)))
+                logger.info("\t{}\tseconds per loop\tsleeping for {} seconds".format(round(self.time_elapsed, 2), int(remaining_time/1+120)))
                 # if we do partial updates and darkmode, you get a worrisome zebra stripe artifact on the EPD
                 if self.partial_update and not self.flip_to_dark:
                     # Create new time image, push to display, full update after 2 partials
@@ -142,7 +142,7 @@ class Clock:
                             logger.info("\t{}s sleep, partial_update".format(round(sec_left, 2)))
                             sleep(sec_left)
                         else:
-                            logger.info("\t{}\tseconds per loop\tsleeping for {} seconds".format(round(self.time_elapsed, 2), round(remaining_time/1+120, 2)))
+                            logger.info("\t{}\tseconds per loop\tsleeping for {} seconds".format(round(self.time_elapsed, 2), int(remaining_time/1+120))
                             sleep(sec_left - self.time_elapsed)
 
                         if sec_left > 5 and partial_update_count < 2:
@@ -160,7 +160,7 @@ class Clock:
                     sleep(remaining_time + 120)
             elif c_hour < 2:
                 # 12:00am - 1:59am update screen every 5ish minutes
-                logger.info("\t", round(self.time_elapsed, 2), "\tseconds per loop\t", "sleeping for {} seconds".format(round(int(remaining_time)+240), 2))
+                logger.info("\t", round(self.time_elapsed, 2), "\tseconds per loop\t", "sleeping for {} seconds".format(int(remaining_time+240)))
                 sleep(remaining_time+240)
 
             # Increment counter for Weather requests
