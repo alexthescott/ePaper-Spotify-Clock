@@ -171,4 +171,5 @@ class SpotifyUser():
             hours_passed, minutes_passed = get_time_from_timedelta(dt.utcnow() - timestamp)
             time_passed = get_time_since_played(hours_passed, minutes_passed)
             context_type, context_name = get_context_from_json(track['context'], self.sp)
+        logger.info(f"Spotify Info: {track_name} by {artist_name} playing from from {context_name} {context_type}")
         return track_name, artist_name, time_passed, context_type, context_name, track_image_link, album_name
