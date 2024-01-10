@@ -2,7 +2,7 @@
     "single_user": true,
     "metric_units": false,
     "twenty_four_hour_clock": false,
-    "partial_update": true,
+    "partial_update": false,
     "time_on_right": true,
     "hide_other_weather": true,
     "sunset_flip": true,
