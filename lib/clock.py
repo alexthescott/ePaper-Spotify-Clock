@@ -104,7 +104,10 @@ class Clock:
                     print("Don't Wake")
                     break
             elif not self.did_epd_init:
-                logger.info("Initializing EPD 4Gray...")
+                if self.four_gray_scale:
+                    logger.info("Initializing EPD 4Gray...")
+                else:
+                    logger.info("Initializing EPD...")
                 if self.epd:
                     self.epd.Init_4Gray() if self.four_gray_scale else self.epd.init()
                     self.epd.Clear()
