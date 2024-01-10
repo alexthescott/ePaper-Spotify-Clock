@@ -17,7 +17,7 @@ class Draw():
     def __init__(self):
         self.WIDTH = 400
         self.HEIGHT = 300
-        self.image_obj = Image.new('1', (self.WIDTH, self.HEIGHT), 128)
+        self.image_obj = Image.new('L', (self.WIDTH, self.HEIGHT), 255)
         self.image_draw = ImageDraw.Draw(self.image_obj)
 
         self.set_dictionaries()
@@ -127,7 +127,7 @@ class Draw():
         '…': '25', '€': '29', '™': '41', '\x00': '36'}
 
     def clear_image(self):
-        self.image_obj = Image.new('1', (self.WIDTH, self.HEIGHT), 128)
+        self.image_obj = Image.new('L', (self.WIDTH, self.HEIGHT), 255)
         self.image_draw = ImageDraw.Draw(self.image_obj)
 
     def get_time(self):
@@ -246,7 +246,7 @@ class Draw():
             self.image_draw.line([(199 + i, 0), (199 + i, 225)], fill=0)
     
     def create_time_text(self, time_str, weather_info):
-        new_draw_obj = Image.new('1', (400, 300), 128)
+        new_draw_obj = Image.new('L', (400, 300), 128)
         self.image_draw = ImageDraw.Draw(new_draw_obj)
         date_time_now = dt.now()
         date_str = date_time_now.strftime("%a, %b %-d")
@@ -311,7 +311,7 @@ class Draw():
     def draw_album_image(self, dark_mode, image_file_name="AlbumImage_resize.PNG"):
         album_image = Image.open(f"album_art/{image_file_name}")
         if dark_mode:
-            album_image = album_image.convert("1")
+            album_image = album_image.convert('L')
             album_image = ImageMath.eval('255-(a)', a=album_image)
         self.image_obj.paste(album_image, (0, 0))
 

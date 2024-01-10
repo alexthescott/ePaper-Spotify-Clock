@@ -103,9 +103,9 @@ class Clock:
                     print("Don't Wake")
                     break
             elif not self.did_epd_init:
-                logger.info("Initializing EPD...")
+                logger.info("Initializing EPD 4Gray...")
                 if self.epd:
-                    self.epd.init()
+                    self.epd.Init_4Gray()
                     self.epd.Clear()
                 else:
                     self.save_local_file()
@@ -113,9 +113,9 @@ class Clock:
 
             if self.did_epd_init:
                 if self.epd:
-                    image_buffer = self.epd.getbuffer(self.image_obj.get_image_obj())
+                    image_buffer = self.epd.getbuffer_4Gray(self.image_obj.get_image_obj())
                     logger.info("\tDrawing Image to EPD")
-                    self.epd.display(image_buffer)
+                    self.epd.display_4Gray(image_buffer)
                 else:
                     logger.info("\tSaving Image Locally")
                     self.save_local_file()
