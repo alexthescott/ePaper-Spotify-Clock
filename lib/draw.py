@@ -140,7 +140,7 @@ class Draw():
     def save_png(self, file_name):
         if not os.path.exists("test_output"):
             os.makedirs("test_output")
-        self.image_obj.save("test_output/{}.png".format(file_name))
+        self.image_obj.quantize(colors=4).save("test_output/{}.png".format(file_name))
 
     # ---- Formatting Funcs ----------------------------------------------------------------------------
     def get_text_width(self, text, size):
