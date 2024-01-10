@@ -55,6 +55,7 @@ class Clock:
             self.twenty_four_hour_clock = display_settings["twenty_four_hour_clock"]
             self.partial_update = display_settings["partial_update"]
             self.time_on_right = display_settings["time_on_right"]
+            self.four_gray_scale = display_settings["four_gray_scale"]  
 
     def set_weather_and_sunset_info(self):
         self.weather_info, self.sunset_info = self.weather.get_weather_and_sunset_info()
@@ -105,7 +106,7 @@ class Clock:
             elif not self.did_epd_init:
                 logger.info("Initializing EPD 4Gray...")
                 if self.epd:
-                    self.epd.Init_4Gray()
+                    self.epd.Init_4Gray() if self.four_gray_scale else self.epd.Init()
                     self.epd.Clear()
                 else:
                     self.save_local_file()
@@ -113,9 +114,11 @@ class Clock:
 
             if self.did_epd_init:
                 if self.epd:
-                    image_buffer = self.epd.getbuffer_4Gray(self.image_obj.get_image_obj())
                     logger.info("\tDrawing Image to EPD")
-                    self.epd.display_4Gray(image_buffer)
+                    if self.four_gray_scale: 
+                        self.epd.display_4Gray(self.epd.getbuffer_4Gray(self.image_obj.get_image_obj()))
+                    else:
+                        self.epd.display(self.epd.getbuffer(self.image_obj.get_image_obj()))
                 else:
                     logger.info("\tSaving Image Locally")
                     self.save_local_file()

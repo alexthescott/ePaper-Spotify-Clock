@@ -17,12 +17,14 @@ class Draw():
     def __init__(self):
         self.WIDTH = 400
         self.HEIGHT = 300
-        self.image_obj = Image.new('L', (self.WIDTH, self.HEIGHT), 255)
-        self.image_draw = ImageDraw.Draw(self.image_obj)
-
         self.set_dictionaries()
         self.load_display_settings()
         self.load_resources()
+        self.image_mode = 'L' if self.four_gray_scale else '1'
+        self.image_obj = Image.new(self.image_mode, (self.WIDTH, self.HEIGHT), 255)
+        self.image_draw = ImageDraw.Draw(self.image_obj)
+
+
 
     def load_resources(self):
         # Load local resources. Fonts and Icons from /ePaperFonts and /Icons
@@ -48,6 +50,7 @@ class Draw():
             self.TIME_ON_RIGHT = display_settings["time_on_right"]           # (True -> time is displayed on the right, False -> time is displayed on the left)
             self.HIDE_OTHER_WEATHER = display_settings["hide_other_weather"] # (True -> weather not shown in top right, False -> weather is shown in top right)
             self.SUNSET_FLIP =  display_settings["sunset_flip"]              # (True -> dark mode 24m after main sunset, False -> Light mode 24/7)
+            self.four_gray_scale = display_settings["four_gray_scale"]       # (True -> 4 gray scale, False -> Black and White)
 
     def set_dictionaries(self):
         # Used to get the pixel length of strings as they're built
@@ -127,7 +130,7 @@ class Draw():
         '…': '25', '€': '29', '™': '41', '\x00': '36'}
 
     def clear_image(self):
-        self.image_obj = Image.new('L', (self.WIDTH, self.HEIGHT), 255)
+        self.image_obj = Image.new(self.image_mode, (self.WIDTH, self.HEIGHT), 255)
         self.image_draw = ImageDraw.Draw(self.image_obj)
 
     def get_time(self):
@@ -140,7 +143,9 @@ class Draw():
     def save_png(self, file_name):
         if not os.path.exists("test_output"):
             os.makedirs("test_output")
-        self.image_obj.quantize(colors=4, method=Image.Quantize.MAXCOVERAGE).save("test_output/{}.png".format(file_name))
+        if self.image_mode == 'L':
+            self.image_obj = self.image_obj.quantize(colors=4, method=Image.Quantize.MAXCOVERAGE)
+        self.image_obj.save("test_output/{}.png".format(file_name))
 
     # ---- Formatting Funcs ----------------------------------------------------------------------------
     def get_text_width(self, text, size):
@@ -246,7 +251,7 @@ class Draw():
             self.image_draw.line([(199 + i, 0), (199 + i, 225)], fill=0)
     
     def create_time_text(self, time_str, weather_info):
-        new_draw_obj = Image.new('L', (400, 300), 128)
+        new_draw_obj = Image.new(self.image_mode, (400, 300), 128)
         self.image_draw = ImageDraw.Draw(new_draw_obj)
         date_time_now = dt.now()
         date_str = date_time_now.strftime("%a, %b %-d")
