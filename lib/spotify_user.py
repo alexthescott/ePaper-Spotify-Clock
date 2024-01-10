@@ -63,16 +63,24 @@ class SpotifyUser():
         # https://developer.spotify.com/dashboard/
         self.scope = "user-read-private, user-read-recently-played, user-read-playback-state, user-read-currently-playing"
         self.redirect_uri = 'http://www.google.com/'
-
-        self.spot_client_id = ''  
-        self.spot_client_secret = '' 
+        
+        
+        self.spot_client_id = '7423e2b31f244d2498126f51075aba54'  
+        self.spot_client_secret = 'de3a403cc1e7445896a80f7a8f18d8c8' 
         self.cache = '.authcache1' if main else '.authcache2'
         self.name = name # drawn at the top of the screen
         self.SINGLE_USER = single_user
         self.oauth = None
         self.oauth_token_info = None
         self.sp = None
+        self.load_credentials()
         self.update_spotipy_token()
+
+    def load_credentials(self):
+        with open('config/keys.json', 'r') as f:
+            credentials = json.load(f)
+            self.spot_client_id = credentials['spot_client_id']
+            self.spot_client_secret = credentials['spot_client_secret']
 
     def get_user_token(self):
 
@@ -171,5 +179,5 @@ class SpotifyUser():
             hours_passed, minutes_passed = get_time_from_timedelta(dt.utcnow() - timestamp)
             time_passed = get_time_since_played(hours_passed, minutes_passed)
             context_type, context_name = get_context_from_json(track['context'], self.sp)
-        logger.info(f"Spotify Info: {track_name} by {artist_name} playing from from {context_name} {context_type}")
+        logger.info(f"Spotify Info:{track_name} by {artist_name} playing from from {context_name} {context_type}")
         return track_name, artist_name, time_passed, context_type, context_name, track_image_link, album_name

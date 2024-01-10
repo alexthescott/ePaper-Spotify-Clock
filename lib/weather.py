@@ -7,12 +7,55 @@ from lib.clock_logging import logger
 class Weather():
     def __init__(self):
         self.load_display_settings()
-        self.OW_KEY = ""  # https://openweathermap.org/ -> create account and generate key
-        self.OW_CITYID = "" # https://openweathermap.org/find? -> find your city id
-        self.OW_OTHER_CITYID = "" # if hide_other_weather is True, this can be ignored 
-        self.URL_UNITS = "&units=metric" if self.METRIC_UNITS else "&units=imperial" 
-        self.OW_CURRENT_URL = "http://api.openweathermap.org/data/2.5/weather?"
-        self.OW_FORECAST_URL = "http://api.openweathermap.org/data/2.5/forecast?"
+        self.load_credentials()
+        self.url_units = "units=metric" if self.METRIC_UNITS else "units=imperial" 
+        self.ow_current_url = "http://api.openweathermap.org/data/2.5/weather?"
+        self.ow_forecast_url = "http://api.openweathermap.org/data/2.5/forecast?"
+        self.ow_geocoding_url = "http://api.openweathermap.org/geo/1.0/zip?"
+        self.zipcode = self.get_zip_from_ip()  # zipcode of the current location via ip, if not manually set
+        self.lat_long = self.get_lat_long()  # lat and long of the current location via zipcode
+        if not self.HIDE_OTHER_WEATHER:
+            if len(self.ow_alt_weather_zip) == 5 and self.ow_alt_weather_zip.isdigit():
+                raise Exception("ow_alt_weather_zip pair must be a zip code")
+
+    def load_credentials(self):
+        with open('config/keys.json', 'r') as f:
+            credentials = json.load(f)
+            self.ow_key = credentials['ow_key']
+            self.ow_alt_weather_zip = credentials['ow_alt_weather_zip']
+
+    def get_lat_long(self, current_zip=True):
+        """ Get latitude and longitude from zipcode """
+        if self.zipcode is None:
+            return None
+        else:
+            local_zip = self.zipcode if current_zip else self.ow_alt_weather_zip
+            url = self.ow_geocoding_url + "zip=" + local_zip + "&appid=" + self.ow_key
+            response = get_request(url)
+            data = response.json()
+            if 'lat' in data and 'lon' in data:
+                return data['lat'], data['lon']
+            else:
+                return None
+
+    def get_zip_from_ip(self):
+        try:
+            response = get_request('http://ip-api.com/json/')
+            data = response.json()
+            if 'zip' in data:
+                return data['zip']
+        except:
+            pass
+
+        try:
+            response = get_request('https://ipinfo.io/json')
+            data = response.json()
+            if 'postal' in data:
+                return data['postal']
+        except:
+            pass
+
+        return None
 
     def load_display_settings(self):
         # EPD Settings imported from config/display_settings.json ---------------------------------------------------
@@ -46,12 +89,16 @@ class Weather():
             https://en.wikipedia.org/wiki/Metric_Conversion_Act
             https://www.geographyrealm.com/the-only-metric-highway-in-the-united-states/
         """
-        # get local weather
-        local_weather_url_request = self.OW_CURRENT_URL + "appid=" + self.OW_KEY + "&id=" + self.OW_CITYID + self.URL_UNITS
-        local_weather_response = get_request(local_weather_url_request)
-        local_weather_json = local_weather_response.json()
+        if self.zipcode is None:
+            return False, False
+        
+        # set url to get lat and lon to the zip code of the current location using the openweathermap api
 
-        if local_weather_json["cod"] != "404":
+        local_weather_url_request = f"{self.ow_current_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&appid={self.ow_key}"
+        local_weather_response = get_request(local_weather_url_request)
+
+        if local_weather_response.status_code == 200:
+            local_weather_json = local_weather_response.json()
             temp = round(local_weather_json['main']['feels_like'])
             temp_min, temp_max = temp, temp
 
@@ -63,17 +110,17 @@ class Weather():
         if self.HIDE_OTHER_WEATHER:
             other_temp = None
         else:
-            other_weather_url = self.OW_CURRENT_URL + "appid=" + self.OW_KEY + "&id=" + self.OW_OTHER_CITYID + self.URL_UNITS
+            other_weather_url = self.ow_current_url + "appid=" + self.ow_key + "&id=" + self.ow_other_cityid + self.url_units
             other_weather_response = get_request(other_weather_url)
             other_weather_json = other_weather_response.json()
             if other_weather_json["cod"] != "404":
                 other_temp = round(other_weather_json['main']['feels_like'])
 
         # Get forecasted weather from feels_like and temp_min, temp_max
-        local_weather_forcast_request = self.OW_FORECAST_URL + "appid=" + self.OW_KEY + "&id=" + self.OW_CITYID + self.URL_UNITS + "&cnt=12"
+        local_weather_forcast_request = f"{self.ow_forecast_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&cnt=12&appid={self.ow_key}"
         local_weather_forcast_response = get_request(local_weather_forcast_request)
-        forecast_json = local_weather_forcast_response.json()
-        if forecast_json["cod"] != "404":
+        if local_weather_forcast_response.status_code == 200:
+            forecast_json = local_weather_forcast_response.json()
             for i, l in enumerate(forecast_json['list']):
                 temp_min = min(round(l['main']['feels_like']), round(l['main']['temp_max']), temp_min)
                 temp_max = max(round(l['main']['feels_like']), round(l['main']['temp_min']), temp_max)
