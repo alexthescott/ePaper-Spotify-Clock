@@ -316,7 +316,7 @@ class Draw():
     def draw_album_image(self, dark_mode, image_file_name="AlbumImage_resize.PNG"):
         album_image = Image.open(f"album_art/{image_file_name}")
         if dark_mode:
-            album_image = album_image.convert('L')
+            album_image = album_image.convert(self.image_mode)
             album_image = ImageMath.eval('255-(a)', a=album_image)
         self.image_obj.paste(album_image, (0, 0))
 
