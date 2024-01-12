@@ -4,7 +4,8 @@ from lib.clock import Clock
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--clock', action='store_true', help='Enable clock on unsupported machine ')
+    parser.add_argument('-v', action='store_true', help='Enable clock on unsupported machine ')
+    parser.add_argument('-clock', action='store_true', help='Enable clock on unsupported machine ')
     args = parser.parse_args()
 
     logging.getLogger().setLevel(logging.INFO)
