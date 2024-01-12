@@ -71,7 +71,7 @@ class Clock:
             if self.weather_info is None or self.count_to_5 >= 4:
                 self.set_weather_and_sunset_info()
             sec_left, time_str, date_str, old_time = self.get_time_from_date_time()
-            logger.info("Time: {}".format(time_str))
+            logger.info(f"Time: {time_str}")
             start = time() # Used to 'push' our clock timing forward to account for EPD time
 
             # If we have no context read, grab context our context.txt json file
@@ -81,7 +81,7 @@ class Clock:
                     self.ctx_type_1, self.ctx_type_1, self.ctx_type_2, self.ctx_title_2 = self.ctx_io.read_json_ctx((self.ctx_type_1, self.ctx_title_1), (self.ctx_type_2, self.ctx_title_2))
                     fh.close()
                 except:
-                    print("context.txt doesn't exist")
+                    logger.error("context.txt doesn't exist")
             # Afterwords, if we have to write a new context to our context.txt json file, do so
             if (self.ctx_type_1 != "" and self.ctx_title_1 != "") or (self.ctx_type_2 != "" and self.ctx_title_2 != ""):
                 self.ctx_io.write_json_ctx((self.ctx_type_1, self.ctx_title_1),(self.ctx_type_2, self.ctx_title_2))
@@ -98,11 +98,10 @@ class Clock:
                 if self.did_epd_init:
                     # in sleep() from epd4in2.py, epdconfig.module_exit() is never called
                     # I hope this does not create long term damage 🤞
-                    print("EPD Sleep(ish) ....")
-                    break
+                    logger.info("EPD Sleep(ish) ....")
                 else:
-                    print("Don't Wake")
-                    break
+                    logger.info("Sleeping... {}".format(dt.now().strftime("%-I:%M%p")))
+                break
             elif not self.did_epd_init:
                 if self.four_gray_scale:
                     logger.info("Initializing EPD 4Gray...")
@@ -128,14 +127,13 @@ class Clock:
 
             # Look @ start variable above. find out how long it takes to compute our image
             stop = time()
-            self.time_elapsed = stop - start
 
+            self.time_elapsed = stop - start
             remaining_time = sec_left - self.time_elapsed
-            remaining_time = 60 if remaining_time < 0 else remaining_time
 
             if 5 < c_hour and c_hour < 24:
                 # 6:00am - 12:59pm update screen every 3 minutes
-                logger.info("\t{}\tseconds per loop\tsleeping for {} seconds".format(round(self.time_elapsed, 2), int(remaining_time/1+120)))
+                logger.info(f"\t{round(self.time_elapsed, 2)}\tseconds per loop\tsleeping for {int(remaining_time/1+120)} seconds")
                 # if we do partial updates and darkmode, you get a worrisome zebra stripe artifact on the EPD
                 if self.partial_update and not self.flip_to_dark:
                     # Create new time image, push to display, full update after 2 partials
@@ -145,16 +143,16 @@ class Clock:
                         sec_left = 62 - int(date.strftime("%S"))
 
                         if partial_update_count < 2:
-                            logger.info("\t{}s sleep, partial_update".format(round(sec_left, 2)))
+                            logger.info(f"\t{round(sec_left, 2)}s sleep, partial_update")
                             sleep(sec_left)
                         else:
-                            logger.info("\t{}\tseconds per loop\tsleeping for {} seconds".format(round(self.time_elapsed, 2), int(remaining_time/1+120)))
-                            sleep(sec_left - self.time_elapsed)
+                            logger.info(f"\t{round(self.time_elapsed, 2)}\tseconds per loop\tsleeping for {int(remaining_time/1+120)} seconds")
+                            sleep(sec_left-self.time_elapsed)
 
                         if sec_left > 5 and partial_update_count < 2:
                             date = dt.now()
                             time_str = date.strftime("%-H:%M") if self.twenty_four_hour_clock else date.strftime("%-I:%M") + date.strftime("%p").lower()
-                            logger.info("\ttimestr:{}".format(time_str))
+                            logger.info(f"\ttimestr:{time_str}")
                             time_image, time_width = self.image_obj.create_time_text(time_str, self.weather_info)
                             if self.epd:
                                 if self.time_on_right:
@@ -163,7 +161,7 @@ class Clock:
                                     self.epd.EPD_4IN2_PartialDisplay(5, 245, int(5+time_width), 288, self.epd.getbuffer(time_image))
                         partial_update_count += 1
                 else:
-                    sleep(remaining_time + 120)
+                    sleep(remaining_time+120)
             elif c_hour < 2:
                 # 12:00am - 1:59am update screen every 5ish minutes
                 logger.info("\t", round(self.time_elapsed, 2), "\tseconds per loop\t", "sleeping for {} seconds".format(int(remaining_time+240)))
@@ -183,17 +181,17 @@ class Clock:
         track_line_count, track_text_size = self.image_obj.draw_track_text(track_1, 207, 26)
         self.image_obj.draw_artist_text(artist_1, track_line_count, track_text_size, 207, 26)
 
-        ctx_type_1 = tmp_ctx_type_1 if tmp_ctx_type_1 != "" else ctx_type_1
-        ctx_title_1 = tmp_ctn_name_1 if tmp_ctn_name_1 != "" else ctx_title_1
-        self.image_obj.draw_spot_context(ctx_type_1, ctx_title_1, 227, 204)
+        self.ctx_type_1 = tmp_ctx_type_1 if tmp_ctx_type_1 != "" else self.ctx_type_1
+        self.ctx_title_1 = tmp_ctn_name_1 if tmp_ctn_name_1 != "" else self.ctx_title_1
+        self.image_obj.draw_spot_context(self.ctx_type_1, self.ctx_title_1, 227, 204)
 
         name_width_1, name_height_1 = self.image_obj.draw_name(self.spotify_user_1.name, 210, 0)
-        self.image_obj.draw_user_time_ago(time_since_1, 220 + name_width_1, name_height_1 // 2)
+        self.image_obj.draw_user_time_ago(time_since_1, 220+name_width_1, name_height_1//2)
 
         # --- Spotify User 2 or Album Art Display ---
         if not self.single_user:
             track_2, artist_2, time_since_2, tmp_ctx_type_2, tmp_ctn_name_2, track_image_link, album_name_2 = self.spotify_user_2.get_spotipy_info()
-            track_line_count, track_text_size = self.image_obj.draw_track_text(track_1, 5, 26)
+            track_line_count, track_text_size = self.image_obj.draw_track_text(track_2, 5, 26)
             self.image_obj.draw_artist_text(artist_2, track_line_count, track_text_size, 5, 26)
 
             ctx_type_2 = tmp_ctx_type_2 if tmp_ctx_type_2 != "" else ctx_type_2
@@ -201,7 +199,7 @@ class Clock:
             self.image_obj.draw_spot_context(ctx_type_2, ctx_title_2, 25, 204)
 
             name_width_2, name_height_2 = self.image_obj.draw_name(self.spotify_user_2.name, 8, 0)
-            self.image_obj.draw_user_time_ago(time_since_1, 18 + name_width_2, name_height_2 // 2)
+            self.image_obj.draw_user_time_ago(time_since_2, 18+name_width_2, name_height_2 /2)
         else:
             self.misc.get_album_art(track_image_link)
             self.image_obj.draw_album_image(self.flip_to_dark)
@@ -232,12 +230,12 @@ class Clock:
         # We air on the side of caution, and would rather add an additional current_minute than shrink by a current_minute
         if self.old_time is not None and (5 < hour and hour < 24):
             # 6:00am - 11:59pm update screen every 3 mins
-            while int(abs(self.old_time - new_min)) < 3:
+            while int(abs(self.old_time-new_min)) < 3:
                 date = dt.now() + timedelta(seconds=self.time_elapsed)
                 new_min = int(date.strftime("%M")[-1])
                 sleep(2)
         # 12:00am - 1:59am update screen every 5 mins at least
-        elif self.old_time is not None and (hour < 2):
+        elif self.old_time is not None and hour < 2:
             while int(abs(self.old_time - new_min)) < 5:
                 date = dt.now() + timedelta(seconds=self.time_elapsed)
                 new_min = int(date.strftime("%M")[-1])
