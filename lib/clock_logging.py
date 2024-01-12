@@ -1,17 +1,21 @@
 import logging
 import argparse
+import json
 
 # Create a custom logger
 logger = logging.getLogger(__name__)
 
-parser = argparse.ArgumentParser()
-std_out_logging = parser.parse_args().v
+# Read the value from the JSON configuration file
+with open('config/args_parse.json', 'r') as f:
+    config = json.load(f)
+
+verbose_logging = config['verbose_logging']
 
 # Set level of logger
 logger.setLevel(logging.INFO)
 
 # Create handlers
-if std_out_logging:
+if verbose_logging:
     c_handler = logging.StreamHandler()
     c_handler.setLevel(logging.INFO)
     # Create formatters and add it to handlers

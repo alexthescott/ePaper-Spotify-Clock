@@ -1,13 +1,18 @@
 import logging
 import argparse
-from lib.clock import Clock
+import json
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-v', action='store_true', help='Enable Verbose Logging')
+parser.add_argument('--clock', action='store_true', help='Enable clock')
+
+args = parser.parse_args()
+# Write the values to a JSON configuration file
+with open('config/args_parse.json', 'w') as f:
+    json.dump({'verbose_logging': args.v, 'clock': args.clock}, f)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-v', action='store_true', help='Enable clock on unsupported machine ')
-    parser.add_argument('-clock', action='store_true', help='Enable clock on unsupported machine ')
-    args = parser.parse_args()
-
+    from lib.clock import Clock
     logging.getLogger().setLevel(logging.INFO)
     clock = Clock()
     if clock.local_run and not args.clock:
