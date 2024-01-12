@@ -8,13 +8,13 @@ class Weather():
     def __init__(self):
         self.load_display_settings()
         self.load_credentials()
-        self.url_units = "units=metric" if self.METRIC_UNITS else "units=imperial" 
+        self.url_units = "units=metric" if self.metric_units else "units=imperial" 
         self.ow_current_url = "http://api.openweathermap.org/data/2.5/weather?"
         self.ow_forecast_url = "http://api.openweathermap.org/data/2.5/forecast?"
         self.ow_geocoding_url = "http://api.openweathermap.org/geo/1.0/zip?"
         self.zipcode = self.get_zip_from_ip()  # zipcode of the current location via ip, if not manually set
         self.lat_long = self.get_lat_long()  # lat and long of the current location via zipcode
-        if not self.HIDE_OTHER_WEATHER:
+        if not self.hide_other_weather:
             if len(self.ow_alt_weather_zip) == 5 and self.ow_alt_weather_zip.isdigit():
                 raise Exception("ow_alt_weather_zip pair must be a zip code")
 
@@ -61,13 +61,9 @@ class Weather():
         # EPD Settings imported from config/display_settings.json ---------------------------------------------------
         with open('config/display_settings.json') as display_settings:
             display_settings = json.load(display_settings)
-            self.SINGLE_USER = display_settings["single_user"]               # (True -> Left side album art False -> two user mode)
-            self.METRIC_UNITS = display_settings["metric_units"]             # (True -> C°, False -> F°)
-            self.TWENTY_FOUR_CLOCK =   display_settings["twenty_four_hour_clock"] # (True -> 22:53, False -> 10:53pm) 
-            self.PARTIAL_UPDATE = display_settings["partial_update"]         # (True -> 1/60HZ Screen_Update, False -> 1/180HZ Screen_Update)
-            self.TIME_ON_RIGHT = display_settings["time_on_right"]           # (True -> time is displayed on the right, False -> time is displayed on the left)
-            self.HIDE_OTHER_WEATHER = display_settings["hide_other_weather"] # (True -> weather not shown in top right, False -> weather is shown in top right)
-            self.SUNSET_FLIP =  display_settings["sunset_flip"]              # (True -> dark mode 24m after main sunset, False -> Light mode 24/7)
+            main_settings = display_settings["main_settings"]
+            self.metric_units = main_settings["metric_units"]             # (True -> C°, False -> F°)
+            self.hide_other_weather = main_settings["hide_other_weather"] # (True -> weather not shown in top right, False -> weather is shown in top right)
 
     def get_weather_and_sunset_info(self):
         """ 
@@ -107,7 +103,7 @@ class Weather():
             sunset_minute = int(strftime('%-M', localtime(sunset_unix)))
 
         # get weather for other user on the right
-        if self.HIDE_OTHER_WEATHER:
+        if self.hide_other_weather:
             other_temp = None
         else:
             other_weather_url = self.ow_current_url + "appid=" + self.ow_key + "&id=" + self.ow_other_cityid + self.url_units

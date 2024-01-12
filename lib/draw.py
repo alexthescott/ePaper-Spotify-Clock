@@ -24,8 +24,6 @@ class Draw():
         self.image_obj = Image.new(self.image_mode, (self.WIDTH, self.HEIGHT), 255)
         self.image_draw = ImageDraw.Draw(self.image_obj)
 
-
-
     def load_resources(self):
         # Load local resources. Fonts and Icons from /ePaperFonts and /Icons
         self.DSfnt16 = ImageFont.truetype('ePaperFonts/Nintendo-DS-BIOS.ttf', 16)
@@ -43,14 +41,14 @@ class Draw():
         # EPD Settings imported from config/display_settings.json ---------------------------------------------------
         with open('config/display_settings.json') as display_settings:
             display_settings = json.load(display_settings)
-            self.SINGLE_USER = display_settings["single_user"]               # (True -> Left side album art False -> two user mode)
-            self.METRIC_UNITS = display_settings["metric_units"]             # (True -> C°, False -> F°)
-            self.TWENTY_FOUR_CLOCK =   display_settings["twenty_four_hour_clock"] # (True -> 22:53, False -> 10:53pm) 
-            self.PARTIAL_UPDATE = display_settings["partial_update"]         # (True -> 1/60HZ Screen_Update, False -> 1/180HZ Screen_Update)
-            self.TIME_ON_RIGHT = display_settings["time_on_right"]           # (True -> time is displayed on the right, False -> time is displayed on the left)
-            self.HIDE_OTHER_WEATHER = display_settings["hide_other_weather"] # (True -> weather not shown in top right, False -> weather is shown in top right)
-            self.SUNSET_FLIP =  display_settings["sunset_flip"]              # (True -> dark mode 24m after main sunset, False -> Light mode 24/7)
-            self.four_gray_scale = display_settings["four_gray_scale"]       # (True -> 4 gray scale, False -> Black and White)
+            main_settings = display_settings["main_settings"]
+            single_user_settings = display_settings["single_user_settings"]
+            self.metric_units = main_settings["metric_units"]             # (True -> C°, False -> F°)
+            self.twenty_four_hour_clock =   main_settings["twenty_four_hour_clock"] # (True -> 22:53, False -> 10:53pm) 
+            self.time_on_right = main_settings["time_on_right"]           # (True -> time is displayed on the right, False -> time is displayed on the left)
+            self.hide_other_weather = main_settings["hide_other_weather"] # (True -> weather not shown in top right, False -> weather is shown in top right)
+            self.four_gray_scale = main_settings["four_gray_scale"]       # (True -> 4 gray scale, False -> Black and White)
+            self.album_art_right_side = single_user_settings["album_art_right_side"]       # (True -> 4 gray scale, False -> Black and White)
 
     def set_dictionaries(self):
         # Used to get the pixel length of strings as they're built
@@ -135,7 +133,7 @@ class Draw():
 
     def get_time(self):
         self.dt = dt.now()
-        if self.TWENTY_FOUR_CLOCK:
+        if self.twenty_four_hour_clock:
             self.time_str = self.dt.strftime("%-H:%M")
         else:
             self.time_str = self.dt.strftime("%-I:%M") + self.dt.strftime("%p").lower()
@@ -313,12 +311,12 @@ class Draw():
             elif context_type == 'artist':
                 self.image_obj.paste(self.artist_icon, (context_x - 22, context_y - 1))
 
-    def draw_album_image(self, dark_mode, image_file_name="AlbumImage_resize.PNG"):
+    def draw_album_image(self, dark_mode, image_file_name="AlbumImage_resize.PNG", pos=(0, 0)):
         album_image = Image.open(f"album_art/{image_file_name}")
         if dark_mode:
             album_image = album_image.convert(self.image_mode)
             album_image = ImageMath.eval('255-(a)', a=album_image)
-        self.image_obj.paste(album_image, (0, 0))
+        self.image_obj.paste(album_image, pos)
 
     def draw_weather(self, pos, weather_info):
         """
@@ -330,7 +328,7 @@ class Draw():
                             low forecasted temperature, and another temperature value.
         """
         temp, temp_high, temp_low, other_temp = weather_info
-        temp_degrees = "C" if self.METRIC_UNITS else "F"
+        temp_degrees = "C" if self.metric_units else "F"
 
         # main temp pos calculations
         temp_start_x, temp_width = pos[0], self.image_draw.textlength(str(temp), font=self.DSfnt64)
@@ -378,7 +376,7 @@ class Draw():
         """
         self.get_time()
         temp, temp_high, temp_low, other_temp = weather_info
-        temp_degrees = "C" if self.METRIC_UNITS else "F"
+        temp_degrees = "C" if self.metric_units else "F"
         left_elem_x = 10
         bar_height = 74  # the height of the bottom bar
 
@@ -386,7 +384,7 @@ class Draw():
         temp_width, temp_height = self.image_draw.textlength(str(temp), font=self.DSfnt64), self.DSfnt64.size/1.3
         time_width, time_height = self.calculate_time_dimensions()
 
-        if self.TIME_ON_RIGHT:
+        if self.time_on_right:
             left_elem_y = self.HEIGHT - (bar_height // 2) - (temp_height // 2)
             self.draw_weather((left_elem_x, left_elem_y), weather_info)
 
@@ -410,7 +408,7 @@ class Draw():
         self.image_draw.text((date_x, date_y), self.dt.strftime("%a, %b %-d"), font=self.DSfnt32)
 
         # Draw "upper temp" next to name of right user
-        if not self.HIDE_OTHER_WEATHER:
+        if not self.hide_other_weather:
             high_temp_x = 387 - self.get_text_width(str(other_temp), 1)
             self.image_draw.text((high_temp_x, 0), str(other_temp), font=self.DSfnt32)
             self.image_draw.text((high_temp_x + 2 + self.get_text_width(str(other_temp), 1), 2), temp_degrees, font=self.DSfnt16)

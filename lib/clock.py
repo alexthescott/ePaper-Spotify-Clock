@@ -50,12 +50,15 @@ class Clock:
     def load_display_settings(self):
         with open("config/display_settings.json") as display_settings:
             display_settings = json.load(display_settings)
-            self.single_user = display_settings["single_user"]
-            self.sunset_flip = display_settings["sunset_flip"]
-            self.twenty_four_hour_clock = display_settings["twenty_four_hour_clock"]
-            self.partial_update = display_settings["partial_update"]
-            self.time_on_right = display_settings["time_on_right"]
-            self.four_gray_scale = display_settings["four_gray_scale"]  
+            main_settings = display_settings["main_settings"]
+            single_user_settings = display_settings["single_user_settings"]
+            self.single_user = main_settings["single_user"]
+            self.sunset_flip = main_settings["sunset_flip"]
+            self.twenty_four_hour_clock = main_settings["twenty_four_hour_clock"]
+            self.partial_update = main_settings["partial_update"]
+            self.time_on_right = main_settings["time_on_right"]
+            self.four_gray_scale = main_settings["four_gray_scale"]  
+            self.album_art_right_side = single_user_settings["album_art_right_side"]
 
     def set_weather_and_sunset_info(self):
         self.weather_info, self.sunset_info = self.weather.get_weather_and_sunset_info()
@@ -178,15 +181,26 @@ class Clock:
 
         # --- Spotify User 1 ---
         track_1, artist_1, time_since_1, tmp_ctx_type_1, tmp_ctn_name_1, track_image_link, album_name_1 = self.spotify_user_1.get_spotipy_info()
-        track_line_count, track_text_size = self.image_obj.draw_track_text(track_1, 207, 26)
-        self.image_obj.draw_artist_text(artist_1, track_line_count, track_text_size, 207, 26)
+        if self.single_user and self.album_art_right_side:
+            track_line_count, track_text_size = self.image_obj.draw_track_text(track_1, 5, 26)
+            self.image_obj.draw_artist_text(artist_1, track_line_count, track_text_size, 5, 26)
 
-        self.ctx_type_1 = tmp_ctx_type_1 if tmp_ctx_type_1 != "" else self.ctx_type_1
-        self.ctx_title_1 = tmp_ctn_name_1 if tmp_ctn_name_1 != "" else self.ctx_title_1
-        self.image_obj.draw_spot_context(self.ctx_type_1, self.ctx_title_1, 227, 204)
+            self.ctx_type_1 = tmp_ctx_type_1 if tmp_ctx_type_1 != "" else self.ctx_type_1
+            self.ctx_title_1 = tmp_ctn_name_1 if tmp_ctn_name_1 != "" else self.ctx_title_1
+            self.image_obj.draw_spot_context(self.ctx_type_1, self.ctx_title_1, 25, 204)
 
-        name_width_1, name_height_1 = self.image_obj.draw_name(self.spotify_user_1.name, 210, 0)
-        self.image_obj.draw_user_time_ago(time_since_1, 220+name_width_1, name_height_1//2)
+            name_width_1, name_height_1 = self.image_obj.draw_name(self.spotify_user_1.name, 8, 0)
+            self.image_obj.draw_user_time_ago(time_since_1, 220+name_width_1, name_height_1//2)
+        else:
+            track_line_count, track_text_size = self.image_obj.draw_track_text(track_1, 207, 26)
+            self.image_obj.draw_artist_text(artist_1, track_line_count, track_text_size, 207, 26)
+
+            self.ctx_type_1 = tmp_ctx_type_1 if tmp_ctx_type_1 != "" else self.ctx_type_1
+            self.ctx_title_1 = tmp_ctn_name_1 if tmp_ctn_name_1 != "" else self.ctx_title_1
+            self.image_obj.draw_spot_context(self.ctx_type_1, self.ctx_title_1, 227, 204)
+
+            name_width_1, name_height_1 = self.image_obj.draw_name(self.spotify_user_1.name, 210, 0)
+            self.image_obj.draw_user_time_ago(time_since_1, 220+name_width_1, name_height_1//2)
 
         # --- Spotify User 2 or Album Art Display ---
         if not self.single_user:
@@ -202,8 +216,12 @@ class Clock:
             self.image_obj.draw_user_time_ago(time_since_2, 18+name_width_2, name_height_2 /2)
         else:
             self.misc.get_album_art(track_image_link)
-            self.image_obj.draw_album_image(self.flip_to_dark)
-            self.image_obj.draw_spot_context("album", album_name_1, 25, 204)
+            if self.album_art_right_side:
+                self.image_obj.draw_album_image(self.flip_to_dark, pos=(201, 0))
+                self.image_obj.draw_spot_context("album", album_name_1, 227, 204)
+            else:
+                self.image_obj.draw_album_image(self.flip_to_dark)
+                self.image_obj.draw_spot_context("album", album_name_1, 25, 204)
 
         # -------- Dark Mode --------
         # Dark mode ~25 minutes after the sunsets. Determined by the bool sunset_flip
