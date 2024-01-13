@@ -60,6 +60,9 @@ class Clock:
             self.four_gray_scale = main_settings["four_gray_scale"]  
             self.album_art_right_side = single_user_settings["album_art_right_side"]
 
+            if self.partial_update and self.four_gray_scale:
+                raise Exception("Partial updates are not supported in 4 Gray Scale, you must chose one or another")
+
     def set_weather_and_sunset_info(self):
         self.weather_info, self.sunset_info = self.weather.get_weather_and_sunset_info()
         self.flip_to_dark = self.misc.has_sun_set(self.sunset_info, self.sunset_flip)
@@ -106,12 +109,16 @@ class Clock:
                     logger.info("Sleeping... {}".format(dt.now().strftime("%-I:%M%p")))
                 break
             elif not self.did_epd_init:
-                if self.four_gray_scale:
-                    logger.info("Initializing EPD 4Gray...")
-                else:
-                    logger.info("Initializing EPD...")
                 if self.epd:
-                    self.epd.Init_4Gray() if self.four_gray_scale else self.epd.init()
+                    if self.four_gray_scale:
+                        logger.info("Initializing EPD 4Gray...")
+                        self.epd.Init_4Gray() 
+                    elif self.partial_update:
+                        logger.info("Initializing Partial EPD...")
+                        self.epd.init_Partial()
+                    else:
+                        logger.info("Initializing EPD...")
+                        self.epd.init()
                     self.epd.Clear()
                 else:
                     self.save_local_file()
