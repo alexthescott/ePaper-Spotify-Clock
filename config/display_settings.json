@@ -1,4 +1,8 @@
 {
+    "clock_names": {
+        "name_1": "Alex",
+        "name_2": "Emma"
+    },
     "main_settings": {
         "single_user": true,
         "metric_units": false,

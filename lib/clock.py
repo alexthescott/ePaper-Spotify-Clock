@@ -22,7 +22,7 @@ class Clock:
         except ImportError:
             self.local_run = True
 
-        logger.info("\t-- Clock Init --\n-----------------------------------------------------------------------------------------------------")
+        logger.info("\n\t-- Clock Init --\n-----------------------------------------------------------------------------------------------------")
         self.load_display_settings()
 
         # Initialize Info/Drawing Libs/Users
@@ -30,9 +30,9 @@ class Clock:
         self.weather = Weather()
         self.misc = Misc()
         self.ctx_io = LocalJsonIO()
-        self.spotify_user_1 = SpotifyUser("Alex", single_user=self.single_user)
+        self.spotify_user_1 = SpotifyUser(self.name_1, single_user=self.single_user)
         self.ctx_type_1, self.ctx_title_1 = "", ""
-        self.spotify_user_2 = (SpotifyUser("Emma", main=False) if not self.single_user else None)
+        self.spotify_user_2 = (SpotifyUser(self.name_2, main=False) if not self.single_user else None)
         self.ctx_type_2, self.ctx_title_2 = "", ""
 
         # EPD vars/settings
@@ -51,6 +51,7 @@ class Clock:
         with open("config/display_settings.json") as display_settings:
             display_settings = json.load(display_settings)
             main_settings = display_settings["main_settings"]
+            clock_names = display_settings["clock_names"]
             single_user_settings = display_settings["single_user_settings"]
             self.single_user = main_settings["single_user"]
             self.sunset_flip = main_settings["sunset_flip"]
@@ -59,6 +60,8 @@ class Clock:
             self.time_on_right = main_settings["time_on_right"]
             self.four_gray_scale = main_settings["four_gray_scale"]  
             self.album_art_right_side = single_user_settings["album_art_right_side"]
+            self.name_1 = clock_names["name_1"]
+            self.name_2 = clock_names["name_2"]
 
             if self.partial_update and self.four_gray_scale:
                 raise Exception("Partial updates are not supported in 4 Gray Scale, you must chose one or another")
