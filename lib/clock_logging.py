@@ -1,12 +1,15 @@
 import logging
 import argparse
 import json
+from lib.misc import Misc
+
+misc = Misc()
 
 # Create a custom logger
 logger = logging.getLogger(__name__)
 
-# Read the value from the JSON configuration file
-with open('config/args_parse.json', 'r') as f:
+# Read the value from the cache/args_parse.json file
+with open('cache/args_parse.json', 'r') as f:
     config = json.load(f)
 
 verbose_logging = config['verbose_logging']
@@ -23,7 +26,9 @@ if verbose_logging:
     c_handler.setFormatter(c_format)
     # Add handlers to the logger
     logger.addHandler(c_handler)
-f_handler = logging.FileHandler('clock.log')
+
+
+f_handler = logging.FileHandler('cache/clock.log')
 f_handler.setLevel(logging.INFO)
 f_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 f_handler.setFormatter(f_format)

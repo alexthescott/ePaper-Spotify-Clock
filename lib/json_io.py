@@ -7,7 +7,7 @@ class LocalJsonIO():
         # if we have already written context info, don't rewrite file
         left_temp_ctx, right_tmp_ctx = left_ctx, right_ctx
         try:
-            with open('context.txt') as j_ctx:
+            with open('cache/context.txt') as j_ctx:
                 write_l_ctx, write_r_ctx = True, True
                 data = json.load(j_ctx)
 
@@ -41,13 +41,13 @@ class LocalJsonIO():
             'title': right_tmp_ctx[1]
         })
 
-        with open('context.txt', 'w+') as j_cxt:
+        with open('cache/context.txt', 'w+') as j_cxt:
             json.dump(context_data, j_cxt)
 
 
     def read_json_ctx(self, left_ctx, right_ctx):
         """ Read context.txt, returning ctx found if left_ctx, or right_ctx is empty. """
-        with open('context.txt') as j_cxt:
+        with open('cache/context.txt') as j_cxt:
             context_data = json.load(j_cxt)
             data = context_data['context']
             # Only update an empty context side. Either update the left ctx, the right ctx, or both ctx files

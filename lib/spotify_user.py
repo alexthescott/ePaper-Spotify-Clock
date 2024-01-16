@@ -67,7 +67,7 @@ class SpotifyUser():
         
         self.spot_client_id = '7423e2b31f244d2498126f51075aba54'  
         self.spot_client_secret = 'de3a403cc1e7445896a80f7a8f18d8c8' 
-        self.cache = '.authcache1' if main else '.authcache2'
+        self.cache = 'cache/.authcache1' if main else 'cache/.authcache2'
         self.name = name # drawn at the top of the screen
         self.SINGLE_USER = single_user
         self.oauth = None

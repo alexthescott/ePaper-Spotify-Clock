@@ -35,3 +35,14 @@ class Misc():
         new_image_name = album_image_name.split('.')[0] + "_resize.PNG"
         self.save_image_from_URL(track_image_link, album_image_name)
         self.resize_image(album_image_name)
+
+    def create_cache_file(self, file_name):
+        """
+        if the folder "cache" does not exist, create it
+        if the file "file_name" does not exist, create it
+         - file_name contains the file extension as part of it's string
+        """
+        if not os.path.exists("cache"):
+            os.makedirs("cache")
+        if not os.path.exists(f"cache/{file_name}"):
+            open(file_name, 'w').close()

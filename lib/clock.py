@@ -83,15 +83,15 @@ class Clock:
             logger.info(f"Time: {time_str}")
             start = time() # Used to 'push' our clock timing forward to account for EPD time
 
-            # If we have no context read, grab context our context.txt json file
+            # If we have no context read, grab context our cache/context.txt json file
             if all([self.ctx_type_1, self.ctx_title_1]) or all([self.ctx_type_2, self.ctx_title_2]):
                 try:
-                    fh = open("context.txt")
+                    fh = open("cache/context.txt")
                     self.ctx_type_1, self.ctx_type_1, self.ctx_type_2, self.ctx_title_2 = self.ctx_io.read_json_ctx((self.ctx_type_1, self.ctx_title_1), (self.ctx_type_2, self.ctx_title_2))
                     fh.close()
                 except:
-                    logger.error("context.txt doesn't exist")
-            # Afterwords, if we have to write a new context to our context.txt json file, do so
+                    logger.error("cache/context.txt doesn't exist")
+            # Afterwords, if we have to write a new context to our cache/context.txt json file, do so
             if (self.ctx_type_1 != "" and self.ctx_title_1 != "") or (self.ctx_type_2 != "" and self.ctx_title_2 != ""):
                 self.ctx_io.write_json_ctx((self.ctx_type_1, self.ctx_title_1),(self.ctx_type_2, self.ctx_title_2))
             
