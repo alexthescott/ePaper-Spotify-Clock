@@ -2,8 +2,11 @@ import spotipy
 from spotipy.exceptions import SpotifyException
 from requests.exceptions import ReadTimeout
 import json
+import logging
 from datetime import timedelta, datetime as dt
 from lib.clock_logging import logger
+
+spotify_logger = logging.getLogger('spotipy.client')
 
 def get_time_from_timedelta(td):
     """ Determine time since last played in terms of hours and minutes from timedelta. """
@@ -31,31 +34,6 @@ def get_time_since_played(hours, minutes):
         return str(hours // 24) + "  day ago"
     else:
         return str(hours // 24) + "  days ago"
-    
-def get_context_from_json(context_json, spotipy_object):
-    """ Return Spotify Context info.
-
-        Parameters:
-            context_json: json to be parsed
-            spotipy_object: used to retreive name of spotify context
-        Return:
-            context_type: Either a playlist, artist, or album
-            context_name: Context name to be displayed
-    """
-    context_type, context_name = "", ""
-    if context_json is not None:
-        context_type = context_json['type']
-        context_uri = context_json['uri']
-        if context_type == 'playlist':
-            playlist_json = spotipy_object.playlist(context_uri)
-            context_name = playlist_json['name']
-        elif context_type == 'album':
-            album_json = spotipy_object.album(context_uri)
-            context_name = album_json['name']
-        elif context_type == 'artist':
-            artist_json = spotipy_object.artist(context_uri)
-            context_name = artist_json['name']
-    return context_type, context_name
 
 class SpotifyUser():
     def __init__(self, name="CHANGE_ME", single_user=False, main=True):
@@ -145,7 +123,7 @@ class SpotifyUser():
         track_image_link, album_name = None, None  # used if single_user
         if recent is not None and recent['item'] is not None:
             # GET CURRENT CONTEXT
-            context_type, context_name = get_context_from_json(recent['context'], self.sp)
+            context_type, context_name = self.get_context_from_json(recent['context'])
             time_passed = " is listening to"
 
             # GET TRACK && ARTIST
@@ -178,6 +156,37 @@ class SpotifyUser():
             timestamp = dt.strptime(str_timestamp, "%Y-%m-%d %H:%M:%S")
             hours_passed, minutes_passed = get_time_from_timedelta(dt.utcnow() - timestamp)
             time_passed = get_time_since_played(hours_passed, minutes_passed)
-            context_type, context_name = get_context_from_json(track['context'], self.sp)
+            context_type, context_name = self.get_context_from_json(track['context'])
         logger.info(f"Spotify Info:{track_name} by {artist_name} playing from from {context_name} {context_type}")
         return track_name, artist_name, time_passed, context_type, context_name, track_image_link, album_name
+        
+    def get_context_from_json(self, context_json):
+        """ Return Spotify Context info.
+
+            Parameters:
+                context_json: json to be parsed
+            Return:
+                context_type: Either a playlist, artist, or album
+                context_name: Context name to be displayed
+        """
+        # Ignore Spotify logger for get_context_from_json
+        spotify_logger.disabled = True
+        context_type, context_name = "", ""
+        if context_json is not None:
+            context_type = context_json['type']
+            context_uri = context_json['uri']
+            if context_type == 'playlist':
+                try:
+                    playlist_json = self.sp.playlist(context_uri)
+                    context_name = playlist_json['name']
+                except SpotifyException:
+                    logger.info("playlist() call failed, assuming User is listening to DJ mix")
+                    context_name = "DJ"
+            elif context_type == 'album':
+                album_json = self.sp.album(context_uri)
+                context_name = album_json['name']
+            elif context_type == 'artist':
+                artist_json = self.sp.artist(context_uri)
+                context_name = artist_json['name']
+        spotify_logger.disabled = False
+        return context_type, context_name
