@@ -200,7 +200,7 @@ class Clock:
             self.image_obj.draw_spot_context(self.ctx_type_1, self.ctx_title_1, 25, 204)
 
             name_width_1, name_height_1 = self.image_obj.draw_name(self.spotify_user_1.name, 8, 0)
-            self.image_obj.draw_user_time_ago(time_since_1, 220+name_width_1, name_height_1//2)
+            self.image_obj.draw_user_time_ago(time_since_1, 18+name_width_1, name_height_1//2)
         else:
             track_line_count, track_text_size = self.image_obj.draw_track_text(track_1, 207, 26)
             self.image_obj.draw_artist_text(artist_1, track_line_count, track_text_size, 207, 26)
