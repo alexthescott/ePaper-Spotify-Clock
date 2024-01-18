@@ -4,7 +4,6 @@
         "name_2": "Emma"
     },
     "main_settings": {
-        "single_user": true,
         "metric_units": false,
         "twenty_four_hour_clock": false,
         "partial_update": false,
