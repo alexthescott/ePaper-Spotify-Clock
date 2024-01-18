@@ -36,6 +36,7 @@ class Draw():
         self.playlist_icon = Image.open('Icons/playlist.png')
         self.artist_icon = Image.open('Icons/artist.png')
         self.album_icon = Image.open('Icons/album.png')
+        self.dj_icon = Image.open('Icons/dj.png')
 
     def load_display_settings(self):
         # EPD Settings imported from config/display_settings.json ---------------------------------------------------
@@ -304,12 +305,15 @@ class Draw():
             self.image_draw.text((context_x, context_y), temp_context, font=self.DSfnt16)
 
             # ATTACH ICONS
-            if context_type == 'playlist':
+            if context_text == 'DJ':
+                self.image_obj.paste(self.dj_icon, (context_x - 24, context_y - 4))
+            elif context_type == 'playlist':
                 self.image_obj.paste(self.playlist_icon, (context_x - 21, context_y - 1))
             elif context_type == 'album':
                 self.image_obj.paste(self.album_icon, (context_x - 24, context_y - 4))
             elif context_type == 'artist':
                 self.image_obj.paste(self.artist_icon, (context_x - 22, context_y - 1))
+
 
     def draw_album_image(self, dark_mode, image_file_name="AlbumImage_resize.PNG", pos=(0, 0)):
         album_image = Image.open(f"album_art/{image_file_name}")
