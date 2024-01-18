@@ -37,6 +37,7 @@ class Draw():
         self.artist_icon = Image.open('Icons/artist.png')
         self.album_icon = Image.open('Icons/album.png')
         self.dj_icon = Image.open('Icons/dj.png')
+        self.collection_icon = Image.open('Icons/collection.png')
 
     def load_display_settings(self):
         # EPD Settings imported from config/display_settings.json ---------------------------------------------------
@@ -313,7 +314,8 @@ class Draw():
                 self.image_obj.paste(self.album_icon, (context_x - 24, context_y - 4))
             elif context_type == 'artist':
                 self.image_obj.paste(self.artist_icon, (context_x - 22, context_y - 1))
-
+            elif context_type == 'collection':
+                self.image_obj.paste(self.collection_icon, (context_x - 24, context_y - 4))
 
     def draw_album_image(self, dark_mode, image_file_name="AlbumImage_resize.PNG", pos=(0, 0)):
         album_image = Image.open(f"album_art/{image_file_name}")

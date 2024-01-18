@@ -188,5 +188,7 @@ class SpotifyUser():
             elif context_type == 'artist':
                 artist_json = self.sp.artist(context_uri)
                 context_name = artist_json['name']
+            if context_type == 'collection':
+                context_name = "Liked Songs"
         spotify_logger.disabled = False
         return context_type, context_name
