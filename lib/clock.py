@@ -112,7 +112,7 @@ class Clock:
                     logger.info("Sleeping... {}".format(dt.now().strftime("%-I:%M%p")))
                 break
             elif not self.did_epd_init:
-                if self.epd:
+                if not self.local_run:
                     if self.four_gray_scale:
                         logger.info("Initializing EPD 4Gray...")
                         self.epd.Init_4Gray() 
@@ -128,7 +128,7 @@ class Clock:
                 self.did_epd_init = True
 
             if self.did_epd_init:
-                if self.epd:
+                if not self.local_run:
                     logger.info("\tDrawing Image to EPD")
                     if self.four_gray_scale: 
                         self.epd.display_4Gray(self.epd.getbuffer_4Gray(self.image_obj.get_image_obj()))
@@ -167,11 +167,13 @@ class Clock:
                             time_str = date.strftime("%-H:%M") if self.twenty_four_hour_clock else date.strftime("%-I:%M") + date.strftime("%p").lower()
                             logger.info(f"\ttimestr:{time_str}")
                             time_image, time_width = self.image_obj.create_time_text(time_str, self.weather_info)
-                            if self.epd:
+                            if not self.local_run:
                                 if self.time_on_right:
                                     self.epd.EPD_4IN2_PartialDisplay(int(self.image_obj.WIDTH-5-time_width), 245, int(self.image_obj.WIDTH-5), 288, self.epd.getbuffer(time_image))
                                 else:
                                     self.epd.EPD_4IN2_PartialDisplay(5, 245, int(5+time_width), 288, self.epd.getbuffer(time_image))
+                            else:
+                                self.save_local_file()
                         partial_update_count += 1
                 else:
                     sleep(remaining_time+120)
