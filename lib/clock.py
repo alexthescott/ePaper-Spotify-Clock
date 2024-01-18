@@ -89,7 +89,7 @@ class Clock:
                     fh = open("cache/context.txt")
                     self.ctx_type_1, self.ctx_type_1, self.ctx_type_2, self.ctx_title_2 = self.ctx_io.read_json_ctx((self.ctx_type_1, self.ctx_title_1), (self.ctx_type_2, self.ctx_title_2))
                     fh.close()
-                except:
+                except FileNotFoundError:
                     logger.error("cache/context.txt doesn't exist")
             # Afterwords, if we have to write a new context to our cache/context.txt json file, do so
             if (self.ctx_type_1 != "" and self.ctx_title_1 != "") or (self.ctx_type_2 != "" and self.ctx_title_2 != ""):
