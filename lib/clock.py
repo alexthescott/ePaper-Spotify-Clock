@@ -79,7 +79,7 @@ class Clock:
             self.image_obj.clear_image()
             if self.weather_info is None or self.count_to_5 >= 4:
                 self.set_weather_and_sunset_info()
-            sec_left, time_str, date_str, old_time = self.get_time_from_date_time()
+            sec_left, time_str = self.get_time_from_date_time()
             logger.info(f"Time: {time_str}")
             start = time() # Used to 'push' our clock timing forward to account for EPD time
 
@@ -186,10 +186,9 @@ class Clock:
             self.count_to_5 = 0 if self.count_to_5 == 4 else self.count_to_5 + 1
 
     def build_image(self):
+        # Draw Spotify info before Weather and Date/Time
         if self.weather_info is None:
             self.set_weather_and_sunset_info()
-        self.image_obj.draw_date_time_temp(self.weather_info)
-        self.image_obj.draw_border_lines()
 
         # --- Spotify User 1 ---
         track_1, artist_1, time_since_1, tmp_ctx_type_1, tmp_ctn_name_1, track_image_link, album_name_1 = self.spotify_user_1.get_spotipy_info()
@@ -235,6 +234,9 @@ class Clock:
                 self.image_obj.draw_album_image(self.flip_to_dark)
                 self.image_obj.draw_spot_context("album", album_name_1, 25, 204)
 
+        self.image_obj.draw_date_time_temp(self.weather_info)
+        self.image_obj.draw_border_lines()
+
         # -------- Dark Mode --------
         # Dark mode ~25 minutes after the sunsets. Determined by the bool sunset_flip
         if self.flip_to_dark:
@@ -272,7 +274,6 @@ class Clock:
                 sleep(2)
         # 2:00am - 5:59am check time every 15ish minutes, granularity here is not paramount
         sec_left = 60 - int(date.strftime("%S"))
-        date_str, am_pm = date.strftime("%a, %b %-d"), date.strftime("%p")
 
         time_str = date.strftime("%-H:%M") if self.twenty_four_hour_clock else date.strftime("%-I:%M") + am_pm.lower()
-        return sec_left, time_str, date_str, int(new_min)
+        return sec_left, time_str
