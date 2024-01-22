@@ -176,11 +176,11 @@ class Clock:
                                 self.save_local_file()
                         partial_update_count += 1
                 else:
-                    sleep(remaining_time+120)
+                    sleep(max(remaining_time+120, 0))
             elif c_hour < 2:
                 # 12:00am - 1:59am update screen every 5ish minutes
                 logger.info("\t", round(self.time_elapsed, 2), "\tseconds per loop\t", "sleeping for {} seconds".format(int(remaining_time+240)))
-                sleep(remaining_time+240)
+                sleep(max(remaining_time+240, 0))
 
             # Increment counter for Weather requests
             self.count_to_5 = 0 if self.count_to_5 == 4 else self.count_to_5 + 1
