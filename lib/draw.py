@@ -152,6 +152,8 @@ class Draw():
     def save_png(self, file_name):
         if not os.path.exists("test_output"):
             os.makedirs("test_output")
+        if self.four_gray_scale:
+            self.image_obj = self.image_obj.quantize(colors=4, method=Image.Quantize.MAXCOVERAGE)
         self.image_obj.save("test_output/{}.png".format(file_name))
 
     # ---- Formatting Funcs ----------------------------------------------------------------------------
@@ -330,7 +332,11 @@ class Draw():
         if dark_mode:
             self.album_image = ImageMath.eval('255-(a)', a=self.album_image)
         if self.four_gray_scale:
+            before_dither = time()
+            logger.info("Starting Dithering album_art")
             self.dither_album_art()
+            after_dither = time()
+            logger.info(f"Dithering took {after_dither - before_dither:.2f} seconds")
         self.image_obj.paste(self.album_image, pos)
 
     def draw_weather(self, pos, weather_info):
@@ -517,7 +523,6 @@ class Draw():
             track_y += 12
         return len(track_lines), 13
 
-
     def draw_artist_text(self, artist_name, track_line_count, track_height, artist_x, artist_y):
         # Always ensure bottom of text is always at 190 pixels after draw height
 
@@ -584,7 +589,6 @@ class Draw():
         j_iterator = range(0, width, 2)
         for i in i_iterator:
             # logger.info i/height as a percentage 
-            logger.info(f"Dithering height: {i/height*100:.2f}%")
             for j in j_iterator:
                 # Get the original color of the pixel
                 old_color = np_image_obj[i, j]
