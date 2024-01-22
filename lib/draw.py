@@ -17,7 +17,8 @@ class Draw():
     Made for the Waveshare 4.2inch e-Paper Module
     https://www.waveshare.com/wiki/4.2inch_e-Paper_Module
     """
-    def __init__(self):
+    def __init__(self, local_run=False):
+        self.local_run = local_run
         self.WIDTH = 400
         self.HEIGHT = 300
         self.set_dictionaries()
@@ -579,10 +580,12 @@ class Draw():
         np_image_obj = np.array(self.album_image, dtype=np.float64)
         # Loop through each pixel of the image
         height, width = np_image_obj.shape
-        for i in range(height):
+        i_iterator = range(height) if self.local_run else range(0, height, 2)
+        j_iterator = range(width) if self.local_run else range(0, width, 2)
+        for i in i_iterator:
             # logger.info i/height as a percentage 
             logger.info(f"Dithering height: {i/height*100:.2f}%")
-            for j in range(width):
+            for j in j_iterator:
                 # Get the original color of the pixel
                 old_color = np_image_obj[i, j]
                 # Find the closest color in the palette

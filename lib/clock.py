@@ -26,7 +26,7 @@ class Clock:
         self.load_display_settings()
 
         # Initialize Info/Drawing Libs/Users
-        self.image_obj = Draw()
+        self.image_obj = Draw(self.local_run)
         self.weather = Weather()
         self.misc = Misc()
         self.ctx_io = LocalJsonIO()
