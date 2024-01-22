@@ -580,8 +580,8 @@ class Draw():
         np_image_obj = np.array(self.album_image, dtype=np.float64)
         # Loop through each pixel of the image
         height, width = np_image_obj.shape
-        i_iterator = range(height) if self.local_run else range(0, height, 2)
-        j_iterator = range(width) if self.local_run else range(0, width, 2)
+        i_iterator = range(height)
+        j_iterator = range(0, width, 2)
         for i in i_iterator:
             # logger.info i/height as a percentage 
             logger.info(f"Dithering height: {i/height*100:.2f}%")
