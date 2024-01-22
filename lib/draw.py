@@ -149,10 +149,6 @@ class Draw():
     def save_png(self, file_name):
         if not os.path.exists("test_output"):
             os.makedirs("test_output")
-        if self.image_mode == 'L':
-            self.dither_image()
-            # Older (worse) method blower
-            # self.image_obj = self.image_obj.quantize(colors=4, method=Image.Quantize.MAXCOVERAGE)
         self.image_obj.save("test_output/{}.png".format(file_name))
 
     # ---- Formatting Funcs ----------------------------------------------------------------------------

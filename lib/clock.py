@@ -131,7 +131,6 @@ class Clock:
                 if not self.local_run:
                     logger.info("\tDrawing Image to EPD")
                     if self.four_gray_scale: 
-                        self.image_obj.dither_image()
                         self.epd.display_4Gray(self.epd.getbuffer_4Gray(self.image_obj.get_image_obj()))
                     else:
                         self.epd.display(self.epd.getbuffer(self.image_obj.get_image_obj()))
@@ -235,6 +234,9 @@ class Clock:
             else:
                 self.image_obj.draw_album_image(self.flip_to_dark)
                 self.image_obj.draw_spot_context("album", album_name_1, 25, 204)
+
+        if self.four_gray_scale:
+            self.image_obj.dither_image()
 
         # -------- Dark Mode --------
         # Dark mode ~25 minutes after the sunsets. Determined by the bool sunset_flip
