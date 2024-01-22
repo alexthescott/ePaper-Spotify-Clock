@@ -325,8 +325,8 @@ class Draw():
 
     def draw_album_image(self, dark_mode, image_file_name="AlbumImage_resize.PNG", pos=(0, 0)):
         self.album_image = Image.open(f"album_art/{image_file_name}")
+        self.album_image = self.album_image.convert(self.image_mode)
         if dark_mode:
-            self.album_image = self.album_image.convert(self.image_mode)
             self.album_image = ImageMath.eval('255-(a)', a=self.album_image)
         if self.four_gray_scale:
             self.dither_album_art()
