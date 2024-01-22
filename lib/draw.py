@@ -569,7 +569,7 @@ class Draw():
     # Define a function to find the closest color in the palette
     def closest_color(self, color):
         # Compute the Euclidean distance between the color and each palette color
-        distances = [np.sqrt(np.sum((np.array(color) - np.array(p))**2)) for p in self.pallete]
+        distances = [np.sqrt(np.sum((color - p)**2)) for p in self.pallete]
         # Return the index of the minimum distance
         return np.argmin(distances)
     
