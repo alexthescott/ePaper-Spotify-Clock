@@ -1,5 +1,6 @@
 import os
 import json
+import numpy as np 
 from PIL import Image, ImageFont, ImageDraw, ImageMath
 from time import time, sleep, strftime, localtime
 from datetime import timedelta, datetime as dt
@@ -20,7 +21,12 @@ class Draw():
         self.set_dictionaries()
         self.load_display_settings()
         self.load_resources()
-        self.image_mode = 'L' if self.four_gray_scale else '1'
+        if self.four_gray_scale:
+            self.image_mode = 'L'
+            self.pallete = [0, 85, 170, 255]
+        else:
+            self.image_mode = '1'
+            self.pallete = None
         self.image_obj = Image.new(self.image_mode, (self.WIDTH, self.HEIGHT), 255)
         self.image_draw = ImageDraw.Draw(self.image_obj)
 
@@ -144,7 +150,9 @@ class Draw():
         if not os.path.exists("test_output"):
             os.makedirs("test_output")
         if self.image_mode == 'L':
-            self.image_obj = self.image_obj.quantize(colors=4, method=Image.Quantize.MAXCOVERAGE)
+            self.dither_image()
+            # Older (worse) method blower
+            # self.image_obj = self.image_obj.quantize(colors=4, method=Image.Quantize.MAXCOVERAGE)
         self.image_obj.save("test_output/{}.png".format(file_name))
 
     # ---- Formatting Funcs ----------------------------------------------------------------------------
@@ -557,6 +565,41 @@ class Draw():
         for line in artist_lines:
             self.image_draw.text((artist_x, artist_y), line, font=self.DSfnt16)
             artist_y += 12
+
+    # ---- DRAW MISC FUNCs ----------------------------------------------------------------------------
+
+    # Define a function to find the closest color in the palette
+    def closest_color(self, color):
+        # Compute the Euclidean distance between the color and each palette color
+        distances = [np.sqrt(np.sum((np.array(color) - np.array(p))**2)) for p in self.pallete]
+        # Return the index of the minimum distance
+        return np.argmin(distances)
+    
+    def dither_image(self):
+        np_image_obj = np.array(self.image_obj)
+        # Loop through each pixel of the image
+        height, width = np_image_obj.shape
+        for i in range(height):
+            for j in range(width):
+                # Get the original color of the pixel
+                old_color = np_image_obj[i, j]
+                # Find the closest color in the palette
+                new_color = self.pallete[self.closest_color(old_color)]
+                # Assign the new color to the pixel
+                np_image_obj[i, j] = new_color
+                # Compute the quantization error
+                error = old_color - new_color
+                # Distribute the error to the neighboring pixels
+                if j < width - 1:
+                    np_image_obj[i, j + 1] = np.clip(np_image_obj[i, j + 1] + error * 7 / 16, 0, 255)
+                if i < height - 1 and j > 0:
+                    np_image_obj[i + 1, j - 1] = np.clip(np_image_obj[i + 1, j - 1] + error * 3 / 16, 0, 255)
+                if i < height - 1:
+                    np_image_obj[i + 1, j] = np.clip(np_image_obj[i + 1, j] + error * 5 / 16, 0, 255)
+                if i < height - 1 and j < width - 1:
+                    np_image_obj[i + 1, j + 1] = np.clip(np_image_obj[i + 1, j + 1] + error * 1 / 16, 0, 255)
+        self.image_obj = Image.fromarray(np_image_obj)
+
 
     def dark_mode_flip(self):
         self.image_obj.paste(ImageMath.eval('255-(a)', a=self.image_obj), (0, 0))
