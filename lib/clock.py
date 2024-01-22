@@ -72,6 +72,7 @@ class Clock:
 
     def save_local_file(self):
         self.image_obj.save_png("{}".format(dt.now().strftime("%H:%M:%S")))
+        self.image_obj.dither_album_art()
         self.image_obj.save_png("now")
 
     def tick_tock(self):

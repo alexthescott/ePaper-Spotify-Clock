@@ -576,8 +576,6 @@ class Draw():
     def dither_album_art(self):
         np_image_obj = np.array(self.album_image, dtype=np.float64)
         # Loop through each pixel of the image
-
-        """ Older Approach for posterity rn 
         height, width = np_image_obj.shape
         for i in range(height):
             for j in range(width):
@@ -598,20 +596,6 @@ class Draw():
                     np_image_obj[i + 1, j] = np.clip(np_image_obj[i + 1, j] + error * 5 / 16, 0, 255)
                 if i < height - 1 and j < width - 1:
                     np_image_obj[i + 1, j + 1] = np.clip(np_image_obj[i + 1, j + 1] + error * 1 / 16, 0, 255)
-        
-        """
-
-        for y in range(np_image_obj.shape[0] - 1):
-            old_pixels = np_image_obj[y, 1:-1]
-            # Ensure that the indices returned by np.argmin are within the bounds of self.pallete
-            indices = np.argmin(np.abs(old_pixels[:, None] - self.pallete), axis=1)
-            indices = np.clip(indices, 0, len(self.pallete) - 1)
-            new_pixels = self.pallete[indices]
-            quant_error = old_pixels - new_pixels
-            np_image_obj[y, 2:] += quant_error * 7 / 16
-            np_image_obj[y + 1, :-2] += quant_error * 3 / 16
-            np_image_obj[y + 1, 1:-1] += quant_error * 5 / 16
-            np_image_obj[y + 1, 2:] += quant_error * 1 / 16 
         self.album_image = Image.fromarray(np_image_obj)
 
 
