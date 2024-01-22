@@ -235,9 +235,6 @@ class Clock:
                 self.image_obj.draw_album_image(self.flip_to_dark)
                 self.image_obj.draw_spot_context("album", album_name_1, 25, 204)
 
-        if self.four_gray_scale:
-            self.image_obj.dither_image()
-
         # -------- Dark Mode --------
         # Dark mode ~25 minutes after the sunsets. Determined by the bool sunset_flip
         if self.flip_to_dark:

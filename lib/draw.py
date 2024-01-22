@@ -322,11 +322,13 @@ class Draw():
                 self.image_obj.paste(self.collection_icon, (context_x - 24, context_y - 4))
 
     def draw_album_image(self, dark_mode, image_file_name="AlbumImage_resize.PNG", pos=(0, 0)):
-        album_image = Image.open(f"album_art/{image_file_name}")
+        self.album_image = Image.open(f"album_art/{image_file_name}")
         if dark_mode:
-            album_image = album_image.convert(self.image_mode)
-            album_image = ImageMath.eval('255-(a)', a=album_image)
-        self.image_obj.paste(album_image, pos)
+            self.album_image = self.album_image.convert(self.image_mode)
+            self.album_image = ImageMath.eval('255-(a)', a=self.album_image)
+        if self.four_gray_scale:
+            self.dither_album_art()
+        self.image_obj.paste(self.album_image, pos)
 
     def draw_weather(self, pos, weather_info):
         """
@@ -571,8 +573,8 @@ class Draw():
         # Return the index of the minimum distance
         return np.argmin(distances)
     
-    def dither_image(self):
-        np_image_obj = np.array(self.image_obj)
+    def dither_album_art(self):
+        np_image_obj = np.array(self.album_image)
         # Loop through each pixel of the image
         height, width = np_image_obj.shape
         for i in range(height):
@@ -594,7 +596,7 @@ class Draw():
                     np_image_obj[i + 1, j] = np.clip(np_image_obj[i + 1, j] + error * 5 / 16, 0, 255)
                 if i < height - 1 and j < width - 1:
                     np_image_obj[i + 1, j + 1] = np.clip(np_image_obj[i + 1, j + 1] + error * 1 / 16, 0, 255)
-        self.image_obj = Image.fromarray(np_image_obj)
+        self.album_image = Image.fromarray(np_image_obj)
 
 
     def dark_mode_flip(self):
