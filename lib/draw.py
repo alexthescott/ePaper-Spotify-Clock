@@ -5,6 +5,8 @@ from PIL import Image, ImageFont, ImageDraw, ImageMath
 from time import time, sleep, strftime, localtime
 from datetime import timedelta, datetime as dt
 
+from lib.clock_logging import logger
+
 class Draw():
     """ Draw to EPaper - Alex Scott 2024
     Companion functions for mainSpotifyClock.py
@@ -578,6 +580,8 @@ class Draw():
         # Loop through each pixel of the image
         height, width = np_image_obj.shape
         for i in range(height):
+            # logger.info i/height as a percentage 
+            logger.info(f"Dithering height: {i/height*100:.2f}%")
             for j in range(width):
                 # Get the original color of the pixel
                 old_color = np_image_obj[i, j]
