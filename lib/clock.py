@@ -1,10 +1,6 @@
-import pdb
 import json
-from time import time, sleep, strftime
+from time import time, sleep
 from datetime import timedelta, datetime as dt
-import logging
-import logging
-from logging.handlers import RotatingFileHandler
 
 from lib.draw import Draw
 from lib.weather import Weather
@@ -32,6 +28,7 @@ class Clock:
         self.ctx_io = LocalJsonIO()
         self.spotify_user_1 = SpotifyUser(self.name_1, single_user=self.single_user)
         self.ctx_type_1, self.ctx_title_1 = "", ""
+        self.old_album_name1, self.album_name_1 = "", ""
         self.spotify_user_2 = (SpotifyUser(self.name_2, main=False) if not self.single_user else None)
         self.ctx_type_2, self.ctx_title_2 = "", ""
 
@@ -92,10 +89,8 @@ class Clock:
                     fh.close()
                 except FileNotFoundError:
                     logger.error("cache/context.txt doesn't exist")
-            # Afterwords, if we have to write a new context to our cache/context.txt json file, do so
-            if (self.ctx_type_1 != "" and self.ctx_title_1 != "") or (self.ctx_type_2 != "" and self.ctx_title_2 != ""):
-                self.ctx_io.write_json_ctx((self.ctx_type_1, self.ctx_title_1),(self.ctx_type_2, self.ctx_title_2))
-            
+                self.ctx_io.write_json_ctx((self.ctx_type_1, self.ctx_title_1), (self.ctx_type_2, self.ctx_title_2))
+                
             self.build_image()
 
             # Get 24H clock c_hour to determine sleep duration before refresh
@@ -192,7 +187,8 @@ class Clock:
             self.set_weather_and_sunset_info()
 
         # --- Spotify User 1 ---
-        track_1, artist_1, time_since_1, tmp_ctx_type_1, tmp_ctn_name_1, track_image_link, album_name_1 = self.spotify_user_1.get_spotipy_info()
+        self.old_album_name1 = self.album_name_1
+        track_1, artist_1, time_since_1, tmp_ctx_type_1, tmp_ctn_name_1, track_image_link, self.album_name_1 = self.spotify_user_1.get_spotipy_info()
         if self.single_user and self.album_art_right_side:
             track_line_count, track_text_size = self.image_obj.draw_track_text(track_1, 5, 26)
             self.image_obj.draw_artist_text(artist_1, track_line_count, track_text_size, 5, 26)
@@ -227,14 +223,14 @@ class Clock:
             name_width_2, name_height_2 = self.image_obj.draw_name(self.spotify_user_2.name, 8, 0)
             self.image_obj.draw_user_time_ago(time_since_2, 18+name_width_2, name_height_2 /2)
         else:
-            self.misc.get_album_art(track_image_link)
-            if self.album_art_right_side:
-                self.image_obj.draw_album_image(self.flip_to_dark, pos=(201, 0))
-                self.image_obj.draw_spot_context("album", album_name_1, 227, 204)
-            else:
-                self.image_obj.draw_album_image(self.flip_to_dark)
-                self.image_obj.draw_spot_context("album", album_name_1, 25, 204)
-
+            get_new_album_art = self.old_album_name1 != self.album_name_1
+            if get_new_album_art:
+                self.misc.get_album_art(track_image_link)
+            album_pos = (201, 0) if self.album_art_right_side else (0, 0)
+            context_pos = (227, 204) if self.album_art_right_side else (25, 204)
+            self.image_obj.draw_album_image(self.flip_to_dark, pos=album_pos, convert_image=get_new_album_art)
+            self.image_obj.draw_spot_context("album", self.album_name_1, album_pos[0], album_pos[1])
+            
         self.image_obj.draw_date_time_temp(self.weather_info)
         self.image_obj.draw_border_lines()
 

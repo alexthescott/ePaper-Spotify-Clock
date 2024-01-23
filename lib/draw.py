@@ -24,6 +24,7 @@ class Draw():
         self.set_dictionaries()
         self.load_display_settings()
         self.load_resources()
+        self.album_image = None
 
         if not os.path.exists("album_art"):
             os.makedirs("album_art")
@@ -333,19 +334,20 @@ class Draw():
             elif context_type == 'collection':
                 self.image_obj.paste(self.collection_icon, (context_x - 24, context_y - 4))
 
-    def draw_album_image(self, dark_mode, image_file_name="AlbumImage_resize.PNG", pos=(0, 0)):
-        self.album_image = Image.open(f"album_art/{image_file_name}")
-        self.album_image = self.album_image.convert(self.image_mode)
-        
-        if self.four_gray_scale:
-            before_dither = time()
-            logger.info("Starting Dithering album_art")
-            self.dither_album_art()
-            after_dither = time()
-            logger.info(f"Dithering took {after_dither - before_dither:.2f} seconds")
+    def draw_album_image(self, dark_mode, image_file_name="AlbumImage_resize.PNG", pos=(0, 0), convert_image=True):
+        if convert_image or self.album_image is None:
+            self.album_image = Image.open(f"album_art/{image_file_name}")
+            self.album_image = self.album_image.convert(self.image_mode)
+            
+            if self.four_gray_scale:
+                before_dither = time()
+                logger.info("Starting Dithering album_art")
+                self.dither_album_art()
+                after_dither = time()
+                logger.info(f"Dithering took {after_dither - before_dither:.2f} seconds")
 
-        if dark_mode:
-            self.album_image = ImageMath.eval('255-(a)', a=self.album_image)
+            if dark_mode:
+                self.album_image = ImageMath.eval('255-(a)', a=self.album_image)
         self.image_obj.paste(self.album_image, pos)
 
     def draw_weather(self, pos, weather_info):
