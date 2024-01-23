@@ -229,7 +229,7 @@ class Clock:
             album_pos = (201, 0) if self.album_art_right_side else (0, 0)
             context_pos = (227, 204) if self.album_art_right_side else (25, 204)
             self.image_obj.draw_album_image(self.flip_to_dark, pos=album_pos, convert_image=get_new_album_art)
-            self.image_obj.draw_spot_context("album", self.album_name_1, album_pos[0], album_pos[1])
+            self.image_obj.draw_spot_context("album", self.album_name_1, context_pos[0], context_pos[1])
             
         self.image_obj.draw_date_time_temp(self.weather_info)
         self.image_obj.draw_border_lines()

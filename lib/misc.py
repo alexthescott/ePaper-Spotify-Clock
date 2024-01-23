@@ -1,7 +1,7 @@
 from requests import get as get_request
 from PIL import Image, ImageFont, ImageDraw, ImageMath
 import os
-from datetime import timedelta, datetime as dt
+from datetime import datetime as dt
 
 class Misc():
     def save_image_from_URL(self, track_image_link, fileName):
@@ -33,7 +33,6 @@ class Misc():
         return sunset_flip and ((sun_h < c_hour or c_hour < 2) or (sun_h == c_hour and sun_m <= c_minute))
 
     def get_album_art(self, track_image_link, album_image_name="AlbumImage.PNG"):
-        new_image_name = album_image_name.split('.')[0] + "_resize.PNG"
         self.save_image_from_URL(track_image_link, album_image_name)
         self.resize_image(album_image_name)
 

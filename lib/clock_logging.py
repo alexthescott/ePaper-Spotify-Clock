@@ -1,5 +1,4 @@
 import logging
-import argparse
 import json
 from lib.misc import Misc
 
@@ -26,7 +25,6 @@ if verbose_logging:
     c_handler.setFormatter(c_format)
     # Add handlers to the logger
     logger.addHandler(c_handler)
-
 
 f_handler = logging.FileHandler('cache/clock.log')
 f_handler.setLevel(logging.INFO)
