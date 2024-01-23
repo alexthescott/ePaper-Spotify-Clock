@@ -1,7 +1,6 @@
 import os
 import json
 import subprocess
-import numpy as np 
 from PIL import Image, ImageFont, ImageDraw, ImageMath
 from time import time, sleep, strftime, localtime
 from datetime import timedelta, datetime as dt
@@ -25,12 +24,19 @@ class Draw():
         self.set_dictionaries()
         self.load_display_settings()
         self.load_resources()
+
+        if not os.path.exists("album_art"):
+            os.makedirs("album_art")
+        # Get the full path to the 'album_art' directory
+        self.dir_path = os.path.abspath('album_art')
+
         if self.four_gray_scale:
             self.image_mode = 'L'
-            self.pallete = np.array([0, 85, 170, 255])
+            # Create four grayscale color palette 
+            subprocess.run(['convert', '-size', '1x4', 'xc:#FFFFFF', 'xc:#AAAAAA', 'xc:#555555', 'xc:#000000', '+append', os.path.join(self.dir_path, 'palette.PNG')])
         else:
             self.image_mode = '1'
-            self.pallete = None
+        
         self.image_obj = Image.new(self.image_mode, (self.WIDTH, self.HEIGHT), 255)
         self.image_draw = ImageDraw.Draw(self.image_obj)
 
@@ -576,51 +582,11 @@ class Draw():
             artist_y += 12
 
     # ---- DRAW MISC FUNCs ----------------------------------------------------------------------------
-
-    # Define a function to find the closest color in the palette
-    def closest_color(self, color):
-        # Compute the Euclidean distance between the color and each palette color
-        distances = [np.sqrt(np.sum((color - p)**2)) for p in self.pallete]
-        # Return the index of the minimum distance
-        return np.argmin(distances)
     
     def dither_album_art(self):
-        # Get the full path to the 'album_art' directory
-        dir_path = os.path.abspath('album_art')
-
-        # Create the color palette
-        subprocess.run(['convert', '-size', '1x4', 'xc:#FFFFFF', 'xc:#AAAAAA', 'xc:#555555', 'xc:#000000', '+append', os.path.join(dir_path, 'palette.PNG')])
-
         # Remap the colors in the image
-        subprocess.run(['convert', os.path.join(dir_path, 'AlbumImage_resize.PNG'), '-dither', 'Floyd-Steinberg', '-remap', os.path.join(dir_path, 'palette.PNG'), os.path.join(dir_path, 'AlbumImage_dither.PNG')])
+        subprocess.run(['convert', os.path.join(self.dir_path, 'AlbumImage_resize.PNG'), '-dither', 'Floyd-Steinberg', '-remap', os.path.join(self.dir_path, 'palette.PNG'), os.path.join(self.dir_path, 'AlbumImage_dither.PNG')])
         self.album_image = Image.open("album_art/AlbumImage_dither.PNG")
-
-        return True
-        np_image_obj = np.array(self.album_image, dtype=np.float64)
-        # Loop through each pixel of the image
-        height, width = np_image_obj.shape
-        for i in range(height):
-            # logger.info i/height as a percentage 
-            for j in range(width):
-                # Get the original color of the pixel
-                old_color = np_image_obj[i, j]
-                # Find the closest color in the palette
-                new_color = self.pallete[self.closest_color(old_color)]
-                # Assign the new color to the pixel
-                np_image_obj[i, j] = new_color
-                # Compute the quantization error
-                error = old_color - new_color
-                # Distribute the error to the neighboring pixels
-                if j < width - 1:
-                    np_image_obj[i, j + 1] = np.clip(np_image_obj[i, j + 1] + error * 7 / 16, 0, 255)
-                if i < height - 1 and j > 0:
-                    np_image_obj[i + 1, j - 1] = np.clip(np_image_obj[i + 1, j - 1] + error * 3 / 16, 0, 255)
-                if i < height - 1:
-                    np_image_obj[i + 1, j] = np.clip(np_image_obj[i + 1, j] + error * 5 / 16, 0, 255)
-                if i < height - 1 and j < width - 1:
-                    np_image_obj[i + 1, j + 1] = np.clip(np_image_obj[i + 1, j + 1] + error * 1 / 16, 0, 255)
-        self.album_image = Image.fromarray(np_image_obj)
-
 
     def dark_mode_flip(self):
         self.image_obj.paste(ImageMath.eval('255-(a)', a=self.image_obj), (0, 0))
