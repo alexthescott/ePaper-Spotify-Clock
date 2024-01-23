@@ -71,7 +71,8 @@ class Clock:
         self.flip_to_dark = self.misc.has_sun_set(self.sunset_info, self.sunset_flip)
 
     def save_local_file(self):
-        self.image_obj.save_png("{}".format(dt.now().strftime("%H:%M:%S")))
+        # avoid saving this for now; maybe come back for it later with program argument
+        # self.image_obj.save_png("{}".format(dt.now().strftime("%H:%M:%S")))
         self.image_obj.save_png("now")
 
     def tick_tock(self):
