@@ -585,11 +585,9 @@ class Draw():
         np_image_obj = np.array(self.album_image, dtype=np.float64)
         # Loop through each pixel of the image
         height, width = np_image_obj.shape
-        i_iterator = range(height)
-        j_iterator = range(0, width, 2)
-        for i in i_iterator:
+        for i in range(height):
             # logger.info i/height as a percentage 
-            for j in j_iterator:
+            for j in range(width):
                 # Get the original color of the pixel
                 old_color = np_image_obj[i, j]
                 # Find the closest color in the palette

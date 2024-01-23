@@ -20,7 +20,8 @@ class Misc():
             try:
                 im = Image.open(f"album_art/{imageName}")
                 im.thumbnail(size)
-                im.save(f"album_art/{outfile}", "PNG")
+                im = im.convert("L")
+                im.save(f"album_art/{outfile}", "PNG", mode="L")
             except IOError:
                 print ("cannot create thumbnail for '%s'" % imageName)
 
