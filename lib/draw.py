@@ -33,7 +33,7 @@ class Draw():
         if self.four_gray_scale:
             self.image_mode = 'L'
             # Create four grayscale color palette 
-            subprocess.run(['convert', '-size', '1x4', 'xc:#FFFFFF', 'xc:#AAAAAA', 'xc:#555555', 'xc:#000000', '+append', os.path.join(self.dir_path, 'palette.PNG')])
+            subprocess.run(['convert', '-size', '1x4', 'xc:#FFFFFF', 'xc:#C0C0C0', 'xc:#808080', 'xc:#000000', '+append', os.path.join(self.dir_path, 'palette.PNG')])
         else:
             self.image_mode = '1'
         
