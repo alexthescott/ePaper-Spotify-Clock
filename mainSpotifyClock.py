@@ -16,7 +16,6 @@ if __name__ == "__main__":
     with open('cache/args_parse.json', 'w') as f:
         json.dump({'verbose_logging': args.v, 'clock': args.clock, 'local': args.local}, f)
 
-
     from lib.misc import Misc
     from lib.clock import Clock
     misc = Misc()

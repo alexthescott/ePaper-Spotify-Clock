@@ -41,7 +41,7 @@ class Misc():
         """
         if the folder "cache" does not exist, create it
         if the file "file_name" does not exist, create it
-         - file_name contains the file extension as part of it's string
+        - file_name contains the file extension as part of it's string
         """
         if not os.path.exists("cache"):
             os.makedirs("cache")
