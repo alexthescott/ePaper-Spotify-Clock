@@ -1,5 +1,6 @@
 import os
 import json
+import subprocess
 import numpy as np 
 from PIL import Image, ImageFont, ImageDraw, ImageMath
 from time import time, sleep, strftime, localtime
@@ -152,8 +153,8 @@ class Draw():
     def save_png(self, file_name):
         if not os.path.exists("test_output"):
             os.makedirs("test_output")
-        if self.four_gray_scale:
-            self.image_obj = self.image_obj.quantize(colors=4, method=Image.Quantize.MAXCOVERAGE)
+        # if self.four_gray_scale:
+        #     self.image_obj = self.image_obj.quantize(colors=4, method=Image.Quantize.MAXCOVERAGE)
         self.image_obj.save("test_output/{}.png".format(file_name))
 
     # ---- Formatting Funcs ----------------------------------------------------------------------------
@@ -329,14 +330,16 @@ class Draw():
     def draw_album_image(self, dark_mode, image_file_name="AlbumImage_resize.PNG", pos=(0, 0)):
         self.album_image = Image.open(f"album_art/{image_file_name}")
         self.album_image = self.album_image.convert(self.image_mode)
-        if dark_mode:
-            self.album_image = ImageMath.eval('255-(a)', a=self.album_image)
+        
         if self.four_gray_scale:
             before_dither = time()
             logger.info("Starting Dithering album_art")
             self.dither_album_art()
             after_dither = time()
             logger.info(f"Dithering took {after_dither - before_dither:.2f} seconds")
+
+        if dark_mode:
+            self.album_image = ImageMath.eval('255-(a)', a=self.album_image)
         self.image_obj.paste(self.album_image, pos)
 
     def draw_weather(self, pos, weather_info):
@@ -582,6 +585,17 @@ class Draw():
         return np.argmin(distances)
     
     def dither_album_art(self):
+        # Get the full path to the 'album_art' directory
+        dir_path = os.path.abspath('album_art')
+
+        # Create the color palette
+        subprocess.run(['convert', '-size', '1x4', 'xc:#FFFFFF', 'xc:#AAAAAA', 'xc:#555555', 'xc:#000000', '+append', os.path.join(dir_path, 'palette.PNG')])
+
+        # Remap the colors in the image
+        subprocess.run(['convert', os.path.join(dir_path, 'AlbumImage_resize.PNG'), '-dither', 'Floyd-Steinberg', '-remap', os.path.join(dir_path, 'palette.PNG'), os.path.join(dir_path, 'AlbumImage_dither.PNG')])
+        self.album_image = Image.open("album_art/AlbumImage_dither.PNG")
+
+        return True
         np_image_obj = np.array(self.album_image, dtype=np.float64)
         # Loop through each pixel of the image
         height, width = np_image_obj.shape
