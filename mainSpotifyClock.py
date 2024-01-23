@@ -2,13 +2,8 @@ import logging
 import argparse
 import json
 import os
-from lib.misc import Misc
-from lib.clock import Clock
 
 if __name__ == "__main__":
-    misc = Misc()
-    logging.getLogger().setLevel(logging.INFO)
-
     parser = argparse.ArgumentParser()
     parser.add_argument('-v', action='store_true', help='Enable Verbose Logging')
     parser.add_argument('--clock', action='store_true', help='Enable clock')
@@ -20,6 +15,12 @@ if __name__ == "__main__":
         os.makedirs("cache")
     with open('cache/args_parse.json', 'w') as f:
         json.dump({'verbose_logging': args.v, 'clock': args.clock, 'local': args.local}, f)
+
+
+    from lib.misc import Misc
+    from lib.clock import Clock
+    misc = Misc()
+    logging.getLogger().setLevel(logging.INFO)
 
     clock = Clock()
     if args.local or (clock.local_run and not args.clock):
