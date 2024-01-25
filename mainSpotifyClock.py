@@ -13,7 +13,7 @@ if __name__ == "__main__":
     # Write the values to a JSON configuration file
     if not os.path.exists("cache"):
         os.makedirs("cache")
-    with open('cache/args_parse.json', 'w') as f:
+    with open('cache/args_parse.json', 'w', encoding='utf-8') as f:
         json.dump({'verbose_logging': args.v, 'clock': args.clock, 'local': args.local}, f)
 
     from lib.misc import Misc
