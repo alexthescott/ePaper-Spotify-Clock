@@ -38,6 +38,7 @@ class Clock:
         self.count_to_5 = 0  # count_to_5 is used to get weather every 5 minutes
         self.time_elapsed = 15.0
         self.old_time = None
+        self.flip_to_dark = False
 
         # Weather/Sunset vars
         self.weather_info = None
@@ -45,7 +46,7 @@ class Clock:
         self.sunset_time_tuple = None
 
     def load_display_settings(self):
-        with open("config/display_settings.json") as display_settings:
+        with open("config/display_settings.json", encoding="utf-8") as display_settings:
             display_settings = json.load(display_settings)
             main_settings = display_settings["main_settings"]
             clock_names = display_settings["clock_names"]
@@ -61,7 +62,7 @@ class Clock:
             self.name_2 = clock_names["name_2"]
 
             if self.partial_update and self.four_gray_scale:
-                raise Exception("Partial updates are not supported in 4 Gray Scale, you must chose one or another")
+                raise ValueError("Partial updates are not supported in 4 Gray Scale, you must choose one or another")
 
     def set_weather_and_sunset_info(self):
         self.weather_info, self.sunset_info = self.weather.get_weather_and_sunset_info()
@@ -84,7 +85,7 @@ class Clock:
             # If we have no context read, grab context our cache/context.txt json file
             if all([self.ctx_type_1, self.ctx_title_1]) or all([self.ctx_type_2, self.ctx_title_2]):
                 try:
-                    fh = open("cache/context.txt")
+                    fh = open("cache/context.txt", encoding="utf-8")
                     self.ctx_type_1, self.ctx_type_1, self.ctx_type_2, self.ctx_title_2 = self.ctx_io.read_json_ctx((self.ctx_type_1, self.ctx_title_1), (self.ctx_type_2, self.ctx_title_2))
                     fh.close()
                 except FileNotFoundError:
@@ -96,7 +97,7 @@ class Clock:
             # Get 24H clock c_hour to determine sleep duration before refresh
             date = dt.now() + timedelta(seconds=self.time_elapsed)
             c_hour = int(date.strftime("%-H"))
-            c_minute = int(date.strftime("%-M"))
+            # c_minute = int(date.strftime("%-M")) # in case we need it later
 
             # from 2:01 - 5:59am, don't init the display, return from main, and have .sh script run again in 3 mins
             if 2 <= c_hour and c_hour <= 5:
@@ -105,7 +106,7 @@ class Clock:
                     # I hope this does not create long term damage 🤞
                     logger.info("EPD Sleep(ish) ....")
                 else:
-                    logger.info("Sleeping... {}".format(dt.now().strftime("%-I:%M%p")))
+                    logger.info(f"Sleeping... {dt.now().strftime('%-I:%M%p')}")
                 break
             elif not self.did_epd_init:
                 if not self.local_run:
@@ -165,7 +166,7 @@ class Clock:
                             time_image, time_width = self.image_obj.create_time_text(time_str, self.weather_info)
                             if not self.local_run:
                                 if self.time_on_right:
-                                    self.epd.EPD_4IN2_PartialDisplay(int(self.image_obj.WIDTH-5-time_width), 245, int(self.image_obj.WIDTH-5), 288, self.epd.getbuffer(time_image))
+                                    self.epd.EPD_4IN2_PartialDisplay(int(self.image_obj.width-5-time_width), 245, int(self.image_obj.width-5), 288, self.epd.getbuffer(time_image))
                                 else:
                                     self.epd.EPD_4IN2_PartialDisplay(5, 245, int(5+time_width), 288, self.epd.getbuffer(time_image))
                             else:
@@ -175,7 +176,7 @@ class Clock:
                     sleep(max(remaining_time+120, 0))
             elif c_hour < 2:
                 # 12:00am - 1:59am update screen every 5ish minutes
-                logger.info("\t", round(self.time_elapsed, 2), "\tseconds per loop\t", "sleeping for {} seconds".format(int(remaining_time+240)))
+                logger.info(f"\t{round(self.time_elapsed, 2)}\tseconds per loop\tsleeping for {int(remaining_time+240)} seconds")
                 sleep(max(remaining_time+240, 0))
 
             # Increment counter for Weather requests
@@ -212,7 +213,7 @@ class Clock:
 
         # --- Spotify User 2 or Album Art Display ---
         if not self.single_user:
-            track_2, artist_2, time_since_2, tmp_ctx_type_2, tmp_ctn_name_2, track_image_link, album_name_2 = self.spotify_user_2.get_spotipy_info()
+            track_2, artist_2, time_since_2, tmp_ctx_type_2, tmp_ctn_name_2, track_image_link, _ = self.spotify_user_2.get_spotipy_info()
             track_line_count, track_text_size = self.image_obj.draw_track_text(track_2, 5, 26)
             self.image_obj.draw_artist_text(artist_2, track_line_count, track_text_size, 5, 26)
 
