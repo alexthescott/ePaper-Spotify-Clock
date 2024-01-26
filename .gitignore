@@ -1,0 +1,8 @@
+album_art/
+test_output/
+config/secrets.txt
+cache/
+*context.*
+.*cache*
+*.log
+*.pyc

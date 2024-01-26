@@ -3,12 +3,14 @@
 # navigate to directory then execute python script 
 
 runscript(){
-	python3 mainSpotifyEPD.py
+	python3 mainSpotifyClock.py 2>> failures.txt
+	echo "Failure occurred at: $(date '+%Y-%m-%d %H:%M:%S')" >> failures.txt
+	echo "" >> failures.txt
 }
 
-cd /home/alex/e-Paper/Pi/python/examples/
+cd /home/{USER}/e-Paper/Pi/python/examples/
 while true; 
 do
 	runscript
-	sleep 3m 
+    sleep 1m 
 done
