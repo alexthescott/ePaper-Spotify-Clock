@@ -82,6 +82,9 @@ class Draw():
         self.collection_icon = Image.open('Icons/collection.png')
 
     def load_display_settings(self):
+        """
+        Load display settings from config/display_settings.json
+        """
         # EPD Settings imported from config/display_settings.json ---------------------------------------------------
         with open('config/display_settings.json', 'r', encoding='utf-8') as display_settings:
             display_settings = json.load(display_settings)
