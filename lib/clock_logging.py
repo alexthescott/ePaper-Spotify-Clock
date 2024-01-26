@@ -8,7 +8,7 @@ misc = Misc()
 logger = logging.getLogger(__name__)
 
 # Read the value from the cache/args_parse.json file
-with open('cache/args_parse.json', 'r') as f:
+with open('cache/args_parse.json', 'r', encoding='utf-8') as f:
     config = json.load(f)
 
 verbose_logging = config['verbose_logging']
