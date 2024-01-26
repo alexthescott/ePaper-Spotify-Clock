@@ -10,6 +10,11 @@ from lib.json_io import LocalJsonIO
 from lib.clock_logging import logger
 
 class Clock:
+    """
+    Clock updates the screen with the current Spotify info, time, date, and weather on a regular loop
+    Clock caches the local context of the Spotify user, and will only update the context if the user has changed
+    Clock will update the weather every 5 minutes
+    """
     def __init__(self):
         # -------- Init --------
         self.local_run = False
@@ -107,7 +112,8 @@ class Clock:
             # c_minute = int(date.strftime("%-M")) # in case we need it later
 
             # from 2:01 - 5:59am, don't init the display, return from main, and have .sh script run again in 3 mins
-            if 2 <= c_hour and c_hour <= 5:
+            sleeping_hours = 2 <= c_hour and c_hour <= 5
+            if sleeping_hours:
                 if self.did_epd_init:
                     # in sleep() from epd4in2.py, epdconfig.module_exit() is never called
                     # I hope this does not create long term damage 🤞
@@ -180,11 +186,11 @@ class Clock:
                                 self.save_local_file()
                         partial_update_count += 1
                 else:
-                    sleep(max(remaining_time+120, 0))
+                    sleep(max(2+remaining_time+120, 0))
             elif c_hour < 2:
                 # 12:00am - 1:59am update screen every 5ish minutes
                 logger.info(f"\t{round(self.time_elapsed, 2)}\tseconds per loop\tsleeping for {int(remaining_time+240)} seconds")
-                sleep(max(remaining_time+240, 0))
+                sleep(max(2+remaining_time+240, 0))
 
             # Increment counter for Weather requests
             self.count_to_5 = 0 if self.count_to_5 == 4 else self.count_to_5 + 1
