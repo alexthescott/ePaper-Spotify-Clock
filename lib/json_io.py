@@ -1,13 +1,16 @@
 import json
+from lib.clock_logging import logger
 
 class LocalJsonIO():
     def write_json_ctx(self, left_ctx, right_ctx):
-        """ creates, writes to context.txt a json object containing the ctx of left and right users. """
+        """
+        Creates, writes to context.txt a json object containing the ctx of left and right users.
+        """
 
         # if we have already written context info, don't rewrite file
         left_temp_ctx, right_tmp_ctx = left_ctx, right_ctx
         try:
-            with open('cache/context.txt') as j_ctx:
+            with open('cache/context.txt', encoding='utf-8') as j_ctx:
                 write_l_ctx, write_r_ctx = True, True
                 data = json.load(j_ctx)
 
@@ -20,9 +23,8 @@ class LocalJsonIO():
 
                 if not write_l_ctx and not write_r_ctx:
                     return
-                print("Update context.txt")
-                print("left_ctx: {} right_ctx: {}".format(left_ctx, right_ctx))
-        except Exception as e:
+                logger.info("write_json_ctx() - left_ctx: %s right_ctx: %s", left_ctx, right_ctx)
+        except (FileNotFoundError, PermissionError) as e:
             print("write_json_ctx() Failed:", e)
             print("writing to new context.txt")
 
@@ -41,13 +43,15 @@ class LocalJsonIO():
             'title': right_tmp_ctx[1]
         })
 
-        with open('cache/context.txt', 'w+') as j_cxt:
+        with open('cache/context.txt', 'w+', encoding='utf-8') as j_cxt:
             json.dump(context_data, j_cxt)
 
 
     def read_json_ctx(self, left_ctx, right_ctx):
-        """ Read context.txt, returning ctx found if left_ctx, or right_ctx is empty. """
-        with open('cache/context.txt') as j_cxt:
+        """
+        Read context.txt, returning ctx found if left_ctx, or right_ctx is empty. 
+        """
+        with open('cache/context.txt', 'w+', encoding='utf-8') as j_cxt:
             context_data = json.load(j_cxt)
             data = context_data['context']
             # Only update an empty context side. Either update the left ctx, the right ctx, or both ctx files
