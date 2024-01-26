@@ -1,6 +1,14 @@
 # 4.2in E-Paper Spotify Weather Clock 
 This project uses Python3 to display [two](https://open.spotify.com/user/bassguitar1234?si=hHnnqHUGTe25liNezp9cJQ) [users'](https://open.spotify.com/user/ermisk?si=0G5DmMxCRLuUm1G6-EWhFA) recent Spotify history, weather for two cities (local and away), and the current time 
 
+# 2024 re-rewite in progress
+
+#### Notes for WIP
+sudo apt-get install imagemagick used in dither_image()
+
+# rewrite end
+
+
 <p align="center">
 	<img src="spotify_epaper_preview.png" width="400">
 	<img src="spotify_epaper_preview2.png" width="400">
@@ -19,6 +27,7 @@ Image and Front Resources -> [Icons](https://github.com/alexthescott/ePaper-Spot
 1) In the 'Hardware/Software setup' tab of Waveshare's [4.2inch wiki](https://www.waveshare.com/wiki/4.2inch_e-Paper_Module), use the GPIO guide to attach the display to the Pi
 
 2) Enable SPI interface by launching raspi-config, choosing 'Interfacing Options', 'SPI', Yes to enable SPI interface
+
 
 ```bash
 sudo raspi-config
