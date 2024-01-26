@@ -1,9 +1,11 @@
-import spotipy
-from spotipy.exceptions import SpotifyException
-from requests.exceptions import ReadTimeout
 import json
 import logging
-from datetime import timedelta, datetime as dt
+from datetime import datetime
+from requests.exceptions import ReadTimeout
+
+import spotipy
+from spotipy.exceptions import SpotifyException
+
 from lib.clock_logging import logger
 
 spotify_logger = logging.getLogger('spotipy.client')
@@ -36,18 +38,21 @@ def get_time_since_played(hours, minutes):
         return str(hours // 24) + "  days ago"
 
 class SpotifyUser():
+    """ 
+    Class to handle Spotify User Information needed for Clock()
+    """
     def __init__(self, name="CHANGE_ME", single_user=False, main=True):
         # Generate Spotify client_id and client_secret
         # https://developer.spotify.com/dashboard/
         self.scope = "user-read-private, user-read-recently-played, user-read-playback-state, user-read-currently-playing"
         self.redirect_uri = 'http://www.google.com/'
         
-        
+        self.dt = None
         self.spot_client_id = '7423e2b31f244d2498126f51075aba54'  
         self.spot_client_secret = 'de3a403cc1e7445896a80f7a8f18d8c8' 
         self.cache = 'cache/.authcache1' if main else 'cache/.authcache2'
         self.name = name # drawn at the top of the screen
-        self.SINGLE_USER = single_user
+        self.single_user = single_user
         self.oauth = None
         self.oauth_token_info = None
         self.sp = None
@@ -55,27 +60,19 @@ class SpotifyUser():
         self.update_spotipy_token()
 
     def load_credentials(self):
-        with open('config/keys.json', 'r') as f:
+        """
+        Load display settings from config/display_settings.json
+        """
+        with open('config/keys.json', 'r', encoding='utf-8') as f:
             credentials = json.load(f)
             self.spot_client_id = credentials['spot_client_id']
             self.spot_client_secret = credentials['spot_client_secret']
 
-    def get_user_token(self):
-
-        # GET right user's SPOTIFY TOKEN
-        # print("Get right user's Spotify Token")
-        response = self.update_spotipy_token(self.oauth, self.oauth_token_info)
-        if response:
-            track, artist, time_since, tmp_ctx_type, tmp_ctx_name, track_image_link, album_name = self.get_spotipy_info(self.token, get_album_art=self.SINGLE_USER)
-            ctx_type = tmp_ctx_type if tmp_ctx_type != "" else ctx_type
-            ctx_name = tmp_ctx_name if tmp_ctx_name != "" else ctx_name
-        else:
-            print(":( Right's access token unavailable")
-            r_track, r_artist = "", ""
-
     # Spotify Functions
     def update_spotipy_token(self):
-        """ Updates Spotify Token from self.oauth if token_info is stale. """
+        """ 
+        Updates Spotify Token from self.oauth if token_info is stale. 
+        """
         self.oauth = spotipy.oauth2.SpotifyOAuth(self.spot_client_id, self.spot_client_secret, self.redirect_uri, scope=self.scope, cache_path=self.cache, requests_timeout=10)
         self.oauth_token_info = self.oauth.get_cached_token()
 
@@ -107,7 +104,7 @@ class SpotifyUser():
                 context_type: used to determine context icon -> pulled from get_context_from_json()
                 context_name: context name to be displayed -> pulled from get_context_from_json()
         """
-        self.dt = dt.now()
+        self.dt = datetime.now()
         for _ in range(3):
             try:
                 recent = self.sp.current_user_playing_track()
@@ -116,7 +113,7 @@ class SpotifyUser():
                 logger.info(e)
                 self.update_spotipy_token()
         else:
-            logger.error(f"Failed to get current {self.name}'s Spotify Info")
+            logger.error("Failed to get current %s's Spotify Info", self.name)
             return "", "", "", "", "", None, None
         
         context_type, context_name, time_passed = "", "", ""
@@ -128,13 +125,10 @@ class SpotifyUser():
 
             # GET TRACK && ARTIST
             track_name, artists = recent['item']['name'], recent['item']['artists']
-            artist_name = ""
-            for i in range(len(artists)):
-                artist_name += artists[i]['name'] + ", "
-            artist_name = artist_name[:-2]
+            artist_name = ', '.join(artist['name'] for artist in artists)
 
             # need image data as single_user
-            if self.SINGLE_USER:
+            if self.single_user:
                 track_image_link = recent['item']['album']['images'][0]['url']
                 album_name = recent['item']['album']['name']
         else:
@@ -146,18 +140,15 @@ class SpotifyUser():
             track_image_link = tracks[0]['track']['album']['images'][0]['url']
             album_name = track['track']['album']['name']
             # Concatenate artist names
-            artist_name = ""
-            for i in range(len(artists)):
-                artist_name += track['track']['artists'][i]['name'] + ", "
-            artist_name = artist_name[:-2]
+            artist_name = ', '.join(track['track']['artists'][i]['name'] for i in range(len(artists)))
 
             last_timestamp = track['played_at']
             str_timestamp = last_timestamp[:10] + " " + last_timestamp[11:19]
-            timestamp = dt.strptime(str_timestamp, "%Y-%m-%d %H:%M:%S")
-            hours_passed, minutes_passed = get_time_from_timedelta(dt.utcnow() - timestamp)
+            timestamp = self.dt.strptime(str_timestamp, "%Y-%m-%d %H:%M:%S")
+            hours_passed, minutes_passed = get_time_from_timedelta(self.dt.utcnow() - timestamp)
             time_passed = get_time_since_played(hours_passed, minutes_passed)
             context_type, context_name = self.get_context_from_json(track['context'])
-        logger.info(f"Spotify Info:{track_name} by {artist_name} playing from from {context_name} {context_type}")
+        logger.info("Spotify Info:%s by %s playing from from %s %s", track_name, artist_name, context_name, context_type)
         return track_name, artist_name, time_passed, context_type, context_name, track_image_link, album_name
         
     def get_context_from_json(self, context_json):
