@@ -91,7 +91,7 @@ class Clock:
             if self.weather_info is None or self.count_to_5 >= 4:
                 self.set_weather_and_sunset_info()
             sec_left, time_str = self.get_time_from_date_time()
-            logger.info(f"Time: {time_str}")
+            logger.info("Time: %s", time_str)
             start = time() # Used to 'push' our clock timing forward to account for EPD time
 
             # If we have no context read, grab context our cache/context.txt json file
@@ -119,7 +119,7 @@ class Clock:
                     # I hope this does not create long term damage 🤞
                     logger.info("EPD Sleep(ish) ....")
                 else:
-                    logger.info(f"Sleeping... {dt.now().strftime('%-I:%M%p')}")
+                    logger.info("Sleeping... %s", dt.now().strftime('%-I:%M%p'))
                 break
             elif not self.did_epd_init:
                 if not self.local_run:
@@ -156,7 +156,7 @@ class Clock:
 
             if 5 < c_hour and c_hour < 24:
                 # 6:00am - 12:59pm update screen every 3 minutes
-                logger.info(f"\t{round(self.time_elapsed, 2)}\tseconds per loop\tsleeping for {int(remaining_time/1+120)} seconds")
+                logger.info("\t%.2f\tseconds per loop\tsleeping for %d seconds", round(self.time_elapsed, 2), int(remaining_time/1+120))
                 # if we do partial updates and darkmode, you get a worrisome zebra stripe artifact on the EPD
                 if self.partial_update and not self.flip_to_dark:
                     # Create new time image, push to display, full update after 2 partials
@@ -166,16 +166,16 @@ class Clock:
                         sec_left = 62 - int(date.strftime("%S"))
 
                         if partial_update_count < 2:
-                            logger.info(f"\t{round(sec_left, 2)}s sleep, partial_update")
+                            logger.info("\t%s sleep, partial_update", round(sec_left, 2))
                             sleep(sec_left)
                         else:
-                            logger.info(f"\t{round(self.time_elapsed, 2)}\tseconds per loop\tsleeping for {int(remaining_time/1+120)} seconds")
+                            logger.info("\t%.2f\tseconds per loop\tsleeping for %d seconds", round(self.time_elapsed, 2), int(remaining_time/1+120))
                             sleep(sec_left-self.time_elapsed)
 
                         if sec_left > 5 and partial_update_count < 2:
                             date = dt.now()
                             time_str = date.strftime("%-H:%M") if self.twenty_four_hour_clock else date.strftime("%-I:%M") + date.strftime("%p").lower()
-                            logger.info(f"\ttimestr:{time_str}")
+                            logger.info("\ttimestr:%s", time_str)
                             time_image, time_width = self.image_obj.create_time_text(time_str, self.weather_info)
                             if not self.local_run:
                                 if self.time_on_right:
@@ -189,7 +189,7 @@ class Clock:
                     sleep(max(2+remaining_time+120, 0))
             elif c_hour < 2:
                 # 12:00am - 1:59am update screen every 5ish minutes
-                logger.info(f"\t{round(self.time_elapsed, 2)}\tseconds per loop\tsleeping for {int(remaining_time+240)} seconds")
+                logger.info("\t%.2f\tseconds per loop\tsleeping for %d seconds", round(self.time_elapsed, 2), int(remaining_time+240))
                 sleep(max(2+remaining_time+240, 0))
 
             # Increment counter for Weather requests
