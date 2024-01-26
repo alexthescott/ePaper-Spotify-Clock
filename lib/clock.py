@@ -39,6 +39,7 @@ class Clock:
         self.time_elapsed = 15.0
         self.old_time = None
         self.flip_to_dark = False
+        self.get_new_album_art = False if self.single_user else None
 
         # Weather/Sunset vars
         self.weather_info = None
@@ -46,6 +47,9 @@ class Clock:
         self.sunset_time_tuple = None
 
     def load_display_settings(self):
+        """
+        Load display settings from config/display_settings.json
+        """
         with open("config/display_settings.json", encoding="utf-8") as display_settings:
             display_settings = json.load(display_settings)
             main_settings = display_settings["main_settings"]
@@ -66,7 +70,10 @@ class Clock:
 
     def set_weather_and_sunset_info(self):
         self.weather_info, self.sunset_info = self.weather.get_weather_and_sunset_info()
+        flip_to_dark_before = self.flip_to_dark
         self.flip_to_dark = self.misc.has_sun_set(self.sunset_info, self.sunset_flip)
+        if not flip_to_dark_before and self.flip_to_dark:
+            self.get_new_album_art = True
 
     def save_local_file(self):
         # avoid saving this for now; maybe come back for it later with program argument
@@ -224,9 +231,10 @@ class Clock:
             name_width_2, name_height_2 = self.image_obj.draw_name(self.spotify_user_2.name, 8, 0)
             self.image_obj.draw_user_time_ago(time_since_2, 18+name_width_2, name_height_2 /2)
         else:
-            get_new_album_art = self.old_album_name1 != self.album_name_1
+            get_new_album_art = self.old_album_name1 != self.album_name_1 or self.get_new_album_art
             if get_new_album_art:
                 self.misc.get_album_art(track_image_link)
+                self.get_new_album_art = False
             album_pos = (201, 0) if self.album_art_right_side else (0, 0)
             context_pos = (227, 204) if self.album_art_right_side else (25, 204)
             self.image_obj.draw_album_image(self.flip_to_dark, pos=album_pos, convert_image=get_new_album_art)
