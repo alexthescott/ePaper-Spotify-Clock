@@ -3,6 +3,7 @@ This project uses Python3 to display [two](https://open.spotify.com/user/bassgui
 
 # 2024 re-rewite in progress 0.5
 
+
 #### Notes for WIP
 
 If you want to use this beta version, fill the keys.json file generated with the OpenWeather and Spotify APIs
