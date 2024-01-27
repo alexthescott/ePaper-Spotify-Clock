@@ -1,6 +1,7 @@
 import json
 from time import time, sleep
 from datetime import timedelta, datetime as dt
+from PIL import ImageMath
 
 from lib.draw import Draw
 from lib.weather import Weather
@@ -178,6 +179,8 @@ class Clock:
                             time_str = date.strftime("%-H:%M") if self.twenty_four_hour_clock else date.strftime("%-I:%M") + date.strftime("%p").lower()
                             logger.info("\ttimestr:%s", time_str)
                             time_image, time_width = self.image_obj.create_time_text(time_str, self.weather_info)
+                            # flip image polarity
+                            time_image = ImageMath.eval('255-(a)', a=time_image)
                             if not self.local_run:
                                 if self.time_on_right:
                                     self.epd.EPD_4IN2_PartialDisplay(int(self.image_obj.width-5-time_width), 245, int(self.image_obj.width-5), 288, self.epd.getbuffer(time_image))
