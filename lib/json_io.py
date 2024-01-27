@@ -50,13 +50,17 @@ class LocalJsonIO():
         """
         Read context.txt, returning ctx found if left_ctx, or right_ctx is empty. 
         """
-        with open('cache/context.txt', 'w+', encoding='utf-8') as j_cxt:
-            context_data = json.load(j_cxt)
-            data = context_data['context']
-            # Only update an empty context side. Either update the left ctx, the right ctx, or both ctx files
-            if left_ctx[0] != "" and left_ctx[1] != "" and right_ctx[0] == "" and right_ctx[1] == "":
-                return left_ctx[0], left_ctx[1], data[1]['type'], data[1]['title']
-            elif left_ctx[0] == "" and left_ctx[1] == "" and right_ctx[0] != "" and right_ctx[1] != "":
-                return data[0]['type'], data[0]['title'], right_ctx[0], right_ctx[1]
-            else:
-                return data[0]['type'], data[0]['title'], data[1]['type'], data[1]['title']
+        try:
+            with open('cache/context.txt', 'w+', encoding='utf-8') as j_cxt:
+                context_data = json.load(j_cxt)
+                data = context_data['context']
+                # Only update an empty context side. Either update the left ctx, the right ctx, or both ctx files
+                if left_ctx[0] != "" and left_ctx[1] != "" and right_ctx[0] == "" and right_ctx[1] == "":
+                    return left_ctx[0], left_ctx[1], data[1]['type'], data[1]['title']
+                elif left_ctx[0] == "" and left_ctx[1] == "" and right_ctx[0] != "" and right_ctx[1] != "":
+                    return data[0]['type'], data[0]['title'], right_ctx[0], right_ctx[1]
+                else:
+                    return data[0]['type'], data[0]['title'], data[1]['type'], data[1]['title']
+        except (FileNotFoundError, PermissionError) as e:
+            logger.info("read_json_ctx() Failed: %s", e)
+            return "", "", "", ""
