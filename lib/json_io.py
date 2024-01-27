@@ -46,7 +46,6 @@ class LocalJsonIO():
         with open('cache/context.txt', 'w+', encoding='utf-8') as j_cxt:
             json.dump(context_data, j_cxt)
 
-
     def read_json_ctx(self, left_ctx, right_ctx):
         """
         Read context.txt, returning ctx found if left_ctx, or right_ctx is empty. 

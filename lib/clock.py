@@ -76,9 +76,10 @@ class Clock:
     def set_weather_and_sunset_info(self):
         self.weather_info, self.sunset_info = self.weather.get_weather_and_sunset_info()
         flip_to_dark_before = self.flip_to_dark
-        self.flip_to_dark = self.misc.has_sun_set(self.sunset_info, self.sunset_flip)
-        if not flip_to_dark_before and self.flip_to_dark:
-            self.get_new_album_art = True
+        if self.sunset_flip:
+            self.flip_to_dark = self.misc.has_sun_set(self.sunset_info, self.sunset_flip)
+            if not flip_to_dark_before and self.flip_to_dark:
+                self.get_new_album_art = True
 
     def save_local_file(self):
         # avoid saving this for now; maybe come back for it later with program argument
