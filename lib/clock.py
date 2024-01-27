@@ -184,6 +184,7 @@ class Clock:
                                 else:
                                     self.epd.EPD_4IN2_PartialDisplay(5, 245, int(5+time_width), 288, self.epd.getbuffer(time_image))
                             else:
+                                self.build_image()
                                 self.save_local_file()
                         partial_update_count += 1
                 else:
@@ -253,6 +254,9 @@ class Clock:
         # -------- Dark Mode --------
         # Dark mode ~25 minutes after the sunsets. Determined by the bool sunset_flip
         if self.flip_to_dark:
+            self.image_obj.dark_mode_flip()
+        if self.partial_update and not self.local_run:
+            # partial updates are inverted on the EPD? I don't know why, but it works
             self.image_obj.dark_mode_flip()
 
     def get_time_from_date_time(self):
