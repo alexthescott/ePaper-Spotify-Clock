@@ -146,6 +146,9 @@ class Clock:
                         self.epd.display_4Gray(self.epd.getbuffer_4Gray(self.image_obj.get_image_obj()))
                     else:
                         self.epd.display(self.epd.getbuffer(self.image_obj.get_image_obj()))
+                    logger.info("\tSleeping EPD")
+                    self.epd.sleep()
+                    self.did_epd_init = False
                 else:
                     logger.info("\tSaving Image Locally")
                     self.save_local_file()
