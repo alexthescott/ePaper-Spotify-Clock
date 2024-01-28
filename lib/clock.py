@@ -102,8 +102,8 @@ class Clock:
                     fh = open("cache/context.txt", encoding="utf-8")
                     self.ctx_type_1, self.ctx_type_1, self.ctx_type_2, self.ctx_title_2 = self.ctx_io.read_json_ctx((self.ctx_type_1, self.ctx_title_1), (self.ctx_type_2, self.ctx_title_2))
                     fh.close()
-                except FileNotFoundError:
-                    logger.error("cache/context.txt doesn't exist")
+                except (FileNotFoundError, json.JSONDecodeError) as e:
+                    logger.error("cache/context.txt -> %s", e)
                 self.ctx_io.write_json_ctx((self.ctx_type_1, self.ctx_title_1), (self.ctx_type_2, self.ctx_title_2))
                 
             self.build_image()
