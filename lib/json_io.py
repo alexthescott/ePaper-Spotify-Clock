@@ -11,7 +11,6 @@ class LocalJsonIO():
         """
         # Try load existing data into context_data
         context_data = self.read_json_ctx(full_json=True)
-        import pdb; pdb.set_trace()
         if not context_data:
             context_data = {'context': []}
 
