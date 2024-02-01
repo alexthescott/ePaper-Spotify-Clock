@@ -49,7 +49,7 @@ class LocalJsonIO():
                         json_ctx = json_ctx['context']
                         json_ctx = json_ctx[1] if use_right_side else json_ctx[0]
                         return json_ctx['type'], json_ctx['title']
-                except json.JSONDecodeError as e:
+                except (json.JSONDecodeError, IndexError) as e:
                     side = "right" if use_right_side else "left"
                     logger.error("error reading cache/context.txt for %s side-> %s", side, e)
         return None, None
