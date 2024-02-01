@@ -25,6 +25,8 @@ class Draw():
         self.load_display_settings()
         self.load_resources()
         self.album_image = None
+        self.dt = None
+        self.time_str = None
 
         if not os.path.exists("album_art"):
             os.makedirs("album_art")
@@ -372,10 +374,9 @@ class Draw():
             
             if self.four_gray_scale:
                 before_dither = time()
-                logger.info("Starting Dithering album_art")
                 self.dither_album_art()
                 after_dither = time()
-                logger.info(f"* Dithering took {after_dither - before_dither:.2f} seconds *")
+                logger.info("* Dithering took %.2f seconds *", after_dither - before_dither)
 
             if dark_mode:
                 self.album_image = ImageMath.eval('255-(a)', a=self.album_image)

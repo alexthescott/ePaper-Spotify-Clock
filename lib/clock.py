@@ -97,19 +97,18 @@ class Clock:
             start = time() # Used to 'push' our clock timing forward to account for EPD time
 
             # If we have no context read, grab context our cache/context.txt json file
-            ctx_full_1, ctx_full_2 = all([self.ctx_type_1, self.ctx_title_1]), all([self.ctx_type_2, self.ctx_title_2])
-            if ctx_full_1 or ctx_full_2:
-                try:
-                    fh = open("cache/context.txt", encoding="utf-8")
-                    self.ctx_type_1, self.ctx_title_1, self.ctx_type_2, self.ctx_title_2 = self.ctx_io.read_json_ctx((self.ctx_type_1, self.ctx_title_1), (self.ctx_type_2, self.ctx_title_2))
-                    fh.close()
-                except (FileNotFoundError, json.JSONDecodeError) as e:
-                    logger.error("error reading cache/context.txt -> %s", e)
-            if ctx_full_1 and ctx_full_2:
-                try:
-                    self.ctx_io.write_json_ctx((self.ctx_type_1, self.ctx_title_1), (self.ctx_type_2, self.ctx_title_2))
-                except json.JSONDecodeError as e:
-                    logger.error("error writing cache/context.txt -> %s", e)
+            if all([self.ctx_type_1, self.ctx_title_1]):
+                # write user_1 to context.json
+                self.ctx_io.write_json_ctx((self.ctx_type_1, self.ctx_title_1), self.album_art_right_side)
+            else:
+                # get user_1 from context.json
+                self.ctx_type_1, self.ctx_type_2 = self.ctx_io.read_json_ctx(self.album_art_right_side)
+            if all([self.ctx_type_2, self.ctx_title_2]):
+                # write user_2 to context.json
+                self.ctx_io.write_json_ctx((self.ctx_type_2, self.ctx_title_2), not self.album_art_right_side)
+            else:
+                # get user_2 from context.json
+                self.ctx_type_2, self.ctx_title_2 = self.ctx_io.read_json_ctx(not self.album_art_right_side)
                 
             self.build_image()
 
