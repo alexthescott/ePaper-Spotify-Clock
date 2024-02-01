@@ -53,4 +53,4 @@ class LocalJsonIO():
                 except json.JSONDecodeError as e:
                     side = "right" if use_right_side else "left"
                     logger.error("error reading cache/context.txt for %s side-> %s", side, e)
-                    return None, None
+                return None, None
