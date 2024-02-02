@@ -65,7 +65,8 @@ class Clock:
             self.twenty_four_hour_clock = main_settings["twenty_four_hour_clock"]
             self.partial_update = main_settings["partial_update"]
             self.time_on_right = main_settings["time_on_right"]
-            self.four_gray_scale = main_settings["four_gray_scale"]  
+            self.sleep_epd = main_settings["sleep_epd"] # it is not recommended to set sleep_epd to False as it might damage the display
+            self.four_gray_scale = main_settings["four_gray_scale"]
             self.single_user = single_user_settings["enable_single_user"]
             self.album_art_right_side = single_user_settings["album_art_right_side"]
             self.name_1 = clock_names["name_1"]
@@ -150,9 +151,10 @@ class Clock:
                         self.epd.display_4Gray(self.epd.getbuffer_4Gray(self.image_obj.get_image_obj()))
                     else:
                         self.epd.display(self.epd.getbuffer(self.image_obj.get_image_obj()))
-                    logger.info("\tSleeping EPD")
-                    self.epd.sleep()
-                    self.did_epd_init = False
+                    if self.sleep_epd:
+                        logger.info("\tSleeping EPD")
+                        self.epd.sleep()
+                        self.did_epd_init = False
                 else:
                     logger.info("\tSaving Image Locally")
                     self.save_local_file()
