@@ -171,7 +171,7 @@ class SpotifyUser():
                     playlist_json = self.sp.playlist(context_uri)
                     context_name = playlist_json['name']
                 except SpotifyException:
-                    logger.info("playlist() call failed, assuming User is listening to DJ mix")
+                    # playlist() call failed, assuming User is listening to DJ mix
                     context_name = "DJ"
             elif context_type == 'album':
                 album_json = self.sp.album(context_uri)
