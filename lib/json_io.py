@@ -14,14 +14,17 @@ class LocalJsonIO():
         if None in context_data:
             context_data = {'context': []}
 
-        # Update data
+        # Remove existing right-side context if use_right_side is True
         if use_right_side:
+            context_data['context'] = [c for c in context_data['context'] if c['position'] != 'right']
             context_data['context'].append({
                 'position': 'right',
                 'type': ctx[0],
                 'title': ctx[1]
             })
         else:
+            # Remove existing left-side context
+            context_data['context'] = [c for c in context_data['context'] if c['position'] != 'left']
             context_data['context'].append({
                 'position': 'left',
                 'type': ctx[0],
