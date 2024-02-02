@@ -1,4 +1,5 @@
 import logging
+from logging.handlers import RotatingFileHandler
 import json
 from lib.misc import Misc
 
@@ -26,7 +27,7 @@ if verbose_logging:
     # Add handlers to the logger
     logger.addHandler(c_handler)
 
-f_handler = logging.FileHandler('cache/clock.log')
+f_handler = RotatingFileHandler('cache/clock.log', maxBytes=2*1024*1024, backupCount=5)
 f_handler.setLevel(logging.INFO)
 f_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 f_handler.setFormatter(f_format)
