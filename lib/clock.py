@@ -32,10 +32,10 @@ class Clock:
         self.weather = Weather()
         self.misc = Misc()
         self.ctx_io = LocalJsonIO()
-        self.spotify_user_1 = SpotifyUser(self.name_1, main=True)
+        self.spotify_user_1 = SpotifyUser(self.name_1, self.single_user, me=True)
         self.ctx_type_1, self.ctx_title_1 = "", ""
         self.old_album_name1, self.album_name_1 = "", ""
-        self.spotify_user_2 = (SpotifyUser(self.name_2, main=False) if not self.single_user else None)
+        self.spotify_user_2 = SpotifyUser(self.name_2, self.single_user, me=False) if not self.single_user else None
         self.ctx_type_2, self.ctx_title_2 = "", ""
 
         # EPD vars/settings
