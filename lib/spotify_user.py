@@ -46,11 +46,10 @@ class SpotifyUser():
         # https://developer.spotify.com/dashboard/
         self.scope = "user-read-private, user-read-recently-played, user-read-playback-state, user-read-currently-playing"
         self.redirect_uri = 'http://www.google.com/'
-        
-        self.dt = None
-        self.spot_client_id = '7423e2b31f244d2498126f51075aba54'  
-        self.spot_client_secret = 'de3a403cc1e7445896a80f7a8f18d8c8' 
-        self.cache = 'cache/.authcache1' if main else 'cache/.authcache2'
+        self.main = main
+        self.spot_client_id = ''  
+        self.spot_client_secret = '' 
+        self.cache = '.authcache1' if self.main else '.authcache2'
         self.name = name # drawn at the top of the screen
         self.single_user = single_user
         self.oauth = None
@@ -65,8 +64,8 @@ class SpotifyUser():
         """
         with open('config/keys.json', 'r', encoding='utf-8') as f:
             credentials = json.load(f)
-            self.spot_client_id = credentials['spot_client_id']
-            self.spot_client_secret = credentials['spot_client_secret']
+            self.spot_client_id = credentials['spot_client_id_me'] if self.main else credentials['spot_client_id_you']
+            self.spot_client_secret = credentials['spot_client_secret_me'] if self.main else credentials['spot_client_secret_you']
 
     # Spotify Functions
     def update_spotipy_token(self):
