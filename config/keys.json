@@ -1,6 +1,8 @@
 {
-    "spot_client_id": "",
-    "spot_client_secret": "",
+    "spot_client_id_me": "",
+    "spot_client_secret_me": "",
+    "spot_client_id_you": "",
+    "spot_client_secret_you": "",
     "ow_key": "",
     "ow_alt_weather_zip": ""
 }

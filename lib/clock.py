@@ -1,6 +1,7 @@
 import json
 from time import time, sleep
 from datetime import timedelta, datetime as dt
+from PIL import ImageMath
 
 from lib.draw import Draw
 from lib.weather import Weather
@@ -31,7 +32,7 @@ class Clock:
         self.weather = Weather()
         self.misc = Misc()
         self.ctx_io = LocalJsonIO()
-        self.spotify_user_1 = SpotifyUser(self.name_1, single_user=self.single_user)
+        self.spotify_user_1 = SpotifyUser(self.name_1, main=True)
         self.ctx_type_1, self.ctx_title_1 = "", ""
         self.old_album_name1, self.album_name_1 = "", ""
         self.spotify_user_2 = (SpotifyUser(self.name_2, main=False) if not self.single_user else None)
@@ -64,7 +65,8 @@ class Clock:
             self.twenty_four_hour_clock = main_settings["twenty_four_hour_clock"]
             self.partial_update = main_settings["partial_update"]
             self.time_on_right = main_settings["time_on_right"]
-            self.four_gray_scale = main_settings["four_gray_scale"]  
+            self.sleep_epd = main_settings["sleep_epd"] # it is not recommended to set sleep_epd to False as it might damage the display
+            self.four_gray_scale = main_settings["four_gray_scale"]
             self.single_user = single_user_settings["enable_single_user"]
             self.album_art_right_side = single_user_settings["album_art_right_side"]
             self.name_1 = clock_names["name_1"]
@@ -76,9 +78,10 @@ class Clock:
     def set_weather_and_sunset_info(self):
         self.weather_info, self.sunset_info = self.weather.get_weather_and_sunset_info()
         flip_to_dark_before = self.flip_to_dark
-        self.flip_to_dark = self.misc.has_sun_set(self.sunset_info, self.sunset_flip)
-        if not flip_to_dark_before and self.flip_to_dark:
-            self.get_new_album_art = True
+        if self.sunset_flip:
+            self.flip_to_dark = self.misc.has_sun_set(self.sunset_info, self.sunset_flip)
+            if not flip_to_dark_before and self.flip_to_dark:
+                self.get_new_album_art = True
 
     def save_local_file(self):
         # avoid saving this for now; maybe come back for it later with program argument
@@ -95,14 +98,18 @@ class Clock:
             start = time() # Used to 'push' our clock timing forward to account for EPD time
 
             # If we have no context read, grab context our cache/context.txt json file
-            if all([self.ctx_type_1, self.ctx_title_1]) or all([self.ctx_type_2, self.ctx_title_2]):
-                try:
-                    fh = open("cache/context.txt", encoding="utf-8")
-                    self.ctx_type_1, self.ctx_type_1, self.ctx_type_2, self.ctx_title_2 = self.ctx_io.read_json_ctx((self.ctx_type_1, self.ctx_title_1), (self.ctx_type_2, self.ctx_title_2))
-                    fh.close()
-                except FileNotFoundError:
-                    logger.error("cache/context.txt doesn't exist")
-                self.ctx_io.write_json_ctx((self.ctx_type_1, self.ctx_title_1), (self.ctx_type_2, self.ctx_title_2))
+            if all([self.ctx_type_1, self.ctx_title_1]):
+                # write user_1 to context.json
+                self.ctx_io.write_json_ctx((self.ctx_type_1, self.ctx_title_1), self.album_art_right_side)
+            else:
+                # get user_1 from context.json
+                self.ctx_type_1, self.ctx_type_2 = self.ctx_io.read_json_ctx(self.album_art_right_side)
+            if all([self.ctx_type_2, self.ctx_title_2]):
+                # write user_2 to context.json
+                self.ctx_io.write_json_ctx((self.ctx_type_2, self.ctx_title_2), not self.album_art_right_side)
+            else:
+                # get user_2 from context.json
+                self.ctx_type_2, self.ctx_title_2 = self.ctx_io.read_json_ctx(not self.album_art_right_side)
                 
             self.build_image()
 
@@ -144,6 +151,10 @@ class Clock:
                         self.epd.display_4Gray(self.epd.getbuffer_4Gray(self.image_obj.get_image_obj()))
                     else:
                         self.epd.display(self.epd.getbuffer(self.image_obj.get_image_obj()))
+                    if self.sleep_epd:
+                        logger.info("\tSleeping EPD")
+                        self.epd.sleep()
+                        self.did_epd_init = False
                 else:
                     logger.info("\tSaving Image Locally")
                     self.save_local_file()
@@ -177,12 +188,15 @@ class Clock:
                             time_str = date.strftime("%-H:%M") if self.twenty_four_hour_clock else date.strftime("%-I:%M") + date.strftime("%p").lower()
                             logger.info("\ttimestr:%s", time_str)
                             time_image, time_width = self.image_obj.create_time_text(time_str, self.weather_info)
+                            # flip image polarity
+                            time_image = ImageMath.eval('255-(a)', a=time_image)
                             if not self.local_run:
                                 if self.time_on_right:
                                     self.epd.EPD_4IN2_PartialDisplay(int(self.image_obj.width-5-time_width), 245, int(self.image_obj.width-5), 288, self.epd.getbuffer(time_image))
                                 else:
                                     self.epd.EPD_4IN2_PartialDisplay(5, 245, int(5+time_width), 288, self.epd.getbuffer(time_image))
                             else:
+                                self.build_image()
                                 self.save_local_file()
                         partial_update_count += 1
                 else:
@@ -252,6 +266,9 @@ class Clock:
         # -------- Dark Mode --------
         # Dark mode ~25 minutes after the sunsets. Determined by the bool sunset_flip
         if self.flip_to_dark:
+            self.image_obj.dark_mode_flip()
+        if self.partial_update and not self.local_run:
+            # partial updates are inverted on the EPD? I don't know why, but it works
             self.image_obj.dark_mode_flip()
 
     def get_time_from_date_time(self):
