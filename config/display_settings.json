@@ -10,6 +10,7 @@
         "time_on_right": true,
         "hide_other_weather": true,
         "sunset_flip": true,
+        "always_dark_mode": true,
         "four_gray_scale": true,
         "sleep_epd": true
     },

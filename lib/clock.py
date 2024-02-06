@@ -44,7 +44,7 @@ class Clock:
         self.count_to_5 = 0  # count_to_5 is used to get weather every 5 minutes
         self.time_elapsed = 15.0
         self.old_time = None
-        self.flip_to_dark = False
+        self.flip_to_dark = self.always_dark_mode
         self.get_new_album_art = False if self.single_user else None
 
         # Weather/Sunset vars
@@ -62,6 +62,7 @@ class Clock:
             clock_names = display_settings["clock_names"]
             single_user_settings = display_settings["single_user_settings"]
             self.sunset_flip = main_settings["sunset_flip"]
+            self.always_dark_mode = main_settings["always_dark_mode"]
             self.twenty_four_hour_clock = main_settings["twenty_four_hour_clock"]
             self.partial_update = main_settings["partial_update"]
             self.time_on_right = main_settings["time_on_right"]
@@ -74,12 +75,15 @@ class Clock:
 
             if self.partial_update and self.four_gray_scale:
                 raise ValueError("Partial updates are not supported in 4 Gray Scale, you must choose one or another")
+            
+            if self.sunset_flip and self.always_dark_mode:
+                logger.warning("You have both sunset_flip and always_dark_mode enabled, always_dark_mode supersedes sunset_flip")
 
     def set_weather_and_sunset_info(self):
         self.weather_info, self.sunset_info = self.weather.get_weather_and_sunset_info()
         flip_to_dark_before = self.flip_to_dark
         if self.sunset_flip:
-            self.flip_to_dark = self.misc.has_sun_set(self.sunset_info, self.sunset_flip)
+            self.flip_to_dark = self.misc.has_sun_set(self.sunset_info, self.sunset_flip) or self.always_dark_mode
             if not flip_to_dark_before and self.flip_to_dark:
                 self.get_new_album_art = True
 
