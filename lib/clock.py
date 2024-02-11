@@ -256,14 +256,18 @@ class Clock:
             self.image_obj.draw_user_time_ago(time_since_2, 18+name_width_2, name_height_2 /2)
         else:
             get_new_album_art = self.old_album_name1 != self.album_name_1 or self.get_new_album_art
-            if get_new_album_art:
+            if get_new_album_art and track_image_link is not None:
                 self.misc.get_album_art(track_image_link)
                 self.get_new_album_art = False
             album_pos = (201, 0) if self.album_art_right_side else (0, 0)
             context_pos = (227, 204) if self.album_art_right_side else (25, 204)
-            self.image_obj.draw_album_image(self.flip_to_dark, pos=album_pos, convert_image=get_new_album_art)
-            self.image_obj.draw_spot_context("album", self.album_name_1, context_pos[0], context_pos[1])
-            
+            if track_image_link is not None:
+                self.image_obj.draw_album_image(self.flip_to_dark, pos=album_pos, convert_image=get_new_album_art)
+                self.image_obj.draw_spot_context("album", self.album_name_1, context_pos[0], context_pos[1])
+            else:
+                logger.warning("No album art found, drawing NA.png")
+                self.image_obj.draw_album_image(self.flip_to_dark, image_file_name="NA.png", pos=album_pos, convert_image=get_new_album_art)
+                self.image_obj.draw_spot_context("album", self.album_name_1, context_pos[0], context_pos[1])
         self.image_obj.draw_date_time_temp(self.weather_info)
         self.image_obj.draw_border_lines()
 

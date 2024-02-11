@@ -372,7 +372,7 @@ class Draw():
             self.album_image = Image.open(f"album_art/{image_file_name}")
             self.album_image = self.album_image.convert(self.image_mode)
             
-            if self.four_gray_scale:
+            if self.four_gray_scale and image_file_name!="NA.png":
                 before_dither = time()
                 self.dither_album_art()
                 after_dither = time()
