@@ -15,8 +15,7 @@ if args.v:
     c_handler.setFormatter(c_format)
     logger.addHandler(c_handler)
 
-if not os.path.exists("cache"):
-    os.makedirs("cache")
+os.makedirs("cache", exist_ok=True)
 
 f_handler = RotatingFileHandler('cache/clock.log', maxBytes=2*1024*1024, backupCount=5)
 f_handler.setLevel(logging.INFO)
