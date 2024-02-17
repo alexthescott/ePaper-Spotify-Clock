@@ -17,7 +17,6 @@ class Clock:
     Clock will update the weather every 5 minutes
     """
     def __init__(self):
-        # -------- Init --------
         self.local_run = False
         try:
             from waveshare_epd import epd4in2
@@ -80,6 +79,9 @@ class Clock:
                 logger.warning("You have both sunset_flip and always_dark_mode enabled, always_dark_mode supersedes sunset_flip")
 
     def set_weather_and_sunset_info(self):
+        """
+        Sets the weather information and sunset information for the clock.
+        """
         self.weather_info, self.sunset_info = self.weather.get_weather_and_sunset_info()
         flip_to_dark_before = self.flip_to_dark
         if self.sunset_flip:
@@ -88,11 +90,39 @@ class Clock:
                 self.get_new_album_art = True
 
     def save_local_file(self):
-        # avoid saving this for now; maybe come back for it later with program argument
-        # self.image_obj.save_png("{}".format(dt.now().strftime("%H:%M:%S")))
-        self.image_obj.save_png("now")
+        """
+        Saves the image object "clock_output.png" for later reference
+        """
+        self.image_obj.save_png("clock_output")
+        
+    def get_or_store_context(self, ctx_type, ctx_title, album_art_side):
+        """
+        Retrieves or stores the context based on the provided parameters.
+
+        This method checks if both `ctx_type` and `ctx_title` are provided. If they are, it writes them to a JSON file
+        using the `write_json_ctx` method of the `ctx_io` object, with the side of the album art as an additional parameter.
+        If either `ctx_type` or `ctx_title` is not provided, it reads the context from a JSON file using the `read_json_ctx`
+        method of the `ctx_io` object, with the side of the album art as an additional parameter.
+
+        Parameters:
+        ctx_type (str): The type of the context.
+        ctx_title (str): The title of the context.
+        album_art_side (bool): The side of the album art. True for right side, False for left side.
+
+        Returns:
+        tuple: A tuple containing the context type and context title.
+        """
+        if all([ctx_type, ctx_title]):
+            self.ctx_io.write_json_ctx((ctx_type, ctx_title), album_art_side)
+        else:
+            return self.ctx_io.read_json_ctx(album_art_side)
+        return ctx_type, ctx_title
 
     def tick_tock(self):
+        """
+        Main loop for the clock functionality.
+        continuously updates the clock display and handles various operations based on the current time.
+        """
         while True:
             self.image_obj.clear_image()
             if self.weather_info is None or self.count_to_5 >= 4:
@@ -102,18 +132,8 @@ class Clock:
             start = time() # Used to 'push' our clock timing forward to account for EPD time
 
             # If we have no context read, grab context our cache/context.txt json file
-            if all([self.ctx_type_1, self.ctx_title_1]):
-                # write user_1 to context.json
-                self.ctx_io.write_json_ctx((self.ctx_type_1, self.ctx_title_1), self.album_art_right_side)
-            else:
-                # get user_1 from context.json
-                self.ctx_type_1, self.ctx_type_2 = self.ctx_io.read_json_ctx(self.album_art_right_side)
-            if all([self.ctx_type_2, self.ctx_title_2]):
-                # write user_2 to context.json
-                self.ctx_io.write_json_ctx((self.ctx_type_2, self.ctx_title_2), not self.album_art_right_side)
-            else:
-                # get user_2 from context.json
-                self.ctx_type_2, self.ctx_title_2 = self.ctx_io.read_json_ctx(not self.album_art_right_side)
+            self.ctx_type_1, self.ctx_title_1 = self.get_or_store_context(self.ctx_type_1, self.ctx_title_1, self.album_art_right_side)
+            self.ctx_type_2, self.ctx_title_2 = self.get_or_store_context(self.ctx_type_2, self.ctx_title_2, not self.album_art_right_side)
                 
             self.build_image()
 
@@ -126,17 +146,17 @@ class Clock:
             sleeping_hours = 2 <= c_hour and c_hour <= 5
             if sleeping_hours:
                 if self.did_epd_init:
-                    # in sleep() from epd4in2.py, epdconfig.module_exit() is never called
-                    # I hope this does not create long term damage 🤞
-                    logger.info("EPD Sleep(ish) ....")
+                    self.epd.sleep()
+                    self.did_epd_init = False
+                    logger.info("epd.sleep()....")
                 else:
-                    logger.info("Sleeping... %s", dt.now().strftime('%-I:%M%p'))
+                    logger.info("still sleeping... %s", dt.now().strftime('%-I:%M%p'))
                 break
             elif not self.did_epd_init:
                 if not self.local_run:
                     if self.four_gray_scale:
                         logger.info("Initializing EPD 4Gray...")
-                        self.epd.Init_4Gray() 
+                        self.epd.Init_4Gray()
                     elif self.partial_update:
                         logger.info("Initializing Partial EPD...")
                         self.epd.init_Partial()
@@ -214,6 +234,11 @@ class Clock:
             self.count_to_5 = 0 if self.count_to_5 == 4 else self.count_to_5 + 1
 
     def build_image(self):
+        """
+        Builds the image for the ePaper display by drawing Spotify information, weather, date/time, and borders.
+        If there are two Spotify users, it displays information for both users. If there is only one user, it also
+        displays the album art.
+        """
         # Draw Spotify info before Weather and Date/Time
         if self.weather_info is None:
             self.set_weather_and_sunset_info()
