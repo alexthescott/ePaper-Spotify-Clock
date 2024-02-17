@@ -19,7 +19,7 @@ class Clock:
     def __init__(self):
         self.local_run = False
         try:
-            from waveshare_epd import epd4in2_V2
+            from waveshare_epd import epd4in2
         except ImportError:
             self.local_run = True
 
@@ -38,7 +38,7 @@ class Clock:
         self.ctx_type_2, self.ctx_title_2 = "", ""
 
         # EPD vars/settings
-        self.epd = epd4in2_V2.EPD() if not self.local_run else None
+        self.epd = epd4in2.EPD() if not self.local_run else None
         self.did_epd_init = False
         self.count_to_5 = 0  # count_to_5 is used to get weather every 5 minutes
         self.time_elapsed = 15.0
