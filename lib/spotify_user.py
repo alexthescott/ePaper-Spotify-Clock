@@ -41,17 +41,17 @@ class SpotifyUser():
     """ 
     Class to handle Spotify User Information needed for Clock()
     """
-    def __init__(self, name="CHANGE_ME", single_user=False, main=True):
+    def __init__(self, name="CHANGE_ME", single_user=False, me=True):
         # Generate Spotify client_id and client_secret
         # https://developer.spotify.com/dashboard/
         self.scope = "user-read-private, user-read-recently-played, user-read-playback-state, user-read-currently-playing"
         self.redirect_uri = 'http://www.google.com/'
-        self.main = main
+        self.single_user = single_user
+        self.me = me
         self.spot_client_id = ''  
         self.spot_client_secret = '' 
-        self.cache = '.authcache1' if self.main else '.authcache2'
+        self.cache = 'cache/.authcache1' if self.me else 'cache/.authcache2'
         self.name = name # drawn at the top of the screen
-        self.single_user = single_user
         self.oauth = None
         self.oauth_token_info = None
         self.sp = None
@@ -64,8 +64,9 @@ class SpotifyUser():
         """
         with open('config/keys.json', 'r', encoding='utf-8') as f:
             credentials = json.load(f)
-            self.spot_client_id = credentials['spot_client_id_me'] if self.main else credentials['spot_client_id_you']
-            self.spot_client_secret = credentials['spot_client_secret_me'] if self.main else credentials['spot_client_secret_you']
+            self.spot_client_id = credentials['spot_client_id_me'] if self.me else credentials['spot_client_id_you']
+            self.spot_client_secret = credentials['spot_client_secret_me'] if self.me else credentials['spot_client_secret_you']
+            
 
     # Spotify Functions
     def update_spotipy_token(self):

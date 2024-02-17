@@ -32,10 +32,10 @@ class Clock:
         self.weather = Weather()
         self.misc = Misc()
         self.ctx_io = LocalJsonIO()
-        self.spotify_user_1 = SpotifyUser(self.name_1, main=True)
+        self.spotify_user_1 = SpotifyUser(self.name_1, self.single_user, me=True)
         self.ctx_type_1, self.ctx_title_1 = "", ""
         self.old_album_name1, self.album_name_1 = "", ""
-        self.spotify_user_2 = (SpotifyUser(self.name_2, main=False) if not self.single_user else None)
+        self.spotify_user_2 = SpotifyUser(self.name_2, self.single_user, me=False) if not self.single_user else None
         self.ctx_type_2, self.ctx_title_2 = "", ""
 
         # EPD vars/settings
@@ -44,7 +44,7 @@ class Clock:
         self.count_to_5 = 0  # count_to_5 is used to get weather every 5 minutes
         self.time_elapsed = 15.0
         self.old_time = None
-        self.flip_to_dark = False
+        self.flip_to_dark = self.always_dark_mode
         self.get_new_album_art = False if self.single_user else None
 
         # Weather/Sunset vars
@@ -62,6 +62,7 @@ class Clock:
             clock_names = display_settings["clock_names"]
             single_user_settings = display_settings["single_user_settings"]
             self.sunset_flip = main_settings["sunset_flip"]
+            self.always_dark_mode = main_settings["always_dark_mode"]
             self.twenty_four_hour_clock = main_settings["twenty_four_hour_clock"]
             self.partial_update = main_settings["partial_update"]
             self.time_on_right = main_settings["time_on_right"]
@@ -74,12 +75,15 @@ class Clock:
 
             if self.partial_update and self.four_gray_scale:
                 raise ValueError("Partial updates are not supported in 4 Gray Scale, you must choose one or another")
+            
+            if self.sunset_flip and self.always_dark_mode:
+                logger.warning("You have both sunset_flip and always_dark_mode enabled, always_dark_mode supersedes sunset_flip")
 
     def set_weather_and_sunset_info(self):
         self.weather_info, self.sunset_info = self.weather.get_weather_and_sunset_info()
         flip_to_dark_before = self.flip_to_dark
         if self.sunset_flip:
-            self.flip_to_dark = self.misc.has_sun_set(self.sunset_info, self.sunset_flip)
+            self.flip_to_dark = self.misc.has_sun_set(self.sunset_info, self.sunset_flip) or self.always_dark_mode
             if not flip_to_dark_before and self.flip_to_dark:
                 self.get_new_album_art = True
 
@@ -252,14 +256,18 @@ class Clock:
             self.image_obj.draw_user_time_ago(time_since_2, 18+name_width_2, name_height_2 /2)
         else:
             get_new_album_art = self.old_album_name1 != self.album_name_1 or self.get_new_album_art
-            if get_new_album_art:
+            if get_new_album_art and track_image_link is not None:
                 self.misc.get_album_art(track_image_link)
                 self.get_new_album_art = False
             album_pos = (201, 0) if self.album_art_right_side else (0, 0)
             context_pos = (227, 204) if self.album_art_right_side else (25, 204)
-            self.image_obj.draw_album_image(self.flip_to_dark, pos=album_pos, convert_image=get_new_album_art)
-            self.image_obj.draw_spot_context("album", self.album_name_1, context_pos[0], context_pos[1])
-            
+            if track_image_link is not None:
+                self.image_obj.draw_album_image(self.flip_to_dark, pos=album_pos, convert_image=get_new_album_art)
+                self.image_obj.draw_spot_context("album", self.album_name_1, context_pos[0], context_pos[1])
+            else:
+                logger.warning("No album art found, drawing NA.png")
+                self.image_obj.draw_album_image(self.flip_to_dark, image_file_name="NA.png", pos=album_pos, convert_image=get_new_album_art)
+                self.image_obj.draw_spot_context("album", self.album_name_1, context_pos[0], context_pos[1])
         self.image_obj.draw_date_time_temp(self.weather_info)
         self.image_obj.draw_border_lines()
 
