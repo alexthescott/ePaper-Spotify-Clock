@@ -28,14 +28,13 @@ class Draw():
         self.dt = None
         self.time_str = None
 
-        if not os.path.exists("album_art"):
-            os.makedirs("album_art")
+        os.makedirs("album_art", exist_ok=True)
         # Get the full path to the 'album_art' directory
         self.dir_path = os.path.abspath('album_art')
 
         if self.four_gray_scale:
             self.image_mode = 'L'
-            # Create four grayscale color palette 
+            # Create four grayscale color palette
             subprocess.run([
             'convert', '-size', '1x4', 
             'xc:#FFFFFF', 
@@ -44,7 +43,7 @@ class Draw():
             'xc:#000000', 
             '+append', 
             os.path.join(self.dir_path, 'palette.PNG')
-        ], check=True)
+            ], check=True)
         else:
             self.image_mode = '1'
         
@@ -188,16 +187,18 @@ class Draw():
         self.image_draw = ImageDraw.Draw(self.image_obj)
 
     def get_time(self):
+        """
+        Stores the current time as a formatted string within self.time_str given `twenty_four_hour_clock` attribute.
+        """
         self.dt = dt.now()
-        if self.twenty_four_hour_clock:
-            self.time_str = self.dt.strftime("%-H:%M")
-        else:
-            self.time_str = self.dt.strftime("%-I:%M") + self.dt.strftime("%p").lower()
+        self.time_str = self.dt.strftime("%-H:%M") if self.twenty_four_hour_clock else self.dt.strftime("%-I:%M%p").lower()
 
     def save_png(self, file_name):
-        if not os.path.exists("test_output"):
-            os.makedirs("test_output")
-        self.image_obj.save("test_output/{}.png".format(file_name))
+        """
+        Saves the image object as a PNG file.
+        """
+        os.makedirs("test_output", exist_ok=True)
+        self.image_obj.save(os.path.join("test_output", f"{file_name}.png"))
 
     # ---- Formatting Funcs ----------------------------------------------------------------------------
     def get_text_width(self, text, size):
