@@ -38,16 +38,16 @@ class SpotifyUser():
     """ 
     Class to handle Spotify User Information needed for Clock()
     """
-    def __init__(self, name="CHANGE_ME", single_user=False, me=True):
+    def __init__(self, name: str = "CHANGE_ME", single_user: bool = False, main_user: bool = True):
         # Generate Spotify client_id and client_secret
         # https://developer.spotify.com/dashboard/
         self.scope = "user-read-private, user-read-recently-played, user-read-playback-state, user-read-currently-playing"
         self.redirect_uri = 'http://www.google.com/'
         self.single_user = single_user
-        self.me = me
+        self.main_user = main_user
         self.spot_client_id = ''  
         self.spot_client_secret = '' 
-        self.cache = 'cache/.authcache1' if self.me else 'cache/.authcache2'
+        self.cache = 'cache/.authcache1' if self.main_user else 'cache/.authcache2'
         self.name = name # drawn at the top of the screen
         self.oauth = None
         self.oauth_token_info = None
@@ -62,8 +62,8 @@ class SpotifyUser():
         """
         with open('config/keys.json', 'r', encoding='utf-8') as f:
             credentials = json.load(f)
-            self.spot_client_id = credentials['spot_client_id_me'] if self.me else credentials['spot_client_id_you']
-            self.spot_client_secret = credentials['spot_client_secret_me'] if self.me else credentials['spot_client_secret_you']
+            self.spot_client_id = credentials['spot_client_id_me'] if self.main_user else credentials['spot_client_id_you']
+            self.spot_client_secret = credentials['spot_client_secret_me'] if self.main_user else credentials['spot_client_secret_you']
 
     # Spotify Functions
     def update_spotipy_token(self):
@@ -109,7 +109,7 @@ class SpotifyUser():
         else:
             logger.error("Failed to get current %s's Spotify Info", self.name)
             return "", "", "", "", "", None, None
-        
+
         context_type, context_name, time_passed = "", "", ""
         # used if single_user
         track_image_link, album_name = None, None
@@ -142,7 +142,7 @@ class SpotifyUser():
         logger.info("%s: %s, %s by %s playing from from %s %s",self.name, time_passed, track_name, artist_name, context_name, context_type)
         return track_name, artist_name, time_passed, context_type, context_name, track_image_link, album_name
         
-    def get_context_from_json(self, context_json):
+    def get_context_from_json(self, context_json: dict):
         """ 
         Return Spotify Context info.
         Args:
