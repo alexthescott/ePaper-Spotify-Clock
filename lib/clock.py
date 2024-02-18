@@ -189,8 +189,8 @@ class Clock:
             self.time_elapsed = stop - start
             remaining_time = sec_left - self.time_elapsed
 
-            if 5 < c_hour and c_hour < 24:
-                # 6:00am - 12:59pm update screen every 3 minutes
+            if 5 < c_hour and c_hour < 23:
+                # 6:00am - 10:59pm update screen every 3 minutes
                 logger.info("\t%.2f\tseconds per loop\tsleeping for %d seconds", round(self.time_elapsed, 2), int(remaining_time/1+120))
                 # if we do partial updates and darkmode, you get a worrisome zebra stripe artifact on the EPD
                 if self.partial_update and not self.flip_to_dark:
@@ -226,7 +226,7 @@ class Clock:
                 else:
                     sleep(max(2+remaining_time+120, 0))
             elif c_hour < 2:
-                # 12:00am - 1:59am update screen every 5ish minutes
+                # 11:00pm - 1:59am update screen every 5ish minutes
                 logger.info("\t%.2f\tseconds per loop\tsleeping for %d seconds", round(self.time_elapsed, 2), int(remaining_time+240))
                 sleep(max(2+remaining_time+240, 0))
 
