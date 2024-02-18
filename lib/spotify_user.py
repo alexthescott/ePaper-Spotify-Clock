@@ -1,14 +1,14 @@
 import json
 import logging
 from datetime import datetime, timedelta
-from requests.exceptions import ReadTimeout
 
 import spotipy
+from requests.exceptions import ReadTimeout
 from spotipy.exceptions import SpotifyException
 
 from lib.clock_logging import logger
-
 spotify_logger = logging.getLogger('spotipy.client')
+
 
 def get_time_from_timedelta(td: timedelta):
     """ 
