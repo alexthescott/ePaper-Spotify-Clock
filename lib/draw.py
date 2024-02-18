@@ -343,7 +343,7 @@ class Draw():
 
     def draw_spot_context(self, context_type, context_text, context_x, context_y):
         # Draws both icon {playlist, album, artist} and context text in the bottom of Spot box
-        if context_type is not None:
+        if context_type:
             context_width, temp_context = 0, ""
             # make sure we don't run past context width requirements
             for c in context_text:

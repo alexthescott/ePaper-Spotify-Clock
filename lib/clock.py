@@ -281,12 +281,12 @@ class Clock:
             self.image_obj.draw_user_time_ago(time_since_2, 18+name_width_2, name_height_2 /2)
         else:
             get_new_album_art = self.old_album_name1 != self.album_name_1 or self.get_new_album_art
-            if get_new_album_art and track_image_link is not None:
+            if get_new_album_art and track_image_link:
                 self.misc.get_album_art(track_image_link)
                 self.get_new_album_art = False
             album_pos = (201, 0) if self.album_art_right_side else (0, 0)
             context_pos = (227, 204) if self.album_art_right_side else (25, 204)
-            if track_image_link is not None:
+            if track_image_link:
                 self.image_obj.draw_album_image(self.flip_to_dark, pos=album_pos, convert_image=get_new_album_art)
                 self.image_obj.draw_spot_context("album", self.album_name_1, context_pos[0], context_pos[1])
             else:
@@ -322,14 +322,14 @@ class Clock:
 
         # Here we make some considerations so the screen isn't updated too frequently
         # We air on the side of caution, and would rather add an additional current_minute than shrink by a current_minute
-        if self.old_time is not None and (5 < hour and hour < 24):
+        if self.old_time and (5 < hour and hour < 24):
             # 6:00am - 11:59pm update screen every 3 mins
             while int(abs(self.old_time-new_min)) < 3:
                 date = dt.now() + timedelta(seconds=self.time_elapsed)
                 new_min = int(date.strftime("%M")[-1])
                 sleep(2)
         # 12:00am - 1:59am update screen every 5 mins at least
-        elif self.old_time is not None and hour < 2:
+        elif self.old_time and hour < 2:
             while int(abs(self.old_time - new_min)) < 5:
                 date = dt.now() + timedelta(seconds=self.time_elapsed)
                 new_min = int(date.strftime("%M")[-1])
