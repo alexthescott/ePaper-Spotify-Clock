@@ -80,6 +80,7 @@ class Draw():
         self.album_icon = Image.open('Icons/album.png')
         self.dj_icon = Image.open('Icons/dj.png')
         self.collection_icon = Image.open('Icons/collection.png')
+        self.failure_icon = Image.open('Icons/failure.png')
 
     def load_display_settings(self):
         """
@@ -367,6 +368,8 @@ class Draw():
             self.image_obj.paste(self.artist_icon, (context_x - 22, context_y - 1))
         elif context_type == 'collection':
             self.image_obj.paste(self.collection_icon, (context_x - 24, context_y - 4))
+        else:
+            self.image_obj.paste(self.failure_icon, (context_x - 24, context_y - 4))
 
     def draw_album_image(self, dark_mode: bool, image_file_name: str = "AlbumImage_resize.PNG", pos: tuple = (0, 0), convert_image: bool = True):
         if convert_image or self.album_image is None:

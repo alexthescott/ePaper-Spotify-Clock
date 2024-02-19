@@ -105,18 +105,21 @@ class SpotifyUser():
         """
         if not self.sp:
             logger.error("%s's SpotipyObject Never Created", self.name)
-            return "", "", "", "", "", None, None
+            return "Not Available", "Failed to get Spotify Data", "", "Failed", "Failed", None, "Failed"
         self.dt = datetime.now()
         for _ in range(3):
             try:
                 recent = self.sp.current_user_playing_track()
                 break
             except (SpotifyException, ReadTimeout) as e:
-                logger.info(e)
+                logger.error(e)
                 self.update_spotipy_token()
+            except ConnectionError as e:
+                logger.error(e)
+                return "Not Available", "Failed to get Spotify Data", "", "Failed", "Failed", None, "Failed"
         else:
             logger.error("Failed to get current %s's Spotify Info", self.name)
-            return "", "", "", "", "", None, None
+            return "Not Available", "Failed to get Spotify Data", "", "Failed", "Failed", None, "Failed"
 
         context_type, context_name, time_passed = "", "", ""
         # used if single_user
