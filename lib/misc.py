@@ -49,6 +49,9 @@ class Misc():
         Returns:
             bool: True if the sun has set, False otherwise.
         """
+        if not sunset_info:
+            logger.error("has_sun_set() given invalid sunset_info")
+            return False
         date = dt.now()
         c_hour = int(date.strftime("%-H"))
         c_minute = int(date.strftime("%-M"))

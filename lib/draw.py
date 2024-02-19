@@ -19,8 +19,7 @@ class Draw():
     """
     def __init__(self, local_run=False):
         self.local_run = local_run
-        self.width = 400
-        self.height = 300
+        self.width, self.height = 400, 300
         self.set_dictionaries()
         self.load_display_settings()
         self.load_resources()
@@ -28,13 +27,13 @@ class Draw():
         self.dt = None
         self.time_str = None
 
+        # Make and get the full path to the 'album_art' directory
         os.makedirs("album_art", exist_ok=True)
-        # Get the full path to the 'album_art' directory
         self.dir_path = os.path.abspath('album_art')
 
         if self.four_gray_scale:
-            self.image_mode = 'L'
             # Create four grayscale color palette
+            self.image_mode = 'L'
             subprocess.run([
             'convert', '-size', '1x4', 
             'xc:#FFFFFF', 
@@ -100,11 +99,11 @@ class Draw():
 
     def set_dictionaries(self):
         """
-        This method initializes three dictionaries: sfDict, mfDict, and lfDict. Each dictionary represents a mapping
+        This method initializes three dictionaries: sf_dict, mf_dict, and lf_dict. Each dictionary represents a mapping
         from characters to their corresponding pixel lengths in different font sizes. his method is used to get the 
         pixel length of strings as they're built.
         """
-        self.sfDict = {' ': '2', '!': '2', '"': '4', '#': '8', '$': '6', '%': '8',
+        self.sf_dict = {' ': '2', '!': '2', '"': '4', '#': '8', '$': '6', '%': '8',
         '&': '7', "'": '2', '(': '4', ')': '4', '*': '8', '+': '6', ',': '3',
         '-': '6', '.': '2', '/': '4', '0': '6', '1': '3', '2': '6', '3': '6',
         '4': '7', '5': '6', '6': '6', '7': '6', '8': '6', '9': '6', ':': '2',
@@ -127,7 +126,7 @@ class Draw():
         'ó': '6', 'ô': '6', 'ö': '6', '÷': '6', 'ù': '6', 'ú': '6', 'û': '6',
         'ü': '6', '‘': '3', '’': '3', '“': '5', '”': '5', '…': '6', '€': '7',
         '™': '10', '\x00': '9'}
-        self.mfDict = {' ': '4', '!': '4', '"': '8', '#': '16', '$': '12', '%': '16',
+        self.mf_dict = {' ': '4', '!': '4', '"': '8', '#': '16', '$': '12', '%': '16',
         '&': '14', "'": '4', '(': '8', ')': '8', '*': '16', '+': '12', ',': '6',
         '-': '12', '.': '4', '/': '8', '0': '12', '1': '6', '2': '12', '3': '12',
         '4': '14', '5': '12', '6': '12', '7': '12', '8': '12', '9': '12',
@@ -152,7 +151,7 @@ class Draw():
         'ó': '12', 'ô': '12', 'ö': '12', '÷': '12', 'ù': '12', 'ú': '12',
         'û': '12', 'ü': '12', '‘': '6', '’': '6', '“': '10', '”': '10',
         '…': '12', '€': '14', '™': '20', '\x00': '18'}
-        self.lfDict = {' ': '9', '!': '9', '"': '17', '#': '33', '$': '25', '%': '33',
+        self.lf_dict = {' ': '9', '!': '9', '"': '17', '#': '33', '$': '25', '%': '33',
         '&': '29', "'": '9', '(': '17', ')': '17', '*': '33', '+': '25',
         ',': '13', '-': '25', '.': '9', '/': '17', '0': '25', '1': '13',
         '2': '25', '3': '25', '4': '29', '5': '25', '6': '25', '7': '25',
@@ -193,7 +192,7 @@ class Draw():
         self.dt = dt.now()
         self.time_str = self.dt.strftime("%-H:%M") if self.twenty_four_hour_clock else self.dt.strftime("%-I:%M%p").lower()
 
-    def save_png(self, file_name):
+    def save_png(self, file_name: str):
         """
         Saves the image object as a PNG file.
         """
@@ -201,16 +200,16 @@ class Draw():
         self.image_obj.save(os.path.join("test_output", f"{file_name}.png"))
 
     # ---- Formatting Funcs ----------------------------------------------------------------------------
-    def get_text_width(self, text, size):
+    def get_text_width(self, text: str, size: int):
         """ Return an int representing the size of a word
 
             Requires three dictionaries, defining the width of each char
             for our given font, Nintendo-DS-BIOS.ttf
         """
         size_dict = {
-            2: (self.lfDict, 25),
-            1: (self.mfDict, 12),
-            0: (self.sfDict, 6)
+            2: (self.lf_dict, 25),
+            1: (self.mf_dict, 12),
+            0: (self.sf_dict, 6)
         }
 
         char_dict, default_value = size_dict.get(size)
@@ -218,7 +217,7 @@ class Draw():
             raise ValueError(f"Invalid size: {size}")
         return sum(int(char_dict.get(c, default_value)) for c in text)
 
-    def format_x_word(self, text_size_list, text_list, size):
+    def format_x_word(self, text_size_list: list, text_list: list, size: int):
         """ Return a list of 'squished' words to fit exact width dimensions
 
             Parameters:
@@ -260,7 +259,7 @@ class Draw():
         temp_text_list[:] = [word for word in temp_text_list if word != '']
         return temp_text_list
 
-    def hyphenate_words(self, word, size):
+    def hyphenate_words(self, word: str, size: int):
         """ Return a list of 'spliced' word segments to fit exact width dimensions
 
             Parameters:
@@ -277,9 +276,9 @@ class Draw():
         for i, c in enumerate(word):
             # Find relative char width. Will never hyphenate Large text
             if size == 1:
-                char_size = int(self.mfDict.get(c, 12))
+                char_size = int(self.mf_dict.get(c, 12))
             elif size == 0:
-                char_size = int(self.sfDict.get(c, 25))
+                char_size = int(self.sf_dict.get(c, 25))
 
             # Our last character
             if len(word) - 1 == i:
@@ -293,7 +292,7 @@ class Draw():
                 floor_index, phrase_width = i, char_size
         return temp_text_list
 
-    def can_full_words_fit(self, text_size_list):
+    def can_full_words_fit(self, text_size_list: list):
         return all(word_len < 189 for word_len in text_size_list)
 
     # ---- DRAWING FUNCs ----------------------------------------------------------------------------
@@ -303,7 +302,7 @@ class Draw():
             self.image_draw.line([(0, 224 + i), (400, 224 + i)], fill=0)
             self.image_draw.line([(199 + i, 0), (199 + i, 225)], fill=0)
     
-    def create_time_text(self, time_str, weather_info):
+    def create_time_text(self, time_str: str, weather_info: tuple):
         new_draw_obj = Image.new(self.image_mode, (400, 300), 128)
         self.image_draw = ImageDraw.Draw(new_draw_obj)
         date_time_now = dt.now()
@@ -329,7 +328,7 @@ class Draw():
 
         return new_draw_obj, int(max(partial_width, old_partial_width)+3)
 
-    def draw_name(self, text, name_x, name_y):
+    def draw_name(self, text: str, name_x: int, name_y: int):
         name_width, name_height = self.image_draw.textlength(text, font=self.helveti32), self.helveti32.size/1.3
         self.image_draw.text((name_x, name_y), text, font=self.helveti32)
         line_start_x, line_start_y = name_x - 1, name_y + name_height + 3
@@ -337,38 +336,39 @@ class Draw():
         self.image_draw.line([(line_start_x, line_start_y), (line_end_x, line_end_y)], fill=0)
         return name_width, name_height
 
-    def draw_user_time_ago(self, text, time_x, time_y):
+    def draw_user_time_ago(self, text: str, time_x: int, time_y: int):
         # draw text next to name displaying time since last played track
         self.image_draw.text((time_x, time_y), text, font=self.DSfnt16)
 
-    def draw_spot_context(self, context_type, context_text, context_x, context_y):
+    def draw_spot_context(self, context_type: str, context_text: str, context_x: int, context_y: int):
         # Draws both icon {playlist, album, artist} and context text in the bottom of Spot box
-        if context_type:
-            context_width, temp_context = 0, ""
-            # make sure we don't run past context width requirements
-            for c in context_text:
-                char_width = int(self.sfDict.get(c, 6))
-                if context_width + char_width < 168:
-                    context_width += char_width
-                    temp_context += c
-                else:
-                    temp_context += "..."
-                    break
-            self.image_draw.text((context_x, context_y), temp_context, font=self.DSfnt16)
+        if not context_type or not context_text:
+            return False
+        context_width, temp_context = 0, ""
+        # make sure we don't run past context width requirements
+        for c in context_text:
+            char_width = int(self.sf_dict.get(c, 6))
+            if context_width + char_width < 168:
+                context_width += char_width
+                temp_context += c
+            else:
+                temp_context += "..."
+                break
+        self.image_draw.text((context_x, context_y), temp_context, font=self.DSfnt16)
 
-            # ATTACH ICONS
-            if context_text == 'DJ':
-                self.image_obj.paste(self.dj_icon, (context_x - 24, context_y - 4))
-            elif context_type == 'playlist':
-                self.image_obj.paste(self.playlist_icon, (context_x - 21, context_y - 1))
-            elif context_type == 'album':
-                self.image_obj.paste(self.album_icon, (context_x - 24, context_y - 4))
-            elif context_type == 'artist':
-                self.image_obj.paste(self.artist_icon, (context_x - 22, context_y - 1))
-            elif context_type == 'collection':
-                self.image_obj.paste(self.collection_icon, (context_x - 24, context_y - 4))
+        # ATTACH ICONS
+        if context_text == 'DJ':
+            self.image_obj.paste(self.dj_icon, (context_x - 24, context_y - 4))
+        elif context_type == 'playlist':
+            self.image_obj.paste(self.playlist_icon, (context_x - 21, context_y - 1))
+        elif context_type == 'album':
+            self.image_obj.paste(self.album_icon, (context_x - 24, context_y - 4))
+        elif context_type == 'artist':
+            self.image_obj.paste(self.artist_icon, (context_x - 22, context_y - 1))
+        elif context_type == 'collection':
+            self.image_obj.paste(self.collection_icon, (context_x - 24, context_y - 4))
 
-    def draw_album_image(self, dark_mode, image_file_name="AlbumImage_resize.PNG", pos=(0, 0), convert_image=True):
+    def draw_album_image(self, dark_mode: bool, image_file_name: str = "AlbumImage_resize.PNG", pos: tuple = (0, 0), convert_image: bool = True):
         if convert_image or self.album_image is None:
             self.album_image = Image.open(f"album_art/{image_file_name}")
             self.album_image = self.album_image.convert(self.image_mode)
@@ -383,7 +383,7 @@ class Draw():
                 self.album_image = ImageMath.eval('255-(a)', a=self.album_image)
         self.image_obj.paste(self.album_image, pos)
 
-    def draw_weather(self, pos, weather_info):
+    def draw_weather(self, pos: tuple, weather_info: tuple):
         """
         This method draws the current and forecasted temperatures on the image.
 
@@ -392,8 +392,12 @@ class Draw():
         weather_info (tuple): A tuple containing the current temperature, high forecasted temperature, 
                             low forecasted temperature, and another temperature value.
         """
-        temp, temp_high, temp_low, _ = weather_info
-        temp_degrees = "C" if self.metric_units else "F"
+        if not weather_info:
+            temp = temp_high = temp_low = "NA"
+            temp_degrees = ""
+        else:
+            temp, temp_high, temp_low, _ = weather_info
+            temp_degrees = "C" if self.metric_units else "F"
 
         # main temp pos calculations
         temp_start_x, temp_width = pos[0], self.image_draw.textlength(str(temp), font=self.DSfnt64)
@@ -403,7 +407,7 @@ class Draw():
         forcast_temp_x = temp_start_x + temp_width + 18 + max(temp_low_width, temp_high_width)
 
         # fixes negative temperature formatting issue
-        if temp_high < 0 or temp_low < 0:
+        if (isinstance(temp_high, int) and isinstance(temp_low, int)) and (temp_high < 0 or temp_low < 0):
             forcast_temp_x -= 5
 
         # draw main temp
@@ -416,7 +420,7 @@ class Draw():
         self.image_draw.text((forcast_temp_x - temp_low_width, 266), str(temp_low), font=self.DSfnt32)
         self.image_draw.text((forcast_temp_x + 2, 268), temp_degrees, font=self.DSfnt16)
 
-    def draw_time(self, pos):
+    def draw_time(self, pos: tuple):
         """
         Draws the given time at the specified position on the image.
 
@@ -435,12 +439,15 @@ class Draw():
             am_pm_x = pos[0] + self.image_draw.textlength(current_time, font=self.DSfnt64)
             self.image_draw.text((am_pm_x, pos[1] + 22), am_pm, font=self.DSfnt32)
 
-    def draw_date_time_temp(self, weather_info):
+    def draw_date_time_temp(self, weather_info: tuple):
         """
         This function draws the date, time, and temperature on the display. 
         """
+        if not weather_info:
+            temp, temp_high, temp_low, other_temp = 0, 0, 0, 0
+        else:
+            temp, temp_high, temp_low, other_temp = weather_info
         self.get_time()
-        temp, temp_high, temp_low, other_temp = weather_info
         temp_degrees = "C" if self.metric_units else "F"
         left_elem_x = 10
         bar_height = 74  # the height of the bottom bar
@@ -486,7 +493,7 @@ class Draw():
             time_width, time_height = self.image_draw.textlength(self.time_str, font=self.DSfnt64), self.DSfnt64.size/1.3
         return time_width, time_height
 
-    def draw_track_text(self, track_name, track_x, track_y):
+    def draw_track_text(self, track_name: str, track_x: int, track_y: int):
         # After deciding the size of text, split words into lines, and draw to self.image_obj
 
         # Large Text Format Check
@@ -534,7 +541,7 @@ class Draw():
             track_y += 12
         return len(track_lines), 13
 
-    def draw_artist_text(self, artist_name, track_line_count, track_height, artist_x, artist_y):
+    def draw_artist_text(self, artist_name: str, track_line_count: int, track_height: int, artist_x:int, artist_y: int):
         # Always ensure bottom of text is always at 190 pixels after draw height
         # Large Text Format Check
         l_artist_split = artist_name.split(" ")

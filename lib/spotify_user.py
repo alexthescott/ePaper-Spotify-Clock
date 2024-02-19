@@ -3,7 +3,7 @@ import logging
 from datetime import datetime, timedelta
 
 import spotipy
-from requests.exceptions import ReadTimeout
+from requests.exceptions import ReadTimeout, ConnectionError
 from spotipy.exceptions import SpotifyException
 
 from lib.clock_logging import logger
@@ -71,7 +71,11 @@ class SpotifyUser():
         Updates Spotify Token from self.oauth if token_info is stale. 
         """
         self.oauth = spotipy.oauth2.SpotifyOAuth(self.spot_client_id, self.spot_client_secret, self.redirect_uri, scope=self.scope, cache_path=self.cache, requests_timeout=10)
-        self.oauth_token_info = self.oauth.get_cached_token()
+        try:
+            self.oauth_token_info = self.oauth.get_cached_token()
+        except ConnectionError:
+            logger.error("Failed to update cached_token(): ConnectionError")
+            return False
 
         if self.oauth_token_info:
             self.token = self.oauth_token_info['access_token']
@@ -85,6 +89,7 @@ class SpotifyUser():
                 token_info = self.oauth.get_access_token(code)
                 self.token = token_info['access_token']
         self.sp = spotipy.Spotify(auth=self.token)
+        return True
 
     def get_spotipy_info(self):
         """ 
@@ -98,6 +103,9 @@ class SpotifyUser():
             context_type: used to determine context icon -> pulled from get_context_from_json()
             context_name: context name to be displayed -> pulled from get_context_from_json()
         """
+        if not self.sp:
+            logger.error("%s's SpotipyObject Never Created", self.name)
+            return "", "", "", "", "", None, None
         self.dt = datetime.now()
         for _ in range(3):
             try:

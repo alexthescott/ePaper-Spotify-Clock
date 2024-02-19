@@ -54,7 +54,7 @@ class Weather():
             if 'zip' in data:
                 return data['zip']
         except requests.exceptions.RequestException:
-            pass
+            logger.error("Failed to get zipcode from http://ip-api.com/json/")
 
         try:
             response = requests.get('https://ipinfo.io/json', timeout=10)
@@ -62,11 +62,11 @@ class Weather():
             if 'postal' in data:
                 return data['postal']
         except requests.exceptions.RequestException:
-            pass
-
+            logger.error("Failed to get zipcode from https://ipinfo.io/json")
+        
         return None
 
-    def get_lat_long(self, current_zip=True):
+    def get_lat_long(self, current_zip: bool = True):
         """ 
         Get latitude and longitude from zipcode 
         """
