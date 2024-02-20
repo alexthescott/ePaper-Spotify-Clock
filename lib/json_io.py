@@ -4,8 +4,8 @@ from lib.clock_logging import logger
 
 class LocalJsonIO():
     file_path = 'cache/context.json'
-    
-    def write_json_ctx(self, ctx=None, use_right_side=False):
+
+    def write_json_ctx(self, ctx: bool=None, use_right_side: bool=False):
         """
         Updates context.json with the ctx of left or right users.
         """

@@ -17,7 +17,6 @@ class Clock:
     Clock will update the weather every 5 minutes
     """
     def __init__(self):
-        # -------- Init --------
         self.local_run = False
         try:
             from waveshare_epd import epd4in2
@@ -32,10 +31,10 @@ class Clock:
         self.weather = Weather()
         self.misc = Misc()
         self.ctx_io = LocalJsonIO()
-        self.spotify_user_1 = SpotifyUser(self.name_1, self.single_user, me=True)
+        self.spotify_user_1 = SpotifyUser(self.name_1, self.single_user)
         self.ctx_type_1, self.ctx_title_1 = "", ""
         self.old_album_name1, self.album_name_1 = "", ""
-        self.spotify_user_2 = SpotifyUser(self.name_2, self.single_user, me=False) if not self.single_user else None
+        self.spotify_user_2 = SpotifyUser(self.name_2, self.single_user, main_user=False) if not self.single_user else None
         self.ctx_type_2, self.ctx_title_2 = "", ""
 
         # EPD vars/settings
@@ -80,6 +79,9 @@ class Clock:
                 logger.warning("You have both sunset_flip and always_dark_mode enabled, always_dark_mode supersedes sunset_flip")
 
     def set_weather_and_sunset_info(self):
+        """
+        Sets the weather information and sunset information for the clock.
+        """
         self.weather_info, self.sunset_info = self.weather.get_weather_and_sunset_info()
         flip_to_dark_before = self.flip_to_dark
         if self.sunset_flip:
@@ -88,11 +90,39 @@ class Clock:
                 self.get_new_album_art = True
 
     def save_local_file(self):
-        # avoid saving this for now; maybe come back for it later with program argument
-        # self.image_obj.save_png("{}".format(dt.now().strftime("%H:%M:%S")))
-        self.image_obj.save_png("now")
+        """
+        Saves the image object "clock_output.png" for later reference
+        """
+        self.image_obj.save_png("clock_output")
+        
+    def get_or_store_context(self, ctx_type, ctx_title, album_art_side):
+        """
+        Retrieves or stores the context based on the provided parameters.
+
+        This method checks if both `ctx_type` and `ctx_title` are provided. If they are, it writes them to a JSON file
+        using the `write_json_ctx` method of the `ctx_io` object, with the side of the album art as an additional parameter.
+        If either `ctx_type` or `ctx_title` is not provided, it reads the context from a JSON file using the `read_json_ctx`
+        method of the `ctx_io` object, with the side of the album art as an additional parameter.
+
+        Parameters:
+        ctx_type (str): The type of the context.
+        ctx_title (str): The title of the context.
+        album_art_side (bool): The side of the album art. True for right side, False for left side.
+
+        Returns:
+        tuple: A tuple containing the context type and context title.
+        """
+        if all([ctx_type, ctx_title]):
+            self.ctx_io.write_json_ctx((ctx_type, ctx_title), album_art_side)
+        else:
+            return self.ctx_io.read_json_ctx(album_art_side)
+        return ctx_type, ctx_title
 
     def tick_tock(self):
+        """
+        Main loop for the clock functionality.
+        continuously updates the clock display and handles various operations based on the current time.
+        """
         while True:
             self.image_obj.clear_image()
             if self.weather_info is None or self.count_to_5 >= 4:
@@ -102,18 +132,8 @@ class Clock:
             start = time() # Used to 'push' our clock timing forward to account for EPD time
 
             # If we have no context read, grab context our cache/context.txt json file
-            if all([self.ctx_type_1, self.ctx_title_1]):
-                # write user_1 to context.json
-                self.ctx_io.write_json_ctx((self.ctx_type_1, self.ctx_title_1), self.album_art_right_side)
-            else:
-                # get user_1 from context.json
-                self.ctx_type_1, self.ctx_type_2 = self.ctx_io.read_json_ctx(self.album_art_right_side)
-            if all([self.ctx_type_2, self.ctx_title_2]):
-                # write user_2 to context.json
-                self.ctx_io.write_json_ctx((self.ctx_type_2, self.ctx_title_2), not self.album_art_right_side)
-            else:
-                # get user_2 from context.json
-                self.ctx_type_2, self.ctx_title_2 = self.ctx_io.read_json_ctx(not self.album_art_right_side)
+            self.ctx_type_1, self.ctx_title_1 = self.get_or_store_context(self.ctx_type_1, self.ctx_title_1, self.album_art_right_side)
+            self.ctx_type_2, self.ctx_title_2 = self.get_or_store_context(self.ctx_type_2, self.ctx_title_2, not self.album_art_right_side)
                 
             self.build_image()
 
@@ -126,17 +146,17 @@ class Clock:
             sleeping_hours = 2 <= c_hour and c_hour <= 5
             if sleeping_hours:
                 if self.did_epd_init:
-                    # in sleep() from epd4in2.py, epdconfig.module_exit() is never called
-                    # I hope this does not create long term damage 🤞
-                    logger.info("EPD Sleep(ish) ....")
+                    self.epd.sleep()
+                    self.did_epd_init = False
+                    logger.info("epd.sleep()....")
                 else:
-                    logger.info("Sleeping... %s", dt.now().strftime('%-I:%M%p'))
+                    logger.info("still sleeping... %s", dt.now().strftime('%-I:%M%p'))
                 break
             elif not self.did_epd_init:
                 if not self.local_run:
                     if self.four_gray_scale:
                         logger.info("Initializing EPD 4Gray...")
-                        self.epd.Init_4Gray() 
+                        self.epd.Init_4Gray()
                     elif self.partial_update:
                         logger.info("Initializing Partial EPD...")
                         self.epd.init_Partial()
@@ -169,8 +189,8 @@ class Clock:
             self.time_elapsed = stop - start
             remaining_time = sec_left - self.time_elapsed
 
-            if 5 < c_hour and c_hour < 24:
-                # 6:00am - 12:59pm update screen every 3 minutes
+            if 5 < c_hour and c_hour < 23:
+                # 6:00am - 10:59pm update screen every 3 minutes
                 logger.info("\t%.2f\tseconds per loop\tsleeping for %d seconds", round(self.time_elapsed, 2), int(remaining_time/1+120))
                 # if we do partial updates and darkmode, you get a worrisome zebra stripe artifact on the EPD
                 if self.partial_update and not self.flip_to_dark:
@@ -196,9 +216,17 @@ class Clock:
                             time_image = ImageMath.eval('255-(a)', a=time_image)
                             if not self.local_run:
                                 if self.time_on_right:
-                                    self.epd.EPD_4IN2_PartialDisplay(int(self.image_obj.width-5-time_width), 245, int(self.image_obj.width-5), 288, self.epd.getbuffer(time_image))
+                                    x_start = int(self.image_obj.width-5-time_width)
+                                    x_end = int(self.image_obj.width-5)
                                 else:
-                                    self.epd.EPD_4IN2_PartialDisplay(5, 245, int(5+time_width), 288, self.epd.getbuffer(time_image))
+                                    x_start = 5
+                                    x_end = int(5+time_width)
+
+                                y_start = 245
+                                y_end = 288
+                                buffer = self.epd.getbuffer(time_image)
+
+                                self.epd.EPD_4IN2_PartialDisplay(x_start, y_start, x_end, y_end, buffer)
                             else:
                                 self.build_image()
                                 self.save_local_file()
@@ -206,7 +234,7 @@ class Clock:
                 else:
                     sleep(max(2+remaining_time+120, 0))
             elif c_hour < 2:
-                # 12:00am - 1:59am update screen every 5ish minutes
+                # 11:00pm - 1:59am update screen every 5ish minutes
                 logger.info("\t%.2f\tseconds per loop\tsleeping for %d seconds", round(self.time_elapsed, 2), int(remaining_time+240))
                 sleep(max(2+remaining_time+240, 0))
 
@@ -214,6 +242,11 @@ class Clock:
             self.count_to_5 = 0 if self.count_to_5 == 4 else self.count_to_5 + 1
 
     def build_image(self):
+        """
+        Builds the image for the ePaper display by drawing Spotify information, weather, date/time, and borders.
+        If there are two Spotify users, it displays information for both users. If there is only one user, it also
+        displays the album art.
+        """
         # Draw Spotify info before Weather and Date/Time
         if self.weather_info is None:
             self.set_weather_and_sunset_info()
@@ -256,12 +289,12 @@ class Clock:
             self.image_obj.draw_user_time_ago(time_since_2, 18+name_width_2, name_height_2 /2)
         else:
             get_new_album_art = self.old_album_name1 != self.album_name_1 or self.get_new_album_art
-            if get_new_album_art and track_image_link is not None:
+            if get_new_album_art and track_image_link:
                 self.misc.get_album_art(track_image_link)
                 self.get_new_album_art = False
             album_pos = (201, 0) if self.album_art_right_side else (0, 0)
             context_pos = (227, 204) if self.album_art_right_side else (25, 204)
-            if track_image_link is not None:
+            if track_image_link:
                 self.image_obj.draw_album_image(self.flip_to_dark, pos=album_pos, convert_image=get_new_album_art)
                 self.image_obj.draw_spot_context("album", self.album_name_1, context_pos[0], context_pos[1])
             else:
@@ -297,14 +330,14 @@ class Clock:
 
         # Here we make some considerations so the screen isn't updated too frequently
         # We air on the side of caution, and would rather add an additional current_minute than shrink by a current_minute
-        if self.old_time is not None and (5 < hour and hour < 24):
+        if self.old_time and (5 < hour and hour < 24):
             # 6:00am - 11:59pm update screen every 3 mins
             while int(abs(self.old_time-new_min)) < 3:
                 date = dt.now() + timedelta(seconds=self.time_elapsed)
                 new_min = int(date.strftime("%M")[-1])
                 sleep(2)
         # 12:00am - 1:59am update screen every 5 mins at least
-        elif self.old_time is not None and hour < 2:
+        elif self.old_time and hour < 2:
             while int(abs(self.old_time - new_min)) < 5:
                 date = dt.now() + timedelta(seconds=self.time_elapsed)
                 new_min = int(date.strftime("%M")[-1])
