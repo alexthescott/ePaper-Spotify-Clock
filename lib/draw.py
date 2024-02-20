@@ -371,7 +371,7 @@ class Draw():
         else:
             self.image_obj.paste(self.failure_icon, (context_x - 24, context_y - 4))
 
-    def draw_album_image(self, dark_mode: bool, image_file_name: str = "AlbumImage_resize.PNG", pos: tuple = (0, 0), convert_image: bool = True):
+    def draw_album_image(self, dark_mode: bool, image_file_name: str="AlbumImage_resize.PNG", pos: tuple=(0, 0), convert_image: bool=True):
         if convert_image or self.album_image is None:
             self.album_image = Image.open(f"album_art/{image_file_name}")
             self.album_image = self.album_image.convert(self.image_mode)

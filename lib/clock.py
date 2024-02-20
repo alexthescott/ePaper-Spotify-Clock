@@ -216,9 +216,17 @@ class Clock:
                             time_image = ImageMath.eval('255-(a)', a=time_image)
                             if not self.local_run:
                                 if self.time_on_right:
-                                    self.epd.EPD_4IN2_PartialDisplay(int(self.image_obj.width-5-time_width), 245, int(self.image_obj.width-5), 288, self.epd.getbuffer(time_image))
+                                    x_start = int(self.image_obj.width-5-time_width)
+                                    x_end = int(self.image_obj.width-5)
                                 else:
-                                    self.epd.EPD_4IN2_PartialDisplay(5, 245, int(5+time_width), 288, self.epd.getbuffer(time_image))
+                                    x_start = 5
+                                    x_end = int(5+time_width)
+
+                                y_start = 245
+                                y_end = 288
+                                buffer = self.epd.getbuffer(time_image)
+
+                                self.epd.EPD_4IN2_PartialDisplay(x_start, y_start, x_end, y_end, buffer)
                             else:
                                 self.build_image()
                                 self.save_local_file()
