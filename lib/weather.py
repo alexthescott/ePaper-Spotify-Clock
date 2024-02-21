@@ -66,7 +66,7 @@ class Weather():
         
         return None
 
-    def get_lat_long(self, current_zip: bool = True):
+    def get_lat_long(self, current_zip: bool=True):
         """ 
         Get latitude and longitude from zipcode 
         """
