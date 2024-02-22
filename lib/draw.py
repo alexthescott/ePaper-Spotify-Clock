@@ -450,7 +450,6 @@ class Draw():
             temp, temp_high, temp_low, other_temp = 0, 0, 0, 0
         else:
             temp, temp_high, temp_low, other_temp = weather_info
-        self.get_time()
         temp_degrees = "C" if self.metric_units else "F"
         left_elem_x = 10
         bar_height = 74  # the height of the bottom bar
@@ -477,6 +476,7 @@ class Draw():
             self.draw_weather((right_elem_x, right_elem_y), weather_info)
 
         # Draw the date in the center of the bottom bar
+        self.get_time()
         date_width, date_height = self.image_draw.textlength(self.dt.strftime("%a, %b %-d"), font=self.DSfnt32), self.DSfnt32.size/1.3
         date_x =  left_elem_x + time_width + (right_elem_x - left_elem_x - time_width) // 2 - date_width // 2
         date_y = 239 + date_height
