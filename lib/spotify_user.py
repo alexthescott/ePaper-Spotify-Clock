@@ -3,10 +3,11 @@ import logging
 from datetime import datetime, timedelta
 
 import spotipy
-from requests.exceptions import ReadTimeout, ConnectionError
+from requests.exceptions import ReadTimeout
 from spotipy.exceptions import SpotifyException
 
 from lib.clock_logging import logger
+from lib.json_io import LocalJsonIO
 spotify_logger = logging.getLogger('spotipy.client')
 
 
@@ -53,6 +54,7 @@ class SpotifyUser():
         self.oauth_token_info = None
         self.sp = None
         self.dt = None
+        self.ctx_io = LocalJsonIO
         self.load_credentials()
         self.update_spotipy_token()
 
@@ -135,7 +137,11 @@ class SpotifyUser():
             if self.single_user:
                 track_image_link = recent['item']['album']['images'][0]['url']
                 album_name = recent['item']['album']['name']
+                
+            # TODO: Write relevant information to the ctx_io file
         else:
+            # TODO: get the current_user_recently_played() and compare the cursor to that which is found in ctx_io file
+            
             # grab old context if user is not currently playing a song
             recent = self.sp.current_user_recently_played(1)
             tracks = recent["items"]
@@ -190,3 +196,26 @@ class SpotifyUser():
             
         spotify_logger.disabled = False
         return context_type, context_name
+    
+    def get_or_store_context(self, ctx_type, ctx_title, album_art_side):
+        """
+        Retrieves or stores the context based on the provided parameters.
+
+        This method checks if both `ctx_type` and `ctx_title` are provided. If they are, it writes them to a JSON file
+        using the `write_json_ctx` method of the `ctx_io` object, with the side of the album art as an additional parameter.
+        If either `ctx_type` or `ctx_title` is not provided, it reads the context from a JSON file using the `read_json_ctx`
+        method of the `ctx_io` object, with the side of the album art as an additional parameter.
+
+        Parameters:
+        ctx_type (str): The type of the context.
+        ctx_title (str): The title of the context.
+        album_art_side (bool): The side of the album art. True for right side, False for left side.
+
+        Returns:
+        tuple: A tuple containing the context type and context title.
+        """
+        if all([ctx_type, ctx_title]):
+            self.ctx_io.write_json_ctx((ctx_type, ctx_title), album_art_side)
+        else:
+            return self.ctx_io.read_json_ctx(album_art_side)
+        return ctx_type, ctx_title
