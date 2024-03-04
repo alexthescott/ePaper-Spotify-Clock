@@ -7,7 +7,6 @@ from lib.draw import Draw
 from lib.weather import Weather
 from lib.spotify_user import SpotifyUser
 from lib.misc import Misc
-from lib.json_io import LocalJsonIO
 from lib.clock_logging import logger
 
 class Clock:
@@ -30,7 +29,6 @@ class Clock:
         self.image_obj = Draw(self.local_run)
         self.weather = Weather()
         self.misc = Misc()
-        self.ctx_io = LocalJsonIO()
         self.spotify_user_1 = SpotifyUser(self.name_1, self.single_user)
         self.ctx_type_1, self.ctx_title_1 = "", ""
         self.old_album_name1, self.album_name_1 = "", ""
@@ -94,29 +92,6 @@ class Clock:
         Saves the image object "clock_output.png" for later reference
         """
         self.image_obj.save_png("clock_output")
-        
-    def get_or_store_context(self, ctx_type, ctx_title, album_art_side):
-        """
-        Retrieves or stores the context based on the provided parameters.
-
-        This method checks if both `ctx_type` and `ctx_title` are provided. If they are, it writes them to a JSON file
-        using the `write_json_ctx` method of the `ctx_io` object, with the side of the album art as an additional parameter.
-        If either `ctx_type` or `ctx_title` is not provided, it reads the context from a JSON file using the `read_json_ctx`
-        method of the `ctx_io` object, with the side of the album art as an additional parameter.
-
-        Parameters:
-        ctx_type (str): The type of the context.
-        ctx_title (str): The title of the context.
-        album_art_side (bool): The side of the album art. True for right side, False for left side.
-
-        Returns:
-        tuple: A tuple containing the context type and context title.
-        """
-        if all([ctx_type, ctx_title]):
-            self.ctx_io.write_json_ctx((ctx_type, ctx_title), album_art_side)
-        else:
-            return self.ctx_io.read_json_ctx(album_art_side)
-        return ctx_type, ctx_title
 
     def tick_tock(self):
         """
@@ -131,11 +106,7 @@ class Clock:
             logger.info("Time: %s", time_str)
             start = time() # Used to 'push' our clock timing forward to account for EPD time
 
-            # If we have no context read, grab context our cache/context.txt json file
-            self.ctx_type_1, self.ctx_title_1 = self.get_or_store_context(self.ctx_type_1, self.ctx_title_1, self.album_art_right_side)
-            self.ctx_type_2, self.ctx_title_2 = self.get_or_store_context(self.ctx_type_2, self.ctx_title_2, not self.album_art_right_side)
-                
-            self.build_image()
+            self.build_image(time_str)
 
             # Get 24H clock c_hour to determine sleep duration before refresh
             date = dt.now() + timedelta(seconds=self.time_elapsed)
@@ -228,7 +199,7 @@ class Clock:
 
                                 self.epd.EPD_4IN2_PartialDisplay(x_start, y_start, x_end, y_end, buffer)
                             else:
-                                self.build_image()
+                                self.build_image(time_str)
                                 self.save_local_file()
                         partial_update_count += 1
                 else:
@@ -241,52 +212,33 @@ class Clock:
             # Increment counter for Weather requests
             self.count_to_5 = 0 if self.count_to_5 == 4 else self.count_to_5 + 1
 
-    def build_image(self):
+    def build_image(self, time_str=None):
         """
         Builds the image for the ePaper display by drawing Spotify information, weather, date/time, and borders.
         If there are two Spotify users, it displays information for both users. If there is only one user, it also
         displays the album art.
         """
-        # Draw Spotify info before Weather and Date/Time
-        if self.weather_info is None:
+        # Get weather and sunset info if set
+        if not self.weather_info:
             self.set_weather_and_sunset_info()
-
+        
+        # get time_str if not passed
+        if not time_str:
+            date = dt.now()
+            time_str = date.strftime("%-H:%M") if self.twenty_four_hour_clock else date.strftime("%-I:%M") + date.strftime("%p").lower()
+            
         # --- Spotify User 1 ---
         self.old_album_name1 = self.album_name_1
-        track_1, artist_1, time_since_1, tmp_ctx_type_1, tmp_ctn_name_1, track_image_link, self.album_name_1 = self.spotify_user_1.get_spotipy_info()
-        if self.single_user and self.album_art_right_side:
-            track_line_count, track_text_size = self.image_obj.draw_track_text(track_1, 5, 26)
-            self.image_obj.draw_artist_text(artist_1, track_line_count, track_text_size, 5, 26)
+        track_1, artist_1, time_since_1, ctx_type_1, ctx_title_1, track_image_link, self.album_name_1 = self.spotify_user_1.get_spotipy_info()
 
-            self.ctx_type_1 = tmp_ctx_type_1 if tmp_ctx_type_1 != "" else self.ctx_type_1
-            self.ctx_title_1 = tmp_ctn_name_1 if tmp_ctn_name_1 != "" else self.ctx_title_1
-            self.image_obj.draw_spot_context(self.ctx_type_1, self.ctx_title_1, 25, 204)
-
-            name_width_1, name_height_1 = self.image_obj.draw_name(self.spotify_user_1.name, 8, 0)
-            self.image_obj.draw_user_time_ago(time_since_1, 18+name_width_1, name_height_1//2)
-        else:
-            track_line_count, track_text_size = self.image_obj.draw_track_text(track_1, 207, 26)
-            self.image_obj.draw_artist_text(artist_1, track_line_count, track_text_size, 207, 26)
-
-            self.ctx_type_1 = tmp_ctx_type_1 if tmp_ctx_type_1 != "" else self.ctx_type_1
-            self.ctx_title_1 = tmp_ctn_name_1 if tmp_ctn_name_1 != "" else self.ctx_title_1
-            self.image_obj.draw_spot_context(self.ctx_type_1, self.ctx_title_1, 227, 204)
-
-            name_width_1, name_height_1 = self.image_obj.draw_name(self.spotify_user_1.name, 210, 0)
-            self.image_obj.draw_user_time_ago(time_since_1, 220+name_width_1, name_height_1//2)
+        x_spot_info = 5 if (self.single_user and self.album_art_right_side) or not self.single_user else 207
+        y_spot_info = 26
+        self.draw_track_info(track_1, artist_1, ctx_type_1, ctx_title_1, x_spot_info, y_spot_info, self.spotify_user_1, time_since_1)
 
         # --- Spotify User 2 or Album Art Display ---
         if not self.single_user:
-            track_2, artist_2, time_since_2, tmp_ctx_type_2, tmp_ctn_name_2, track_image_link, _ = self.spotify_user_2.get_spotipy_info()
-            track_line_count, track_text_size = self.image_obj.draw_track_text(track_2, 5, 26)
-            self.image_obj.draw_artist_text(artist_2, track_line_count, track_text_size, 5, 26)
-
-            ctx_type_2 = tmp_ctx_type_2 if tmp_ctx_type_2 != "" else ctx_type_2
-            ctx_title_2 = tmp_ctn_name_2 if tmp_ctn_name_2 != "" else ctx_title_2
-            self.image_obj.draw_spot_context(ctx_type_2, ctx_title_2, 25, 204)
-
-            name_width_2, name_height_2 = self.image_obj.draw_name(self.spotify_user_2.name, 8, 0)
-            self.image_obj.draw_user_time_ago(time_since_2, 18+name_width_2, name_height_2 /2)
+            track_2, artist_2, time_since_2, ctx_type_2, ctx_title_2, track_image_link, _ = self.spotify_user_2.get_spotipy_info()
+            self.draw_track_info(track_2, artist_2, ctx_type_2, ctx_title_2, 207, 26, self.spotify_user_2, time_since_2)
         else:
             get_new_album_art = self.old_album_name1 != self.album_name_1 or self.get_new_album_art
             if get_new_album_art and track_image_link:
@@ -301,7 +253,7 @@ class Clock:
                 logger.warning("No album art found, drawing NA.png")
                 self.image_obj.draw_album_image(self.flip_to_dark, image_file_name="NA.png", pos=album_pos, convert_image=get_new_album_art)
                 self.image_obj.draw_spot_context("album", self.album_name_1, context_pos[0], context_pos[1])
-        self.image_obj.draw_date_time_temp(self.weather_info)
+        self.image_obj.draw_date_time_temp(self.weather_info, time_str)
         self.image_obj.draw_border_lines()
 
         # -------- Dark Mode --------
@@ -311,6 +263,27 @@ class Clock:
         if self.partial_update and not self.local_run:
             # partial updates are inverted on the EPD? I don't know why, but it works
             self.image_obj.dark_mode_flip()
+
+    def draw_track_info(self, track, artist, ctx_type, ctx_title, x, y, spotify_user, time_since):
+        """
+        Draws the track information on the ePaper display.
+
+        Parameters:
+        - track (str): The name of the track.
+        - artist (str): The name of the artist.
+        - ctx_type (str): The context type of the track (e.g., album, playlist).
+        - ctx_title (str): The title of the context.
+        - x (int): The x-coordinate of the starting position.
+        - y (int): The y-coordinate of the starting position.
+        - spotify_user (User): The Spotify user object.
+        - time_since (str): The time since the track was played.
+        """
+        track_line_count, track_text_size = self.image_obj.draw_track_text(track, x, y)
+        self.image_obj.draw_artist_text(artist, track_line_count, track_text_size, x, y)
+        self.image_obj.draw_spot_context(ctx_type, ctx_title, x+20, 204)
+
+        name_width, name_height = self.image_obj.draw_name(spotify_user.name, x+3, 0)
+        self.image_obj.draw_user_time_ago(time_since, x+13+name_width, name_height//2)
 
     def get_time_from_date_time(self):
         """Return time information from datetime including seconds, time, date, and the current_minute of update.

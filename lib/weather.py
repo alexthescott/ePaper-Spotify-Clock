@@ -66,14 +66,14 @@ class Weather():
         
         return None
 
-    def get_lat_long(self, current_zip: bool = True):
+    def get_lat_long(self, current_zip: bool=True):
         """ 
         Get latitude and longitude from zipcode 
         """
         local_zip = self.zipcode if current_zip else self.ow_alt_weather_zip
         if local_zip is None:
             return None, None
-        url = self.ow_geocoding_url + "zip=" + local_zip + "&appid=" + self.ow_key
+        url = f"{self.ow_geocoding_url}zip={local_zip}&appid={self.ow_key}"
         try:
             response = requests.get(url, timeout=10)
             data = response.json()

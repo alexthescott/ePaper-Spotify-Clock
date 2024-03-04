@@ -186,13 +186,6 @@ class Draw():
         self.image_obj = Image.new(self.image_mode, (self.width, self.height), 255)
         self.image_draw = ImageDraw.Draw(self.image_obj)
 
-    def get_time(self):
-        """
-        Stores the current time as a formatted string within self.time_str given `twenty_four_hour_clock` attribute.
-        """
-        self.dt = dt.now()
-        self.time_str = self.dt.strftime("%-H:%M") if self.twenty_four_hour_clock else self.dt.strftime("%-I:%M%p").lower()
-
     def save_png(self, file_name: str):
         """
         Saves the image object as a PNG file.
@@ -442,7 +435,7 @@ class Draw():
             am_pm_x = pos[0] + self.image_draw.textlength(current_time, font=self.DSfnt64)
             self.image_draw.text((am_pm_x, pos[1] + 22), am_pm, font=self.DSfnt32)
 
-    def draw_date_time_temp(self, weather_info: tuple):
+    def draw_date_time_temp(self, weather_info: tuple, time_str: str):
         """
         This function draws the date, time, and temperature on the display. 
         """
@@ -450,10 +443,10 @@ class Draw():
             temp, temp_high, temp_low, other_temp = 0, 0, 0, 0
         else:
             temp, temp_high, temp_low, other_temp = weather_info
-        self.get_time()
         temp_degrees = "C" if self.metric_units else "F"
         left_elem_x = 10
         bar_height = 74  # the height of the bottom bar
+        self.time_str = time_str
 
         # Calculate common elements
         temp_width, temp_height = self.image_draw.textlength(str(temp), font=self.DSfnt64), self.DSfnt64.size/1.3
@@ -477,6 +470,7 @@ class Draw():
             self.draw_weather((right_elem_x, right_elem_y), weather_info)
 
         # Draw the date in the center of the bottom bar
+        self.dt = dt.now()
         date_width, date_height = self.image_draw.textlength(self.dt.strftime("%a, %b %-d"), font=self.DSfnt32), self.DSfnt32.size/1.3
         date_x =  left_elem_x + time_width + (right_elem_x - left_elem_x - time_width) // 2 - date_width // 2
         date_y = 239 + date_height
