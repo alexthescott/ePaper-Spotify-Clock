@@ -54,8 +54,12 @@ class SpotifyUser():
         self.oauth_token_info = None
         self.sp = None
         self.dt = None
-        self.ctx_io = LocalJsonIO
+        self.ctx_io = LocalJsonIO()
+        self.album_art_right_side = None
+        self.right_side = (self.single_user and self.album_art_right_side) or not self.single_user and not self.main_user
+        logger.info("User: %s Right Side: %s", self.name, self.right_side)
         self.load_credentials()
+        self.load_display_settings()
         self.update_spotipy_token()
 
     def load_credentials(self):
@@ -66,6 +70,15 @@ class SpotifyUser():
             credentials = json.load(f)
             self.spot_client_id = credentials['spot_client_id_me'] if self.main_user else credentials['spot_client_id_you']
             self.spot_client_secret = credentials['spot_client_secret_me'] if self.main_user else credentials['spot_client_secret_you']
+
+    def load_display_settings(self):
+        """
+        Load display settings from config/display_settings.json
+        """
+        with open("config/display_settings.json", encoding="utf-8") as display_settings:
+            display_settings = json.load(display_settings)
+            single_user_settings = display_settings["single_user_settings"]
+            self.album_art_right_side = single_user_settings["album_art_right_side"]
 
     # Spotify Functions
     def update_spotipy_token(self):
@@ -118,17 +131,18 @@ class SpotifyUser():
                 self.update_spotipy_token()
             except ConnectionError as e:
                 logger.error(e)
-                return "Not Available", "Failed to get Spotify Data", "", "Failed", "Failed", None, "Failed"
+                old_context = self.ctx_io.read_json_ctx(self.right_side)
+                return self.get_stored_json_info(old_context)
         else:
             logger.error("Failed to get current %s's Spotify Info", self.name)
-            return "Not Available", "Failed to get Spotify Data", "", "Failed", "Failed", None, "Failed"
+            old_context = self.ctx_io.read_json_ctx(self.right_side)
+            return self.get_stored_json_info(old_context)
 
         context_type, context_name, time_passed = "", "", ""
         # used if single_user
         track_image_link, album_name = None, None
-        # if user is currently playing a song
+        # if user is currently playing a song, get current context, track and artist, store into json
         if recent and recent['item']:
-            # get current context, track and artist
             context_type, context_name = self.get_context_from_json(recent['context'])
             time_passed = " is listening to"
             track_name, artists = recent['item']['name'], recent['item']['artists']
@@ -137,13 +151,30 @@ class SpotifyUser():
             if self.single_user:
                 track_image_link = recent['item']['album']['images'][0]['url']
                 album_name = recent['item']['album']['name']
-                
-            # TODO: Write relevant information to the ctx_io file
-        else:
-            # TODO: get the current_user_recently_played() and compare the cursor to that which is found in ctx_io file
+            else:
+                track_image_link = None
+                album_name = None
             
-            # grab old context if user is not currently playing a song
+            current_info = {
+                "unix_timestamp": recent["timestamp"],
+                "context_type": context_type, 
+                "context_name": context_name, 
+                "time_passed": time_passed, 
+                "track_name": track_name, 
+                "artist_name": artist_name, 
+                "track_image_link": track_image_link, 
+                "album_name": album_name
+            }
+            self.ctx_io.write_json_ctx(current_info, self.right_side)
+        else:
+            # get recently played info if user is not currently playing a song
+            # only use that info if it's newer than stored json info
             recent = self.sp.current_user_recently_played(1)
+            unix_timestamp = int(recent['cursors']['after'])
+            old_context = self.ctx_io.read_json_ctx(self.right_side)
+            if old_context['unix_timestamp'] > unix_timestamp:
+                return self.get_stored_json_info(old_context)
+            
             tracks = recent["items"]
             track = tracks[0]
             track_name, artists = track['track']['name'], track['track']['artists']
@@ -197,25 +228,33 @@ class SpotifyUser():
         spotify_logger.disabled = False
         return context_type, context_name
     
-    def get_or_store_context(self, ctx_type, ctx_title, album_art_side):
+    def get_stored_json_info(self, context_json: dict):
         """
-        Retrieves or stores the context based on the provided parameters.
-
-        This method checks if both `ctx_type` and `ctx_title` are provided. If they are, it writes them to a JSON file
-        using the `write_json_ctx` method of the `ctx_io` object, with the side of the album art as an additional parameter.
-        If either `ctx_type` or `ctx_title` is not provided, it reads the context from a JSON file using the `read_json_ctx`
-        method of the `ctx_io` object, with the side of the album art as an additional parameter.
-
-        Parameters:
-        ctx_type (str): The type of the context.
-        ctx_title (str): The title of the context.
-        album_art_side (bool): The side of the album art. True for right side, False for left side.
-
+        Retrieves information from a stored JSON context.
+        Args:
+            context_json (dict): The JSON context containing the stored information.
         Returns:
-        tuple: A tuple containing the context type and context title.
+            tuple: A tuple containing the following information:
+                - track_name (str): The name of the track.
+                - artist_name (str): The name of the artist.
+                - time_passed (str): The time passed since the track was played.
+                - context_type (str): The type of context.
+                - context_name (str): The name of the context.
+                - track_image_link (str): The link to the track's image.
+                - album_name (str): The name of the album.
         """
-        if all([ctx_type, ctx_title]):
-            self.ctx_io.write_json_ctx((ctx_type, ctx_title), album_art_side)
-        else:
-            return self.ctx_io.read_json_ctx(album_art_side)
-        return ctx_type, ctx_title
+        logger.info("Using stored context for %s", self.name)
+        if not context_json:
+            return "Not Available", "Failed to get Spotify Data", "", "Failed", "Failed", None, "Failed"
+        track_name = context_json['track_name']
+        artist_name = context_json['artist_name']
+        context_type = context_json['context_type']
+        context_name = context_json['context_name']
+        track_image_link = context_json['track_image_link']
+        album_name = context_json['album_name']
+        dt_object = datetime.utcfromtimestamp(context_json['unix_timestamp'] / 1000)
+        dt_object_str = dt_object.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+        timestamp = datetime.strptime(dt_object_str, '%Y-%m-%dT%H:%M:%S.%fZ')
+        hours_passed, minutes_passed = get_time_from_timedelta(self.dt.utcnow() - timestamp)
+        time_passed = get_time_since_played(hours_passed, minutes_passed)
+        return track_name, artist_name, time_passed, context_type, context_name, track_image_link, album_name

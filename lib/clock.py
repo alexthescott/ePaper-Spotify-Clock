@@ -7,7 +7,6 @@ from lib.draw import Draw
 from lib.weather import Weather
 from lib.spotify_user import SpotifyUser
 from lib.misc import Misc
-from lib.json_io import LocalJsonIO
 from lib.clock_logging import logger
 
 class Clock:
@@ -213,28 +212,33 @@ class Clock:
             # Increment counter for Weather requests
             self.count_to_5 = 0 if self.count_to_5 == 4 else self.count_to_5 + 1
 
-    def build_image(self, time_str):
+    def build_image(self, time_str=None):
         """
         Builds the image for the ePaper display by drawing Spotify information, weather, date/time, and borders.
         If there are two Spotify users, it displays information for both users. If there is only one user, it also
         displays the album art.
         """
-        # Draw Spotify info before Weather and Date/Time
-        if self.weather_info is None:
+        # Get weather and sunset info if set
+        if not self.weather_info:
             self.set_weather_and_sunset_info()
-
+        
+        # get time_str if not passed
+        if not time_str:
+            date = dt.now()
+            time_str = date.strftime("%-H:%M") if self.twenty_four_hour_clock else date.strftime("%-I:%M") + date.strftime("%p").lower()
+            
         # --- Spotify User 1 ---
         self.old_album_name1 = self.album_name_1
         track_1, artist_1, time_since_1, ctx_type_1, ctx_title_1, track_image_link, self.album_name_1 = self.spotify_user_1.get_spotipy_info()
 
-        x_spot_info = 5 if (self.single_user and self.album_art_right_side) else 207
+        x_spot_info = 5 if (self.single_user and self.album_art_right_side) or not self.single_user else 207
         y_spot_info = 26
         self.draw_track_info(track_1, artist_1, ctx_type_1, ctx_title_1, x_spot_info, y_spot_info, self.spotify_user_1, time_since_1)
 
         # --- Spotify User 2 or Album Art Display ---
         if not self.single_user:
             track_2, artist_2, time_since_2, ctx_type_2, ctx_title_2, track_image_link, _ = self.spotify_user_2.get_spotipy_info()
-            self.draw_track_info(track_2, artist_2, ctx_type_2, ctx_title_2, 5, 26, self.spotify_user_2, time_since_2)
+            self.draw_track_info(track_2, artist_2, ctx_type_2, ctx_title_2, 207, 26, self.spotify_user_2, time_since_2)
         else:
             get_new_album_art = self.old_album_name1 != self.album_name_1 or self.get_new_album_art
             if get_new_album_art and track_image_link:
