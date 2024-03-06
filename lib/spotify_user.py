@@ -143,7 +143,7 @@ class SpotifyUser():
         track_image_link, album_name = None, None
         # if user is currently playing a song, get current context, track and artist, store into json
         if recent and recent['item']:
-            context_type, context_name = self.get_context_from_json(recent['context'])
+            context_type, context_name = self.get_context_from_json(recent)
             time_passed = " is listening to"
             track_name, artists = recent['item']['name'], recent['item']['artists']
             artist_name = ', '.join(artist['name'] for artist in artists)
@@ -172,7 +172,7 @@ class SpotifyUser():
             recent = self.sp.current_user_recently_played(1)
             unix_timestamp = int(recent['cursors']['after'])
             old_context = self.ctx_io.read_json_ctx(self.right_side)
-            if old_context['unix_timestamp'] > unix_timestamp:
+            if 'unix_timestamp' in old_context and old_context['unix_timestamp'] > unix_timestamp:
                 return self.get_stored_json_info(old_context)
             
             tracks = recent["items"]
@@ -186,11 +186,11 @@ class SpotifyUser():
             timestamp = datetime.strptime(last_timestamp, '%Y-%m-%dT%H:%M:%S.%fZ')
             hours_passed, minutes_passed = get_time_from_timedelta(self.dt.utcnow() - timestamp)
             time_passed = get_time_since_played(hours_passed, minutes_passed)
-            context_type, context_name = self.get_context_from_json(track['context'])
+            context_type, context_name = self.get_context_from_json(track)
         logger.info("%s: %s, %s by %s playing from from %s %s",self.name, time_passed, track_name, artist_name, context_name, context_type)
         return track_name, artist_name, time_passed, context_type, context_name, track_image_link, album_name
         
-    def get_context_from_json(self, context_json: dict):
+    def get_context_from_json(self, track_json: dict):
         """ 
         Return Spotify Context info.
         Args:
@@ -200,30 +200,34 @@ class SpotifyUser():
             context_name: Context name to be displayed
         """
         context_type, context_name = "", ""
-        
+        context_json = track_json['context']
         if context_json:
             context_type = context_json['type']
             context_uri = context_json['uri']
-            
-            context_fetchers = {
-                'playlist': self.sp.playlist,
-                'album': self.sp.album,
-                'artist': self.sp.artist
-            }
-            
-            fetcher = context_fetchers.get(context_type, None)
-            
-            if fetcher:
-                # Ignore Spotify logger for get_context_from_json
-                spotify_logger.disabled = True
-                try:
-                    context_name = fetcher(context_uri)['name']
-                except SpotifyException:
-                    # playlist() call failed, assuming User is listening to DJ mix
-                    if context_type == 'playlist':
-                        context_name = "DJ"
-            elif context_type == 'collection':
-                context_name = "Liked Songs"
+        else:
+            context_type = "album"
+            track_info = track_json['track'] if 'track' in track_json else track_json['item']
+            context_uri = track_info['album']['uri']
+        
+        context_fetchers = {
+            'playlist': self.sp.playlist,
+            'album': self.sp.album,
+            'artist': self.sp.artist
+        }
+        
+        fetcher = context_fetchers.get(context_type, None)
+        
+        if fetcher:
+            # Ignore Spotify logger for get_context_from_json
+            spotify_logger.disabled = True
+            try:
+                context_name = fetcher(context_uri)['name']
+            except SpotifyException:
+                # playlist() call failed, assuming User is listening to DJ mix
+                if context_type == 'playlist':
+                    context_name = "DJ"
+        elif context_type == 'collection':
+            context_name = "Liked Songs"
             
         spotify_logger.disabled = False
         return context_type, context_name
