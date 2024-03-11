@@ -187,6 +187,17 @@ class SpotifyUser():
             hours_passed, minutes_passed = get_time_from_timedelta(self.dt.utcnow() - timestamp)
             time_passed = get_time_since_played(hours_passed, minutes_passed)
             context_type, context_name = self.get_context_from_json(track)
+            current_info = {
+                "unix_timestamp": unix_timestamp,
+                "context_type": context_type, 
+                "context_name": context_name, 
+                "time_passed": time_passed, 
+                "track_name": track_name, 
+                "artist_name": artist_name, 
+                "track_image_link": track_image_link, 
+                "album_name": album_name
+            }
+            self.ctx_io.write_json_ctx(current_info, self.right_side)
         logger.info("%s: %s, %s by %s playing from from %s %s",self.name, time_passed, track_name, artist_name, context_name, context_type)
         return track_name, artist_name, time_passed, context_type, context_name, track_image_link, album_name
         
