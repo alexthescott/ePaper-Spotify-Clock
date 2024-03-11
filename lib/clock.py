@@ -129,6 +129,8 @@ class Clock:
                 break
             elif not self.did_epd_init:
                 if not self.local_run:
+                    self.epd.init()
+                    self.epd.Clear()
                     if self.four_gray_scale:
                         logger.info("Initializing EPD 4Gray...")
                         self.epd.Init_4Gray()
@@ -140,8 +142,6 @@ class Clock:
                             self.epd.init_Partial()
                     else:
                         logger.info("Initializing EPD...")
-                        self.epd.init()
-                    self.epd.Clear()
                 else:
                     self.save_local_file()
                 self.did_epd_init = True
