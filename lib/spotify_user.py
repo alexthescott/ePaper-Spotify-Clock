@@ -172,7 +172,7 @@ class SpotifyUser():
             recent = self.sp.current_user_recently_played(1)
             unix_timestamp = int(recent['cursors']['after'])
             old_context = self.ctx_io.read_json_ctx(self.right_side)
-            if 'unix_timestamp' in old_context and old_context['unix_timestamp'] > unix_timestamp:
+            if old_context and 'unix_timestamp' in old_context and old_context['unix_timestamp'] > unix_timestamp:
                 return self.get_stored_json_info(old_context)
             
             tracks = recent["items"]
