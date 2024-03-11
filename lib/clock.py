@@ -203,10 +203,10 @@ class Clock:
                                 y_start = 245
                                 y_end = 288
                                 if self.version_2:
-                                    self.epd.display_Partial(time_image)
+                                    self.build_image(time_str)
+                                    self.epd.display_Partial(self.epd.getbuffer(self.image_obj.get_image_obj()))
                                 else:
-                                    buffer = self.epd.getbuffer(time_image)
-                                    self.epd.EPD_4IN2_PartialDisplay(x_start, y_start, x_end, y_end, buffer)
+                                    self.epd.EPD_4IN2_PartialDisplay(x_start, y_start, x_end, y_end, self.epd.getbuffer(time_image))
                             else:
                                 self.build_image(time_str)
                                 self.save_local_file()
