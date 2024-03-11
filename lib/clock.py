@@ -135,7 +135,7 @@ class Clock:
                     elif self.partial_update:
                         logger.info("Initializing Partial EPD...")
                         if self.version_2:
-                            self.epd.init_fast()
+                            self.epd.init_fast(self.epd.Seconds_1_5S)
                         else:
                             self.epd.init_Partial()
                     else:
