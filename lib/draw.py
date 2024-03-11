@@ -300,7 +300,9 @@ class Draw():
         new_draw_obj = Image.new(self.image_mode, (400, 300), 128)
         self.image_draw = ImageDraw.Draw(new_draw_obj)
         date_time_now = dt.now()
-        self.draw_date_time_temp(weather_info)
+        time_str = date_time_now.strftime("%-I:%M") + date_time_now.strftime("%p").lower() if "am" in time_str or "pm" in time_str else date_time_now.strftime("%-H:%M")
+        
+        self.draw_date_time_temp(weather_info, time_str)
         if "am" in time_str or "pm" in time_str:
             current_time_width = self.image_draw.textlength(time_str[:-2], self.DSfnt64)
             current_am_pm_width = self.image_draw.textlength(time_str[-2:], self.DSfnt32)
