@@ -191,7 +191,7 @@ class Clock:
                             logger.info("\ttimestr:%s", time_str)
                             time_image, time_width = self.image_obj.create_time_text(time_str, self.weather_info)
                             # flip image polarity
-                            time_image = ImageMath.eval('255-(a)', a=time_image)
+                            # time_image = ImageMath.eval('255-(a)', a=time_image)
                             if not self.local_run:
                                 if self.time_on_right:
                                     x_start = int(self.image_obj.width-5-time_width)
