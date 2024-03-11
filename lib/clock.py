@@ -17,12 +17,8 @@ class Clock:
     """
     def __init__(self):
         self.local_run = False
-        self.version_2 = True
         try:
-            if self.version_2:
-                from waveshare_epd import epd4in2_V2
-            else:
-                from waveshare_epd import epd4in2
+            from waveshare_epd import epd4in2_V2
         except ImportError:
             self.local_run = True
 
@@ -136,10 +132,7 @@ class Clock:
                         self.epd.Init_4Gray()
                     elif self.partial_update:
                         logger.info("Initializing Partial EPD...")
-                        if self.version_2:
-                            self.epd.init_fast(self.epd.Seconds_1_5S)
-                        else:
-                            self.epd.init_Partial()
+                        self.epd.init_fast(self.epd.Seconds_1_5S)
                     else:
                         logger.info("Initializing EPD...")
                 else:
@@ -202,11 +195,9 @@ class Clock:
 
                                 y_start = 245
                                 y_end = 288
-                                if self.version_2:
-                                    self.build_image(time_str)
-                                    self.epd.display_Partial(self.epd.getbuffer(self.image_obj.get_image_obj()))
-                                else:
-                                    self.epd.EPD_4IN2_PartialDisplay(x_start, y_start, x_end, y_end, self.epd.getbuffer(time_image))
+                                # TODO: still broken in V2 transition 
+                                self.build_image(time_str)
+                                self.epd.display_Partial(self.epd.getbuffer(self.image_obj.get_image_obj()))
                             else:
                                 self.build_image(time_str)
                                 self.save_local_file()
