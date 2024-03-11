@@ -17,9 +17,9 @@ class Clock:
     """
     def __init__(self):
         self.local_run = False
-        version_2 = True
+        self.version_2 = True
         try:
-            if version_2:
+            if self.version_2:
                 from waveshare_epd import epd4in2_V2
             else:
                 from waveshare_epd import epd4in2
@@ -134,7 +134,7 @@ class Clock:
                         self.epd.Init_4Gray()
                     elif self.partial_update:
                         logger.info("Initializing Partial EPD...")
-                        if version_2:
+                        if self.version_2:
                             self.epd.init_fast()
                         else:
                             self.epd.init_Partial()
