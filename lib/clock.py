@@ -269,7 +269,7 @@ class Clock:
             self.image_obj.dark_mode_flip()
         if self.partial_update and not self.local_run:
             # partial updates are inverted on the EPD? I don't know why, but it works
-            self.image_obj.dark_mode_flip()
+            # self.image_obj.dark_mode_flip()
 
     def draw_track_info(self, track, artist, ctx_type, ctx_title, x, y, spotify_user, time_since):
         """
