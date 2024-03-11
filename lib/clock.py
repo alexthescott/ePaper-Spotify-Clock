@@ -268,6 +268,7 @@ class Clock:
         if self.flip_to_dark:
             self.image_obj.dark_mode_flip()
         if self.partial_update and not self.local_run:
+            pass
             # partial updates are inverted on the EPD? I don't know why, but it works
             # self.image_obj.dark_mode_flip()
 
