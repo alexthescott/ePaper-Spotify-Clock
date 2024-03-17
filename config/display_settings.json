@@ -12,6 +12,7 @@
         "sunset_flip": true,
         "always_dark_mode": false,
         "four_gray_scale": true,
+        "use_epd_libV2": true,
         "sleep_epd": true
     },
     "single_user_settings": {
