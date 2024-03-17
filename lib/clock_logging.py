@@ -17,7 +17,7 @@ if args.v:
 
 os.makedirs("cache", exist_ok=True)
 
-f_handler = RotatingFileHandler('cache/clock.log', maxBytes=2*1024*1024, backupCount=5)
+f_handler = RotatingFileHandler('cache/clock.log', maxBytes=2*1024*1024)
 f_handler.setLevel(logging.INFO)
 f_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 f_handler.setFormatter(f_format)
