@@ -191,7 +191,7 @@ class Clock:
                             logger.info("\ttimestr:%s", time_str)
                             self.image_obj.draw_date_time_temp(self.weather_info, time_str)
                             if not self.local_run:
-                                self.epd.display_Partial(self.epd.getbuffer(self.image_obj.get_image_obj()))
+                                self.epd.display_Fast(self.epd.getbuffer(self.image_obj.get_image_obj()))
                             else:
                                 self.save_local_file()
                         partial_update_count += 1
