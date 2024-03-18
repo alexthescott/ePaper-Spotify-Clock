@@ -16,14 +16,30 @@ class Clock:
     Clock will update the weather every 5 minutes
     """
     def __init__(self):
+        logger.info("\n\t-- Clock Init --\n-----------------------------------------------------------------------------------------------------")
         self.local_run = False
         try:
-            from waveshare_epd import epd4in2
+            from waveshare_epd import epd4in2_V2, epd4in2
         except ImportError:
             self.local_run = True
 
-        logger.info("\n\t-- Clock Init --\n-----------------------------------------------------------------------------------------------------")
+        # EPD vars/settings
         self.load_display_settings()
+        if not self.local_run:
+            self.epd = epd4in2_V2.EPD() if self.use_epd_lib_V2 else epd4in2.EPD()
+        else:
+            self.epd = None
+        self.did_epd_init = False
+        self.count_to_5 = 0  # count_to_5 is used to get weather every 5 minutes
+        self.time_elapsed = 15.0
+        self.old_time = None
+        self.flip_to_dark = self.always_dark_mode
+
+        # Weather/Sunset vars
+        self.weather_info = None
+        self.sunset_info = None
+        self.sunset_time_tuple = None
+        self.get_new_album_art = False if self.single_user else None
 
         # Initialize Info/Drawing Libs/Users
         self.image_obj = Draw(self.local_run)
@@ -34,20 +50,6 @@ class Clock:
         self.old_album_name1, self.album_name_1 = "", ""
         self.spotify_user_2 = SpotifyUser(self.name_2, self.single_user, main_user=False) if not self.single_user else None
         self.ctx_type_2, self.ctx_title_2 = "", ""
-
-        # EPD vars/settings
-        self.epd = epd4in2.EPD() if not self.local_run else None
-        self.did_epd_init = False
-        self.count_to_5 = 0  # count_to_5 is used to get weather every 5 minutes
-        self.time_elapsed = 15.0
-        self.old_time = None
-        self.flip_to_dark = self.always_dark_mode
-        self.get_new_album_art = False if self.single_user else None
-
-        # Weather/Sunset vars
-        self.weather_info = None
-        self.sunset_info = None
-        self.sunset_time_tuple = None
 
     def load_display_settings(self):
         """
@@ -65,6 +67,8 @@ class Clock:
             self.time_on_right = main_settings["time_on_right"]
             self.sleep_epd = main_settings["sleep_epd"] # it is not recommended to set sleep_epd to False as it might damage the display
             self.four_gray_scale = main_settings["four_gray_scale"]
+            self.sunset_flip = main_settings["sunset_flip"]
+            self.use_epd_lib_V2 = main_settings["use_epd_libV2"]
             self.single_user = single_user_settings["enable_single_user"]
             self.album_art_right_side = single_user_settings["album_art_right_side"]
             self.name_1 = clock_names["name_1"]
@@ -125,16 +129,15 @@ class Clock:
                 break
             elif not self.did_epd_init:
                 if not self.local_run:
+                    self.epd.init()
                     if self.four_gray_scale:
                         logger.info("Initializing EPD 4Gray...")
                         self.epd.Init_4Gray()
                     elif self.partial_update:
                         logger.info("Initializing Partial EPD...")
-                        self.epd.init_Partial()
+                        self.epd.init_fast(self.epd.Seconds_1_5S)
                     else:
                         logger.info("Initializing EPD...")
-                        self.epd.init()
-                    self.epd.Clear()
                 else:
                     self.save_local_file()
                 self.did_epd_init = True
@@ -146,7 +149,7 @@ class Clock:
                         self.epd.display_4Gray(self.epd.getbuffer_4Gray(self.image_obj.get_image_obj()))
                     else:
                         self.epd.display(self.epd.getbuffer(self.image_obj.get_image_obj()))
-                    if self.sleep_epd:
+                    if self.sleep_epd and (not self.partial_update or self.flip_to_dark):
                         logger.info("\tSleeping EPD")
                         self.epd.sleep()
                         self.did_epd_init = False
@@ -182,24 +185,10 @@ class Clock:
                             date = dt.now()
                             time_str = date.strftime("%-H:%M") if self.twenty_four_hour_clock else date.strftime("%-I:%M") + date.strftime("%p").lower()
                             logger.info("\ttimestr:%s", time_str)
-                            time_image, time_width = self.image_obj.create_time_text(time_str, self.weather_info)
-                            # flip image polarity
-                            time_image = ImageMath.eval('255-(a)', a=time_image)
+                            self.image_obj.draw_date_time_temp(self.weather_info, time_str)
                             if not self.local_run:
-                                if self.time_on_right:
-                                    x_start = int(self.image_obj.width-5-time_width)
-                                    x_end = int(self.image_obj.width-5)
-                                else:
-                                    x_start = 5
-                                    x_end = int(5+time_width)
-
-                                y_start = 245
-                                y_end = 288
-                                buffer = self.epd.getbuffer(time_image)
-
-                                self.epd.EPD_4IN2_PartialDisplay(x_start, y_start, x_end, y_end, buffer)
+                                self.epd.display_Fast(self.epd.getbuffer(self.image_obj.get_image_obj()))
                             else:
-                                self.build_image(time_str)
                                 self.save_local_file()
                         partial_update_count += 1
                 else:
@@ -259,9 +248,6 @@ class Clock:
         # -------- Dark Mode --------
         # Dark mode ~25 minutes after the sunsets. Determined by the bool sunset_flip
         if self.flip_to_dark:
-            self.image_obj.dark_mode_flip()
-        if self.partial_update and not self.local_run:
-            # partial updates are inverted on the EPD? I don't know why, but it works
             self.image_obj.dark_mode_flip()
 
     def draw_track_info(self, track, artist, ctx_type, ctx_title, x, y, spotify_user, time_since):
