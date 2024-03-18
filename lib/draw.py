@@ -429,7 +429,7 @@ class Draw():
         if am_pm:
             text_width += self.image_draw.textlength(am_pm, font=self.DSfnt32)
         # Draw a white rectangle over the old date
-        self.image_draw.rectangle([pos[0]+15, pos[1]+10, (pos[0] + text_width + 20, pos[1] + text_height)], fill="white", outline="white")
+        self.image_draw.rectangle([pos[0]-15, pos[1]-10, (pos[0]+text_width+20, pos[1]+text_height)], fill="white", outline="white")
         self.image_draw.text(pos, current_time, font=self.DSfnt64)
 
         if am_pm:
