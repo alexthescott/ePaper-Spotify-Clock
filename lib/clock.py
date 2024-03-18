@@ -176,14 +176,10 @@ class Clock:
 
                         if partial_update_count < 2:
                             logger.info("\t%s sleep, partial_update", round(sec_left, 2))
-                            self.epd.sleep()
                             sleep(sec_left)
-                            self.epd.init()
                         else:
                             logger.info("\t%.2f\tseconds per loop\tsleeping for %d seconds", round(self.time_elapsed, 2), int(remaining_time/1+120))
-                            self.epd.sleep()
                             sleep(sec_left-self.time_elapsed)
-                            self.epd.init()
 
                         if sec_left > 5 and partial_update_count < 2:
                             date = dt.now()
