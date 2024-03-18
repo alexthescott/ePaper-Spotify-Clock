@@ -149,7 +149,7 @@ class Clock:
                         self.epd.display_4Gray(self.epd.getbuffer_4Gray(self.image_obj.get_image_obj()))
                     else:
                         self.epd.display(self.epd.getbuffer(self.image_obj.get_image_obj()))
-                    if self.sleep_epd:
+                    if self.sleep_epd and not self.partial_update:
                         logger.info("\tSleeping EPD")
                         self.epd.sleep()
                         self.did_epd_init = False
@@ -176,18 +176,21 @@ class Clock:
 
                         if partial_update_count < 2:
                             logger.info("\t%s sleep, partial_update", round(sec_left, 2))
+                            self.epd.sleep()
                             sleep(sec_left)
+                            self.epd.init()
                         else:
                             logger.info("\t%.2f\tseconds per loop\tsleeping for %d seconds", round(self.time_elapsed, 2), int(remaining_time/1+120))
+                            self.epd.sleep()
                             sleep(sec_left-self.time_elapsed)
-                            
+                            self.epd.init()
+
                         if sec_left > 5 and partial_update_count < 2:
                             date = dt.now()
                             time_str = date.strftime("%-H:%M") if self.twenty_four_hour_clock else date.strftime("%-I:%M") + date.strftime("%p").lower()
                             logger.info("\ttimestr:%s", time_str)
                             self.image_obj.draw_date_time_temp(self.weather_info, time_str)
                             if not self.local_run:
-                                self.epd.init()
                                 self.epd.display_Partial(self.epd.getbuffer(self.image_obj.get_image_obj()))
                             else:
                                 self.save_local_file()
