@@ -295,34 +295,6 @@ class Draw():
         for i in range(3):
             self.image_draw.line([(0, 224 + i), (400, 224 + i)], fill=0)
             self.image_draw.line([(199 + i, 0), (199 + i, 225)], fill=0)
-    
-    def create_time_text(self, time_str: str, weather_info: tuple):
-        new_draw_obj = Image.new(self.image_mode, (400, 300), 128)
-        self.image_draw = ImageDraw.Draw(new_draw_obj)
-        date_time_now = dt.now()
-        time_str = date_time_now.strftime("%-I:%M") + date_time_now.strftime("%p").lower() if "am" in time_str or "pm" in time_str else date_time_now.strftime("%-H:%M")
-        
-        self.draw_date_time_temp(weather_info, time_str)
-        if "am" in time_str or "pm" in time_str:
-            current_time_width = self.image_draw.textlength(time_str[:-2], self.DSfnt64)
-            current_am_pm_width = self.image_draw.textlength(time_str[-2:], self.DSfnt32)
-            partial_width = current_time_width + current_am_pm_width
-        else:
-            partial_width = self.image_draw.textlength(time_str, self.DSfnt64)[0]
-
-        date = date_time_now - timedelta(minutes=1)
-        time_str = date.strftime("%-I:%M") + date.strftime("%p").lower() if "am" in time_str or "pm" in time_str else date.strftime("%-H:%M")
-        if "am" in time_str or "pm" in time_str:
-            current_time_width = self.image_draw.textlength(time_str[:-2], self.DSfnt64)
-            current_am_pm_width = self.image_draw.textlength(time_str[-2:], self.DSfnt32)
-            old_partial_width = current_time_width + current_am_pm_width
-        else:
-            old_partial_width = self.image_draw.textlength(time_str, self.DSfnt64)
-
-        # unclear why this must be present... but without it we are always incorrectly inverted
-        new_draw_obj = ImageMath.eval('255-(a)', a=new_draw_obj)
-
-        return new_draw_obj, int(max(partial_width, old_partial_width)+3)
 
     def draw_name(self, text: str, name_x: int, name_y: int):
         name_width, name_height = self.image_draw.textlength(text, font=self.helveti32), self.helveti32.size/1.3
@@ -337,7 +309,18 @@ class Draw():
         self.image_draw.text((time_x, time_y), text, font=self.DSfnt16)
 
     def draw_spot_context(self, context_type: str, context_text: str, context_x: int, context_y: int):
-        # Draws both icon {playlist, album, artist} and context text in the bottom of Spot box
+        """
+        Draws both icon {playlist, album, artist} and context text in the bottom of Spot box.
+
+        Args:
+            context_type (str): The type of context (e.g., playlist, album, artist).
+            context_text (str): The text to be displayed as the context.
+            context_x (int): The x-coordinate of the starting position for drawing the context.
+            context_y (int): The y-coordinate of the starting position for drawing the context.
+
+        Returns:
+            bool: True if the context was successfully drawn, False otherwise.
+        """
         if not context_type or not context_text:
             return False
         context_width, temp_context = 0, ""
@@ -367,6 +350,15 @@ class Draw():
             self.image_obj.paste(self.failure_icon, (context_x - 24, context_y - 4))
 
     def draw_album_image(self, dark_mode: bool, image_file_name: str="AlbumImage_resize.PNG", pos: tuple=(0, 0), convert_image: bool=True):
+        """
+        Draws the album image on the ePaper display.
+
+        Parameters:
+        dark_mode (bool): Flag indicating whether to apply dark mode to the album image.
+        image_file_name (str, optional): The name of the album image file. Defaults to "AlbumImage_resize.PNG".
+        pos (tuple, optional): The position (x, y) where the album image should be pasted on the display. Defaults to (0, 0).
+        convert_image (bool, optional): Flag indicating whether to convert the image to the specified image mode. Defaults to True.
+        """
         if convert_image or self.album_image is None:
             self.album_image = Image.open(f"album_art/{image_file_name}")
             self.album_image = self.album_image.convert(self.image_mode)
@@ -418,7 +410,7 @@ class Draw():
         self.image_draw.text((forcast_temp_x - temp_low_width, 266), str(temp_low), font=self.DSfnt32)
         self.image_draw.text((forcast_temp_x + 2, 268), temp_degrees, font=self.DSfnt16)
 
-    def draw_time(self, pos: tuple):
+    def draw_time(self, pos: tuple, time_str: str=""):
         """
         Draws the given time at the specified position on the image.
 
@@ -428,9 +420,16 @@ class Draw():
         pos (tuple): A tuple containing the x and y coordinates where the time should be drawn.
         time (str): The time to be drawn. This should be a string in the format "HH:MM" or "HH:MM am/pm".
         """
-        am_pm = self.time_str[-2:] if "am" in self.time_str or "pm" in self.time_str else ""
-        current_time = self.time_str[:-2] if am_pm else self.time_str
-
+        if not time_str:
+            date = dt.now()
+            time_str = date.strftime("%-H:%M") if self.twenty_four_hour_clock else date.strftime("%-I:%M") + date.strftime("%p").lower()
+        am_pm = time_str[-2:] if "am" in time_str or "pm" in time_str else ""
+        current_time = time_str[:-2] if am_pm else time_str
+        text_width, text_height = self.image_draw.textlength(current_time, font=self.DSfnt64), self.DSfnt64.size/1.3
+        if am_pm:
+            text_width += self.image_draw.textlength(am_pm, font=self.DSfnt32)
+        # Draw a white rectangle over the old date
+        self.image_draw.rectangle([pos, (pos[0] + text_width + 20, pos[1] + text_height)], fill="white", outline="white")
         self.image_draw.text(pos, current_time, font=self.DSfnt64)
 
         if am_pm:

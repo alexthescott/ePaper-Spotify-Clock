@@ -176,31 +176,24 @@ class Clock:
 
                         if partial_update_count < 2:
                             logger.info("\t%s sleep, partial_update", round(sec_left, 2))
+                            if self.epd:
+                                self.epd.sleep()
                             sleep(sec_left)
                         else:
                             logger.info("\t%.2f\tseconds per loop\tsleeping for %d seconds", round(self.time_elapsed, 2), int(remaining_time/1+120))
+                            if self.epd:
+                                self.epd.sleep()
                             sleep(sec_left-self.time_elapsed)
-
+                            
                         if sec_left > 5 and partial_update_count < 2:
                             date = dt.now()
                             time_str = date.strftime("%-H:%M") if self.twenty_four_hour_clock else date.strftime("%-I:%M") + date.strftime("%p").lower()
                             logger.info("\ttimestr:%s", time_str)
-                            time_image, time_width = self.image_obj.create_time_text(time_str, self.weather_info)
+                            self.image_obj.draw_date_time_temp(self.weather_info, time_str)
                             if not self.local_run:
-                                if self.time_on_right:
-                                    x_start = int(self.image_obj.width-5-time_width)
-                                    x_end = int(self.image_obj.width-5)
-                                else:
-                                    x_start = 5
-                                    x_end = int(5+time_width)
-
-                                y_start = 245
-                                y_end = 288
-                                # TODO: still broken in V2 transition 
-                                self.build_image(time_str)
-                                self.epd.display_Fast(self.epd.getbuffer(self.image_obj.get_image_obj()))
+                                self.epd.init()
+                                self.epd.display_Partial(self.epd.getbuffer(self.image_obj.get_image_obj()))
                             else:
-                                self.build_image(time_str)
                                 self.save_local_file()
                         partial_update_count += 1
                 else:
