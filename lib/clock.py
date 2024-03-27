@@ -103,19 +103,11 @@ class Clock:
         continuously updates the clock display and handles various operations based on the current time.
         """
         while True:
-            self.image_obj.clear_image()
-            if self.weather_info is None or self.count_to_5 >= 4:
-                self.set_weather_and_sunset_info()
-            sec_left, time_str = self.get_time_from_date_time()
-            logger.info("Time: %s", time_str)
-            start = time() # Used to 'push' our clock timing forward to account for EPD time
-
-            self.build_image(time_str)
-
             # Get 24H clock c_hour to determine sleep duration before refresh
             date = dt.now() + timedelta(seconds=self.time_elapsed)
             c_hour = int(date.strftime("%-H"))
             # c_minute = int(date.strftime("%-M")) # in case we need it later
+            start = time() # Used to 'push' our clock timing forward to account for EPD time
 
             # from 2:01 - 5:59am, don't init the display, return from main, and have .sh script run again in 3 mins
             sleeping_hours = 2 <= c_hour and c_hour <= 5
@@ -138,9 +130,15 @@ class Clock:
                         self.epd.init_fast(self.epd.Seconds_1_5S)
                     else:
                         logger.info("Initializing EPD...")
-                else:
-                    self.save_local_file()
                 self.did_epd_init = True
+
+            self.image_obj.clear_image()
+            if self.weather_info is None or self.count_to_5 >= 4:
+                self.set_weather_and_sunset_info()
+            sec_left, time_str = self.get_time_from_date_time()
+            logger.info("Time: %s", time_str)
+
+            self.build_image(time_str)
 
             if self.did_epd_init:
                 if not self.local_run:
