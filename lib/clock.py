@@ -118,6 +118,7 @@ class Clock:
                     logger.info("epd.sleep()....")
                 else:
                     logger.info("still sleeping... %s", dt.now().strftime('%-I:%M%p'))
+                    sleep(55)
                 break
             elif not self.did_epd_init:
                 if not self.local_run:
