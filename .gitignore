@@ -8,3 +8,4 @@ cache/
 *.log
 *.pyc
 failures.txt
+.vscode/*
