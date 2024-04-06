@@ -289,16 +289,16 @@ class Clock:
         # We air on the side of caution, and would rather add an additional current_minute than shrink by a current_minute
         if self.old_time and (5 < hour and hour < 24):
             # 6:00am - 11:59pm update screen every 3 mins
-            while int(abs(self.old_time-new_min)) < 3:
+            while int(abs(self.old_time - new_min)) < 3:
                 date = dt.now() + timedelta(seconds=self.time_elapsed)
                 new_min = int(date.strftime("%M")[-1])
-                sleep(2)
+                sleep(0.5)
         # 12:00am - 1:59am update screen every 5 mins at least
         elif self.old_time and hour < 2:
             while int(abs(self.old_time - new_min)) < 5:
                 date = dt.now() + timedelta(seconds=self.time_elapsed)
                 new_min = int(date.strftime("%M")[-1])
-                sleep(2)
+                sleep(0.5)
         # 2:00am - 5:59am check time every 15ish minutes, granularity here is not paramount
         sec_left = 60 - int(date.strftime("%S"))
 
