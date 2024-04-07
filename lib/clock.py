@@ -84,7 +84,8 @@ class Clock:
         """
         Sets the weather information and sunset information for the clock.
         """
-        self.weather_info, self.sunset_info = self.weather.get_weather_and_sunset_info()
+        self.weather_info = self.weather.get_current_temperature_info()
+        self.sunset_info = self.weather.get_sunset_info()
         flip_to_dark_before = self.flip_to_dark
         if self.sunset_flip:
             self.flip_to_dark = self.misc.has_sun_set(self.sunset_info, self.sunset_flip) or self.always_dark_mode
@@ -103,29 +104,21 @@ class Clock:
         continuously updates the clock display and handles various operations based on the current time.
         """
         while True:
-            self.image_obj.clear_image()
-            if self.weather_info is None or self.count_to_5 >= 4:
-                self.set_weather_and_sunset_info()
-            sec_left, time_str = self.get_time_from_date_time()
-            logger.info("Time: %s", time_str)
-            start = time() # Used to 'push' our clock timing forward to account for EPD time
-
-            self.build_image(time_str)
-
             # Get 24H clock c_hour to determine sleep duration before refresh
             date = dt.now() + timedelta(seconds=self.time_elapsed)
             c_hour = int(date.strftime("%-H"))
             # c_minute = int(date.strftime("%-M")) # in case we need it later
+            start = time() # Used to 'push' our clock timing forward to account for EPD time
 
             # from 2:01 - 5:59am, don't init the display, return from main, and have .sh script run again in 3 mins
-            sleeping_hours = 2 <= c_hour and c_hour <= 5
-            if sleeping_hours:
+            if 2 <= c_hour <= 5:
                 if self.did_epd_init:
                     self.epd.sleep()
                     self.did_epd_init = False
                     logger.info("epd.sleep()....")
                 else:
                     logger.info("still sleeping... %s", dt.now().strftime('%-I:%M%p'))
+                    sleep(55)
                 break
             elif not self.did_epd_init:
                 if not self.local_run:
@@ -138,9 +131,15 @@ class Clock:
                         self.epd.init_fast(self.epd.Seconds_1_5S)
                     else:
                         logger.info("Initializing EPD...")
-                else:
-                    self.save_local_file()
                 self.did_epd_init = True
+
+            self.image_obj.clear_image()
+            if self.weather_info is None or self.count_to_5 >= 4:
+                self.set_weather_and_sunset_info()
+            sec_left, time_str = self.get_time_from_date_time()
+            logger.info("Time: %s", time_str)
+
+            self.build_image(time_str)
 
             if self.did_epd_init:
                 if not self.local_run:
@@ -162,7 +161,6 @@ class Clock:
 
             self.time_elapsed = stop - start
             remaining_time = sec_left - self.time_elapsed
-
             if 5 < c_hour and c_hour < 23:
                 # 6:00am - 10:59pm update screen every 3 minutes
                 logger.info("\t%.2f\tseconds per loop\tsleeping for %d seconds", round(self.time_elapsed, 2), int(remaining_time/1+120))
@@ -193,7 +191,7 @@ class Clock:
                         partial_update_count += 1
                 else:
                     sleep(max(2+remaining_time+120, 0))
-            elif c_hour < 2:
+            elif c_hour >= 23 or c_hour < 2:
                 # 11:00pm - 1:59am update screen every 5ish minutes
                 logger.info("\t%.2f\tseconds per loop\tsleeping for %d seconds", round(self.time_elapsed, 2), int(remaining_time+240))
                 sleep(max(2+remaining_time+240, 0))
@@ -291,16 +289,16 @@ class Clock:
         # We air on the side of caution, and would rather add an additional current_minute than shrink by a current_minute
         if self.old_time and (5 < hour and hour < 24):
             # 6:00am - 11:59pm update screen every 3 mins
-            while int(abs(self.old_time-new_min)) < 3:
+            while int(abs(self.old_time - new_min)) < 3:
                 date = dt.now() + timedelta(seconds=self.time_elapsed)
                 new_min = int(date.strftime("%M")[-1])
-                sleep(2)
+                sleep(0.5)
         # 12:00am - 1:59am update screen every 5 mins at least
         elif self.old_time and hour < 2:
             while int(abs(self.old_time - new_min)) < 5:
                 date = dt.now() + timedelta(seconds=self.time_elapsed)
                 new_min = int(date.strftime("%M")[-1])
-                sleep(2)
+                sleep(0.5)
         # 2:00am - 5:59am check time every 15ish minutes, granularity here is not paramount
         sec_left = 60 - int(date.strftime("%S"))
 

@@ -82,44 +82,51 @@ class Weather():
         except requests.exceptions.RequestException:
             return None, None
 
-    def get_weather_and_sunset_info(self):
-        """ 
-        Get Weather information and sunset time
-
-        Parameters:
-            metric_units: Bool if we want C or F
-
+    def get_sunset_info(self):
+        """
+        Get Sunset time from OpenWeather API
         Returns:
-            (temp: Current 'feels_like' temp
-            temp_max: Low temp 1.5 days in the future
-            temp_min: High temp 1.5 days in the future
-            other_temp: Temp to be displayed in top right of other user),
             (sunset_hour: Hour of the sunset
             sunset_minute: Minute of the sunset)
+        """
+        local_weather_url_request = f"{self.ow_current_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&appid={self.ow_key}"
+        local_weather_response = requests.get(local_weather_url_request, timeout=20)
+
+        if local_weather_response.status_code == 200:
+            local_weather_json = local_weather_response.json()
+
+            sunset_unix = int(local_weather_json['sys']['sunset']) + 1440
+            sunset_hour = int(strftime('%H', localtime(sunset_unix)))
+            sunset_minute = int(strftime('%-M', localtime(sunset_unix)))
+
+        return sunset_hour, sunset_minute
+
+    def get_current_temperature_info(self):
+        """
+        Get current temperature, min temperature, max temperature, and other temperature from OpenWeather API
+        Returns:
+            temp: Current temperature
+            temp_max: Max temperature
+            temp_min: Min temperature
+            other_temp: Other temperature
+            
 
         Fun Fact:
-            America is a strange country with broken proclamations
+            America is a strange country with broken metric promises 
             https://en.wikipedia.org/wiki/Metric_Conversion_Act
             https://www.geographyrealm.com/the-only-metric-highway-in-the-united-states/
         """
         if self.zipcode is None:
-            return False, False
-        
-        # set url to get lat and lon to the zip code of the current location using the openweathermap api
+            return False, False, False, False
 
         local_weather_url_request = f"{self.ow_current_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&appid={self.ow_key}"
-        local_weather_response = requests.get(local_weather_url_request, timeout=10)
+        local_weather_response = requests.get(local_weather_url_request, timeout=20)
 
         if local_weather_response.status_code == 200:
             local_weather_json = local_weather_response.json()
             temp = round(local_weather_json['main']['feels_like'])
             temp_min, temp_max = temp, temp
 
-            sunset_unix = int(local_weather_json['sys']['sunset']) + 1440
-            sunset_hour = int(strftime('%H', localtime(sunset_unix)))
-            sunset_minute = int(strftime('%-M', localtime(sunset_unix)))
-
-        # get weather for other user on the right
         if self.hide_other_weather:
             other_temp = None
         else:
@@ -132,23 +139,12 @@ class Weather():
             else:
                 other_temp = "NA"
 
-        # Get forecasted weather from feels_like and temp_min, temp_max
-        local_weather_forcast_request = f"{self.ow_forecast_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&cnt=12&appid={self.ow_key}"
-        local_weather_forcast_response = requests.get(local_weather_forcast_request, timeout=10)
-        if local_weather_forcast_response.status_code == 200:
-            forecast_json = local_weather_forcast_response.json()
+        local_weather_forecast_request = f"{self.ow_forecast_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&cnt=12&appid={self.ow_key}"
+        local_weather_forecast_response = requests.get(local_weather_forecast_request, timeout=20)
+        if local_weather_forecast_response.status_code == 200:
+            forecast_json = local_weather_forecast_response.json()
             for l in forecast_json['list']:
                 temp_min = min(round(l['main']['feels_like']), round(l['main']['temp_max']), temp_min)
                 temp_max = max(round(l['main']['feels_like']), round(l['main']['temp_min']), temp_max)
-        
-        # use a logger message to inform all of the variables collected above
-        weather_info = {
-            "Temp": temp,
-            "Temp Min": temp_min,
-            "Temp Max": temp_max,
-            "Sunset Hour": sunset_hour,
-            "Sunset Minute": sunset_minute
-        }
-        logger.info(weather_info)
-        
-        return (temp, temp_max, temp_min, other_temp), (sunset_hour, sunset_minute)
+
+        return temp, temp_max, temp_min, other_temp
