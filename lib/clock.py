@@ -84,7 +84,8 @@ class Clock:
         """
         Sets the weather information and sunset information for the clock.
         """
-        self.weather_info, self.sunset_info = self.weather.get_weather_and_sunset_info()
+        self.weather_info = self.weather.get_current_temperature_info()
+        self.sunset_info = self.weather.get_sunset_info()
         flip_to_dark_before = self.flip_to_dark
         if self.sunset_flip:
             self.flip_to_dark = self.misc.has_sun_set(self.sunset_info, self.sunset_flip) or self.always_dark_mode
@@ -110,8 +111,7 @@ class Clock:
             start = time() # Used to 'push' our clock timing forward to account for EPD time
 
             # from 2:01 - 5:59am, don't init the display, return from main, and have .sh script run again in 3 mins
-            sleeping_hours = 2 <= c_hour and c_hour <= 5
-            if sleeping_hours:
+            if 2 <= c_hour <= 5:
                 if self.did_epd_init:
                     self.epd.sleep()
                     self.did_epd_init = False
