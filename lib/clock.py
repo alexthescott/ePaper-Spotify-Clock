@@ -262,9 +262,12 @@ class Clock:
         - spotify_user (User): The Spotify user object.
         - time_since (str): The time since the track was played.
         """
+        ctx_type_is_album = ctx_type == "album"
         track_line_count, track_text_size = self.image_obj.draw_track_text(track, x, y)
+        y = 215 if ctx_type_is_album else 190
         self.image_obj.draw_artist_text(artist, track_line_count, track_text_size, x, y)
-        self.image_obj.draw_spot_context(ctx_type, ctx_title, x+20, 204)
+        if not ctx_type_is_album:
+            self.image_obj.draw_spot_context(ctx_type, ctx_title, x+20, 204)
 
         name_width, name_height = self.image_obj.draw_name(spotify_user.name, x+3, 0)
         self.image_obj.draw_user_time_ago(time_since, x+13+name_width, name_height//2)

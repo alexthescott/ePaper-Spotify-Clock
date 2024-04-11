@@ -20,23 +20,21 @@ class Misc():
         with open(f"album_art/{file_name}", 'wb') as handler:
             handler.write(img_data)
 
-    def resize_image(self, image_name: str):
+    def resize_image(self, image_name: str, size=(199, 199)):
         """
         Resize the given image and save it as a PNG file.
         image_name (str): The name of the image file to resize.
         """
         os.makedirs("album_art", exist_ok=True)
-        size = 199, 199
-        outfile = os.path.splitext(image_name)[0] + "_resize.PNG"
-        if image_name == outfile:
-            return None
+        postfix = "resize" if any(s for s in size if s >= 100) else "thumbnail"
+        outfile = os.path.splitext(image_name)[0] + f"_{postfix}.PNG"
         try:
             im = Image.open(f"album_art/{image_name}")
             im.thumbnail(size)
             im = im.convert("L")
             im.save(f"album_art/{outfile}", "PNG", mode="L")
         except IOError:
-            logger.error("cannot create thumbnail for '%s'", image_name)
+            logger.error("cannot create %s for '%s'", postfix, image_name)
 
     def has_sun_set(self, sunset_info: tuple, sunset_flip: bool):
         """
@@ -69,3 +67,4 @@ class Misc():
         """
         self.save_image_from_url(track_image_link, album_image_name)
         self.resize_image(album_image_name)
+        self.resize_image(album_image_name, (46, 46))

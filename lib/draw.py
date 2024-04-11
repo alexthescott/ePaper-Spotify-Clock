@@ -26,6 +26,7 @@ class Draw():
         self.album_image = None
         self.dt = None
         self.time_str = None
+        self.weather_mode = False
 
         # Make and get the full path to the 'album_art' directory
         os.makedirs("album_art", exist_ok=True)
@@ -368,9 +369,10 @@ class Draw():
                 self.dither_album_art()
                 after_dither = time()
                 logger.info("* Dithering took %.2f seconds *", after_dither - before_dither)
-
-            if dark_mode:
-                self.album_image = ImageMath.eval('255-(a)', a=self.album_image)
+        chosen_album_image = "album_art/AlbumImage_thumbnail_dither.PNG" if self.weather_mode else "album_art/AlbumImage_dither.PNG"
+        self.album_image = Image.open(chosen_album_image)
+        if convert_image or self.album_image is None and dark_mode:
+            self.album_image = ImageMath.eval('255-(a)', a=self.album_image)
         self.image_obj.paste(self.album_image, pos)
 
     def draw_weather(self, pos: tuple, weather_info: tuple):
@@ -547,7 +549,7 @@ class Draw():
         if sum(l_artist_size) <= 366 and self.can_full_words_fit(l_artist_size) and len(l_artist_size) <= 2:
             if track_height == 55 and track_line_count + len(l_artist_size) <= 3 or track_height < 55 and track_line_count < 4:
                 artist_lines = self.format_x_word(l_artist_size, l_artist_split, 2)
-                artist_y = 190 - (42 * len(artist_lines))  # y nudge to fit bottom constraint
+                artist_y -= (42 * len(artist_lines))  # y nudge to fit bottom constraint
                 for line in artist_lines:
                     self.image_draw.text((artist_x, artist_y), line, font=self.DSfnt64)
                     artist_y += 43
@@ -563,7 +565,7 @@ class Draw():
         artist_lines = self.format_x_word(m_title_size, m_artist_split, 1)
         artist_size = list(map(self.get_text_width, artist_lines, [1] * len(m_artist_split))) 
         if sum(artist_size) <= 760 and track_line_count + len(artist_lines) <= 6:
-            artist_y = 190 - (25 * len(artist_lines))  # y nudge to fit bottom constraint
+            artist_y -= (25 * len(artist_lines))  # y nudge to fit bottom constraint
             if not self.can_full_words_fit(m_title_size):
                 artist_lines = self.hyphenate_words(str(m_artist_split)[2:-2], 1)
             for line in artist_lines:
@@ -580,7 +582,7 @@ class Draw():
         s_artist_size = list(map(self.get_text_width, s_artist_split, [0] * len(s_artist_split)))
         artist_lines = self.format_x_word(s_artist_size, s_artist_split, 0)
         artist_size = list(map(self.get_text_width, artist_lines, [0] * len(s_artist_split)))
-        artist_y = 190 - (12 * len(artist_lines))  # y nudge to fit bottom constraint
+        artist_y -= (12 * len(artist_lines))  # y nudge to fit bottom constraint
         if not self.can_full_words_fit(s_artist_size):
             artist_lines = self.hyphenate_words(str(s_artist_split)[2:-2], 1)
         for line in artist_lines:
@@ -590,9 +592,22 @@ class Draw():
     # ---- DRAW MISC FUNCs ----------------------------------------------------------------------------
     
     def dither_album_art(self):
-        # Remap the colors in the image
-        subprocess.run(['convert', os.path.join(self.dir_path, 'AlbumImage_resize.PNG'), '-dither', 'Floyd-Steinberg', '-remap', os.path.join(self.dir_path, 'palette.PNG'), os.path.join(self.dir_path, 'AlbumImage_dither.PNG')], check=True)
-        self.album_image = Image.open("album_art/AlbumImage_dither.PNG")
+        # Define the file paths
+        resize_paths = [os.path.join(self.dir_path, 'AlbumImage_resize.PNG'), os.path.join(self.dir_path, 'AlbumImage_thumbnail.PNG')]
+        palette_path = os.path.join(self.dir_path, 'palette.PNG')
+        dither_paths = [os.path.join(self.dir_path, 'AlbumImage_dither.PNG'), os.path.join(self.dir_path, 'AlbumImage_thumbnail_dither.PNG')]
+
+        # Check if the files exist
+        for resize_path, dither_path in zip(resize_paths, dither_paths):
+            if os.path.exists(resize_path) and os.path.exists(palette_path):
+                # Remap the colors in the image
+                subprocess.run(['convert', resize_path, '-dither', 'Floyd-Steinberg', '-remap', palette_path, dither_path], check=True)
+                if os.path.exists(dither_path):
+                    self.album_image = Image.open(dither_path)
+                else:
+                    print(f"Error: File {dither_path} not found.")
+            else:
+                print(f"Error: Files {resize_path} and/or {palette_path} not found.")
 
     def dark_mode_flip(self):
         self.image_obj.paste(ImageMath.eval('255-(a)', a=self.image_obj), (0, 0))
