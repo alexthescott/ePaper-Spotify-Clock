@@ -595,7 +595,7 @@ class Draw():
         # Define the file paths
         palette_path = os.path.join(self.dir_path, 'palette.PNG')
         resize_path = os.path.join(self.dir_path, 'AlbumImage_thumbnail.PNG') if self.weather_mode else os.path.join(self.dir_path, 'AlbumImage_resize.PNG')
-        dither_path = os.path.join(self.dir_path, 'AlbumImage_dither.PNG') if self.weather_mode else os.path.join(self.dir_path, 'AlbumImage_thumbnail_dither.PNG')
+        dither_path = os.path.join(self.dir_path, 'AlbumImage_thumbnail_dither.PNG') if self.weather_mode else os.path.join(self.dir_path, 'AlbumImage_dither.PNG')
 
         # Check if the files exist
         if not os.path.exists(resize_path):
