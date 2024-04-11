@@ -86,11 +86,16 @@ class Clock:
             if self.sunset_flip and self.always_dark_mode:
                 logger.warning("You have both sunset_flip and always_dark_mode enabled, always_dark_mode supersedes sunset_flip")
 
-    def set_weather_and_sunset_info(self):
+    def set_weather(self):
         """
-        Sets the weather information and sunset information for the clock.
+        Sets the weather information for the clock.
         """
         self.weather_info = self.weather.get_current_temperature_info()
+
+    def set_sunset_info(self):
+        """
+        Sets the sunset information for the clock.
+        """
         self.sunset_info = self.weather.get_sunset_info()
         flip_to_dark_before = self.flip_to_dark
         if self.sunset_flip:
@@ -141,7 +146,8 @@ class Clock:
 
             self.image_obj.clear_image()
             if self.weather_info is None or self.count_to_5 >= 4:
-                self.set_weather_and_sunset_info()
+                self.set_weather()
+                self.set_sunset_info()
             sec_left, time_str = self.get_time_from_date_time()
             logger.info("Time: %s", time_str)
 
@@ -213,7 +219,9 @@ class Clock:
         """
         # Get weather and sunset info if set
         if not self.weather_info:
-            self.set_weather_and_sunset_info()
+            self.set_weather()
+        if not self.sunset_info:
+            self.set_sunset_info()
         
         # get time_str if not passed
         if not time_str:
