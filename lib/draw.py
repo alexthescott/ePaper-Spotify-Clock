@@ -371,7 +371,7 @@ class Draw():
                 logger.info("* Dithering took %.2f seconds *", after_dither - before_dither)
         chosen_album_image = "album_art/AlbumImage_thumbnail_dither.PNG" if self.weather_mode else "album_art/AlbumImage_dither.PNG"
         self.album_image = Image.open(chosen_album_image)
-        if convert_image or self.album_image is None and dark_mode:
+        if convert_image and dark_mode:
             self.album_image = ImageMath.eval('255-(a)', a=self.album_image)
         self.image_obj.paste(self.album_image, pos)
 
@@ -613,7 +613,13 @@ class Draw():
 
 
     def dark_mode_flip(self):
+        """
+        Used in clock.py to invert the entire image for sunset dark mode
+        """
         self.image_obj.paste(ImageMath.eval('255-(a)', a=self.image_obj), (0, 0))
 
     def get_image_obj(self):
+        """
+        Used in clock.py to be passed into EPD's getBuffer()
+        """
         return self.image_obj
