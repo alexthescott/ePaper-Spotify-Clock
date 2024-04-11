@@ -1,4 +1,5 @@
 import json
+import re
 from time import time, sleep
 from datetime import timedelta, datetime as dt
 from PIL import ImageMath
@@ -78,6 +79,7 @@ class Clock:
             # weather_settings
             self.weather_settings = display_settings["weather_settings"]
             self.detailed_weather_forcast = self.weather_settings["detailed_weather_forcast"]
+            self.minutes_idle_until_detailed_weather = self.weather_settings["minutes_idle_until_detailed_weather"]
 
             if self.partial_update and self.four_gray_scale:
                 raise ValueError("Partial updates are not supported in 4 Gray Scale, you must choose one or another")
@@ -232,6 +234,12 @@ class Clock:
             track_2, artist_2, time_since_2, ctx_type_2, ctx_title_2, track_image_link, _ = self.spotify_user_2.get_spotipy_info()
             self.draw_track_info(track_2, artist_2, ctx_type_2, ctx_title_2, 207, 26, self.spotify_user_2, time_since_2)
         else:
+            # check to see if we need to display detailed weather
+            if self.detailed_weather_forcast:
+                draw_detailed_weather = "minutes" in time_since_1 and self.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())\
+                                        or "hours" in time_since_1 and self.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())*60\
+                                        or "days" in time_since_1 and self.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())*1440
+                self.image_obj.set_weather_mode(draw_detailed_weather)
             get_new_album_art = self.old_album_name1 != self.album_name_1 or self.get_new_album_art
             if get_new_album_art and track_image_link:
                 self.misc.get_album_art(track_image_link)

@@ -7,7 +7,7 @@
         "detailed_weather_forcast": true,
         "metric_units": false,
         "hide_other_weather": true,
-        "hours_idle_until_detailed_weather": 3
+        "minutes_idle_until_detailed_weather": 30
     },
     "main_settings": {
         "twenty_four_hour_clock": false,

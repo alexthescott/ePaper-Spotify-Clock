@@ -183,6 +183,13 @@ class Draw():
         'û': '25', 'ü': '25', '‘': '13', '’': '13', '“': '21', '”': '21',
         '…': '25', '€': '29', '™': '41', '\x00': '36'}
 
+    def set_weather_mode(self, weather_mode: bool):
+        """
+        Set the weather mode.
+        weather_mode (bool): Flag indicating whether to set the weather mode.
+        """
+        self.weather_mode = weather_mode
+
     def clear_image(self):
         """
         This method clears the current image by creating a new blank image filled with the color white (255)
