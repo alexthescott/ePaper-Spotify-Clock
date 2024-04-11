@@ -1,7 +1,6 @@
 import json
 from time import time, sleep
 from datetime import timedelta, datetime as dt
-from PIL import ImageMath
 
 from lib.draw import Draw
 from lib.weather import Weather
