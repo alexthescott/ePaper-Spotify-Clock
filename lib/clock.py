@@ -264,7 +264,7 @@ class Clock:
         """
         ctx_type_is_album = ctx_type == "album"
         track_line_count, track_text_size = self.image_obj.draw_track_text(track, x, y)
-        y = 215 if ctx_type_is_album else 190
+        y = 210 if ctx_type_is_album else 190
         self.image_obj.draw_artist_text(artist, track_line_count, track_text_size, x, y)
         if not ctx_type_is_album:
             self.image_obj.draw_spot_context(ctx_type, ctx_title, x+20, 204)
