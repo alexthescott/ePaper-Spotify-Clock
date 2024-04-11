@@ -57,6 +57,7 @@ class Clock:
         """
         with open("config/display_settings.json", encoding="utf-8") as display_settings:
             display_settings = json.load(display_settings)
+            # main settings
             main_settings = display_settings["main_settings"]
             clock_names = display_settings["clock_names"]
             single_user_settings = display_settings["single_user_settings"]
@@ -69,10 +70,14 @@ class Clock:
             self.four_gray_scale = main_settings["four_gray_scale"]
             self.sunset_flip = main_settings["sunset_flip"]
             self.use_epd_lib_V2 = main_settings["use_epd_libV2"]
+            # single_user_settings
             self.single_user = single_user_settings["enable_single_user"]
             self.album_art_right_side = single_user_settings["album_art_right_side"]
             self.name_1 = clock_names["name_1"]
             self.name_2 = clock_names["name_2"]
+            # weather_settings
+            self.weather_settings = display_settings["weather_settings"]
+            self.detailed_weather_forcast = self.weather_settings["detailed_weather_forcast"]
 
             if self.partial_update and self.four_gray_scale:
                 raise ValueError("Partial updates are not supported in 4 Gray Scale, you must choose one or another")
