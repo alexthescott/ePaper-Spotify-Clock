@@ -593,21 +593,24 @@ class Draw():
     
     def dither_album_art(self):
         # Define the file paths
-        resize_paths = [os.path.join(self.dir_path, 'AlbumImage_resize.PNG'), os.path.join(self.dir_path, 'AlbumImage_thumbnail.PNG')]
         palette_path = os.path.join(self.dir_path, 'palette.PNG')
-        dither_paths = [os.path.join(self.dir_path, 'AlbumImage_dither.PNG'), os.path.join(self.dir_path, 'AlbumImage_thumbnail_dither.PNG')]
+        resize_path = os.path.join(self.dir_path, 'AlbumImage_thumbnail.PNG') if self.weather_mode else os.path.join(self.dir_path, 'AlbumImage_resize.PNG')
+        dither_path = os.path.join(self.dir_path, 'AlbumImage_dither.PNG') if self.weather_mode else os.path.join(self.dir_path, 'AlbumImage_thumbnail_dither.PNG')
 
         # Check if the files exist
-        for resize_path, dither_path in zip(resize_paths, dither_paths):
-            if os.path.exists(resize_path) and os.path.exists(palette_path):
-                # Remap the colors in the image
-                subprocess.run(['convert', resize_path, '-dither', 'Floyd-Steinberg', '-remap', palette_path, dither_path], check=True)
-                if os.path.exists(dither_path):
-                    self.album_image = Image.open(dither_path)
-                else:
-                    print(f"Error: File {dither_path} not found.")
-            else:
-                print(f"Error: Files {resize_path} and/or {palette_path} not found.")
+        if not os.path.exists(resize_path):
+            logger.error("Error: File %s not found.", resize_path)
+            return False
+        if not os.path.exists(palette_path):
+            logger.error("Error: File %s not found.", palette_path)
+            return False
+        # Remap the colors in the image
+        subprocess.run(['convert', resize_path, '-dither', 'Floyd-Steinberg', '-remap', palette_path, dither_path], check=True)
+        if not os.path.exists(dither_path):
+            logger.error("Error: File %s not found.", dither_path)
+            return False
+        self.album_image = Image.open(dither_path)
+
 
     def dark_mode_flip(self):
         self.image_obj.paste(ImageMath.eval('255-(a)', a=self.image_obj), (0, 0))
