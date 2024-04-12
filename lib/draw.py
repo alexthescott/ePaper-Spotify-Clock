@@ -374,6 +374,7 @@ class Draw():
         pos (tuple, optional): The position (x, y) where the album image should be pasted on the display. Defaults to (0, 0).
         convert_image (bool, optional): Flag indicating whether to convert the image to the specified image mode. Defaults to True.
         """
+        image_file_name = "AlbumImage_resize.PNG" if image_file_name is None else image_file_name
         if convert_image or self.album_image is None:
             self.album_image = Image.open(f"album_art/{image_file_name}")
             self.album_image = self.album_image.convert(self.image_mode)
