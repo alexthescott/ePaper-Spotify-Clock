@@ -306,6 +306,10 @@ class Draw():
         for i in range(3):
             self.image_draw.line([(0, 224 + i), (400, 224 + i)], fill=0)
             self.image_draw.line([(199 + i, 0), (199 + i, 225)], fill=0)
+        if not self.weather_mode:
+            return True
+        for i in range(2):
+            self.image_draw.line([(self.width/2, 46 + i), (400, 46 + i)], fill=0)
 
     def draw_name(self, text: str, name_x: int, name_y: int):
         name_width, name_height = self.image_draw.textlength(text, font=self.helveti32), self.helveti32.size/1.3

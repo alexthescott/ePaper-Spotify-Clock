@@ -21,6 +21,7 @@ class Weather():
         self.ow_geocoding_url = "http://api.openweathermap.org/geo/1.0/zip?"
         self.zipcode = self.get_zip_from_ip()  # zipcode of the current location via ip, if not manually set
         self.lat_long = self.get_lat_long()  # lat and long of the current location via zipcode
+        self.local_weather_json = None
         if not self.hide_other_weather:
             if len(self.ow_alt_weather_zip) == 5 and self.ow_alt_weather_zip.isdigit():
                 raise ValueError("ow_alt_weather_zip pair must be a zip code")
@@ -82,6 +83,24 @@ class Weather():
                 return data['lat'], data['lon']
         except requests.exceptions.RequestException:
             return None, None
+        
+    def set_local_weather_json(self):
+        """
+        Sets the local weather JSON from the OpenWeather API.
+        """
+        local_weather_url_request = f"{self.ow_current_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&appid={self.ow_key}"
+        local_weather_response = requests.get(local_weather_url_request, timeout=20)
+
+        if local_weather_response.status_code == 200:
+            self.local_weather_json = local_weather_response.json()
+            return True
+        return False
+
+    def get_local_weather_json(self):
+        """
+        Returns the local weather JSON if it has been set.
+        """
+        return self.local_weather_json if self.local_weather_json else None
 
     def get_sunset_info(self):
         """
@@ -90,15 +109,13 @@ class Weather():
             (sunset_hour: Hour of the sunset
             sunset_minute: Minute of the sunset)
         """
-        local_weather_url_request = f"{self.ow_current_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&appid={self.ow_key}"
-        local_weather_response = requests.get(local_weather_url_request, timeout=20)
+        if not self.local_weather_json:
+            if not self.set_local_weather_json():
+                return None, None
 
-        if local_weather_response.status_code == 200:
-            local_weather_json = local_weather_response.json()
-
-            sunset_unix = int(local_weather_json['sys']['sunset']) + 1440
-            sunset_hour = int(strftime('%H', localtime(sunset_unix)))
-            sunset_minute = int(strftime('%-M', localtime(sunset_unix)))
+        sunset_unix = int(self.local_weather_json['sys']['sunset']) + 1440
+        sunset_hour = int(strftime('%H', localtime(sunset_unix)))
+        sunset_minute = int(strftime('%-M', localtime(sunset_unix)))
 
         return sunset_hour, sunset_minute
 
@@ -119,14 +136,13 @@ class Weather():
         """
         if self.zipcode is None:
             return False, False, False, False
-
-        local_weather_url_request = f"{self.ow_current_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&appid={self.ow_key}"
-        local_weather_response = requests.get(local_weather_url_request, timeout=20)
-
-        if local_weather_response.status_code == 200:
-            local_weather_json = local_weather_response.json()
-            temp = round(local_weather_json['main']['feels_like'])
-            temp_min, temp_max = temp, temp
+        
+        
+        if not self.set_local_weather_json():
+            if not self.local_weather_json:
+                return None, None, None, None
+        temp = round(self.local_weather_json['main']['feels_like'])
+        temp_min, temp_max = temp, temp
 
         if self.hide_other_weather:
             other_temp = None
@@ -147,5 +163,4 @@ class Weather():
             for l in forecast_json['list']:
                 temp_min = min(round(l['main']['feels_like']), round(l['main']['temp_max']), temp_min)
                 temp_max = max(round(l['main']['feels_like']), round(l['main']['temp_min']), temp_max)
-
         return temp, temp_max, temp_min, other_temp
