@@ -26,6 +26,7 @@ class Draw():
         self.album_image = None
         self.dt = None
         self.time_str = None
+        self.weather_mode = False
 
         # Make and get the full path to the 'album_art' directory
         os.makedirs("album_art", exist_ok=True)
@@ -89,14 +90,17 @@ class Draw():
         # EPD Settings imported from config/display_settings.json ---------------------------------------------------
         with open('config/display_settings.json', 'r', encoding='utf-8') as display_settings:
             display_settings = json.load(display_settings)
+            # main_settings
             main_settings = display_settings["main_settings"]
             single_user_settings = display_settings["single_user_settings"]
-            self.metric_units = main_settings["metric_units"]             # (True -> C°, False -> F°)
-            self.twenty_four_hour_clock =   main_settings["twenty_four_hour_clock"] # (True -> 22:53, False -> 10:53pm) 
+            self.twenty_four_hour_clock =   main_settings["twenty_four_hour_clock"] # (True -> 22:53, False -> 10:53pm)
             self.time_on_right = main_settings["time_on_right"]           # (True -> time is displayed on the right, False -> time is displayed on the left)
-            self.hide_other_weather = main_settings["hide_other_weather"] # (True -> weather not shown in top right, False -> weather is shown in top right)
             self.four_gray_scale = main_settings["four_gray_scale"]       # (True -> 4 gray scale, False -> Black and White)
             self.album_art_right_side = single_user_settings["album_art_right_side"]       # (True -> 4 gray scale, False -> Black and White)
+            # weather_settings
+            self.weather_settings = display_settings["weather_settings"]             # (True -> weather mode, False -> normal mode)
+            self.hide_other_weather = self.weather_settings["hide_other_weather"] # (True -> weather not shown in top right, False -> weather is shown in top right)
+            self.metric_units = self.weather_settings["metric_units"]             # (True -> C°, False -> F°)
 
     def set_dictionaries(self):
         """
@@ -368,9 +372,10 @@ class Draw():
                 self.dither_album_art()
                 after_dither = time()
                 logger.info("* Dithering took %.2f seconds *", after_dither - before_dither)
-
-            if dark_mode:
-                self.album_image = ImageMath.eval('255-(a)', a=self.album_image)
+        chosen_album_image = "album_art/AlbumImage_thumbnail_dither.PNG" if self.weather_mode else "album_art/AlbumImage_dither.PNG"
+        self.album_image = Image.open(chosen_album_image)
+        if convert_image and dark_mode:
+            self.album_image = ImageMath.eval('255-(a)', a=self.album_image)
         self.image_obj.paste(self.album_image, pos)
 
     def draw_weather(self, pos: tuple, weather_info: tuple):
@@ -547,7 +552,7 @@ class Draw():
         if sum(l_artist_size) <= 366 and self.can_full_words_fit(l_artist_size) and len(l_artist_size) <= 2:
             if track_height == 55 and track_line_count + len(l_artist_size) <= 3 or track_height < 55 and track_line_count < 4:
                 artist_lines = self.format_x_word(l_artist_size, l_artist_split, 2)
-                artist_y = 190 - (42 * len(artist_lines))  # y nudge to fit bottom constraint
+                artist_y -= (42 * len(artist_lines))  # y nudge to fit bottom constraint
                 for line in artist_lines:
                     self.image_draw.text((artist_x, artist_y), line, font=self.DSfnt64)
                     artist_y += 43
@@ -563,7 +568,7 @@ class Draw():
         artist_lines = self.format_x_word(m_title_size, m_artist_split, 1)
         artist_size = list(map(self.get_text_width, artist_lines, [1] * len(m_artist_split))) 
         if sum(artist_size) <= 760 and track_line_count + len(artist_lines) <= 6:
-            artist_y = 190 - (25 * len(artist_lines))  # y nudge to fit bottom constraint
+            artist_y -= (25 * len(artist_lines))  # y nudge to fit bottom constraint
             if not self.can_full_words_fit(m_title_size):
                 artist_lines = self.hyphenate_words(str(m_artist_split)[2:-2], 1)
             for line in artist_lines:
@@ -580,7 +585,7 @@ class Draw():
         s_artist_size = list(map(self.get_text_width, s_artist_split, [0] * len(s_artist_split)))
         artist_lines = self.format_x_word(s_artist_size, s_artist_split, 0)
         artist_size = list(map(self.get_text_width, artist_lines, [0] * len(s_artist_split)))
-        artist_y = 190 - (12 * len(artist_lines))  # y nudge to fit bottom constraint
+        artist_y -= (12 * len(artist_lines))  # y nudge to fit bottom constraint
         if not self.can_full_words_fit(s_artist_size):
             artist_lines = self.hyphenate_words(str(s_artist_split)[2:-2], 1)
         for line in artist_lines:
@@ -590,12 +595,34 @@ class Draw():
     # ---- DRAW MISC FUNCs ----------------------------------------------------------------------------
     
     def dither_album_art(self):
+        # Define the file paths
+        palette_path = os.path.join(self.dir_path, 'palette.PNG')
+        resize_path = os.path.join(self.dir_path, 'AlbumImage_thumbnail.PNG') if self.weather_mode else os.path.join(self.dir_path, 'AlbumImage_resize.PNG')
+        dither_path = os.path.join(self.dir_path, 'AlbumImage_thumbnail_dither.PNG') if self.weather_mode else os.path.join(self.dir_path, 'AlbumImage_dither.PNG')
+
+        # Check if the files exist
+        if not os.path.exists(resize_path):
+            logger.error("Error: File %s not found.", resize_path)
+            return False
+        if not os.path.exists(palette_path):
+            logger.error("Error: File %s not found.", palette_path)
+            return False
         # Remap the colors in the image
-        subprocess.run(['convert', os.path.join(self.dir_path, 'AlbumImage_resize.PNG'), '-dither', 'Floyd-Steinberg', '-remap', os.path.join(self.dir_path, 'palette.PNG'), os.path.join(self.dir_path, 'AlbumImage_dither.PNG')], check=True)
-        self.album_image = Image.open("album_art/AlbumImage_dither.PNG")
+        subprocess.run(['convert', resize_path, '-dither', 'Floyd-Steinberg', '-remap', palette_path, dither_path], check=True)
+        if not os.path.exists(dither_path):
+            logger.error("Error: File %s not found.", dither_path)
+            return False
+        self.album_image = Image.open(dither_path)
+
 
     def dark_mode_flip(self):
+        """
+        Used in clock.py to invert the entire image for sunset dark mode
+        """
         self.image_obj.paste(ImageMath.eval('255-(a)', a=self.image_obj), (0, 0))
 
     def get_image_obj(self):
+        """
+        Used in clock.py to be passed into EPD's getBuffer()
+        """
         return self.image_obj

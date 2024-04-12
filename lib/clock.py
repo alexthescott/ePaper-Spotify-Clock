@@ -1,7 +1,6 @@
 import json
 from time import time, sleep
 from datetime import timedelta, datetime as dt
-from PIL import ImageMath
 
 from lib.draw import Draw
 from lib.weather import Weather
@@ -57,6 +56,7 @@ class Clock:
         """
         with open("config/display_settings.json", encoding="utf-8") as display_settings:
             display_settings = json.load(display_settings)
+            # main settings
             main_settings = display_settings["main_settings"]
             clock_names = display_settings["clock_names"]
             single_user_settings = display_settings["single_user_settings"]
@@ -69,10 +69,14 @@ class Clock:
             self.four_gray_scale = main_settings["four_gray_scale"]
             self.sunset_flip = main_settings["sunset_flip"]
             self.use_epd_lib_V2 = main_settings["use_epd_libV2"]
+            # single_user_settings
             self.single_user = single_user_settings["enable_single_user"]
             self.album_art_right_side = single_user_settings["album_art_right_side"]
             self.name_1 = clock_names["name_1"]
             self.name_2 = clock_names["name_2"]
+            # weather_settings
+            self.weather_settings = display_settings["weather_settings"]
+            self.detailed_weather_forcast = self.weather_settings["detailed_weather_forcast"]
 
             if self.partial_update and self.four_gray_scale:
                 raise ValueError("Partial updates are not supported in 4 Gray Scale, you must choose one or another")
@@ -262,9 +266,12 @@ class Clock:
         - spotify_user (User): The Spotify user object.
         - time_since (str): The time since the track was played.
         """
+        ctx_type_is_album = ctx_type == "album"
         track_line_count, track_text_size = self.image_obj.draw_track_text(track, x, y)
+        y = 210 if ctx_type_is_album else 190
         self.image_obj.draw_artist_text(artist, track_line_count, track_text_size, x, y)
-        self.image_obj.draw_spot_context(ctx_type, ctx_title, x+20, 204)
+        if not ctx_type_is_album:
+            self.image_obj.draw_spot_context(ctx_type, ctx_title, x+20, 204)
 
         name_width, name_height = self.image_obj.draw_name(spotify_user.name, x+3, 0)
         self.image_obj.draw_user_time_ago(time_since, x+13+name_width, name_height//2)

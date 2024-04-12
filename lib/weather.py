@@ -31,9 +31,10 @@ class Weather():
         """
         with open('config/display_settings.json', encoding='utf-8') as display_settings:
             display_settings = json.load(display_settings)
-            main_settings = display_settings["main_settings"]
-            self.metric_units = main_settings["metric_units"]             # (True -> C°, False -> F°)
-            self.hide_other_weather = main_settings["hide_other_weather"] # (True -> weather not shown in top right, False -> weather is shown in top right)
+            # weather_settings
+            self.weather_settings = display_settings["weather_settings"]             # (True -> weather mode, False -> normal mode)
+            self.hide_other_weather = self.weather_settings["hide_other_weather"] # (True -> weather not shown in top right, False -> weather is shown in top right)
+            self.metric_units = self.weather_settings["metric_units"]             # (True -> C°, False -> F°)
 
     def load_credentials(self):
         """

@@ -3,16 +3,20 @@
         "name_1": "Me",
         "name_2": "You"
     },
-    "main_settings": {
+    "weather_settings": {
+        "detailed_weather_forcast": true,
         "metric_units": false,
+        "hide_other_weather": true,
+        "hours_idle_until_detailed_weather": 3
+    },
+    "main_settings": {
         "twenty_four_hour_clock": false,
         "partial_update": false,
         "time_on_right": true,
-        "hide_other_weather": true,
         "sunset_flip": true,
         "always_dark_mode": false,
         "four_gray_scale": true,
-        "use_epd_libV2": true,
+        "use_epd_libV2": false,
         "sleep_epd": true
     },
     "single_user_settings": {
