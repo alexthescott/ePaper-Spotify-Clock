@@ -114,7 +114,7 @@ class Clock:
             if self.did_epd_init:
                 if not self.local_run:
                     logger.info("\tDrawing Image to EPD")
-                    if self.four_gray_scale: 
+                    if self.ds.four_gray_scale:
                         self.epd.display_4Gray(self.epd.getbuffer_4Gray(self.image_obj.get_image_obj()))
                     else:
                         self.epd.display(self.epd.getbuffer(self.image_obj.get_image_obj()))
