@@ -118,7 +118,7 @@ class Clock:
                         self.epd.display_4Gray(self.epd.getbuffer_4Gray(self.image_obj.get_image_obj()))
                     else:
                         self.epd.display(self.epd.getbuffer(self.image_obj.get_image_obj()))
-                    if self.sleep_epd and (not self.partial_update or self.flip_to_dark):
+                    if self.ds.sleep_epd and (not self.ds.partial_update or self.flip_to_dark):
                         logger.info("\tSleeping EPD")
                         self.epd.sleep()
                         self.did_epd_init = False
