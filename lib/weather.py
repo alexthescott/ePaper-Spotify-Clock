@@ -20,7 +20,7 @@ class Weather():
         self.ow_current_url = "http://api.openweathermap.org/data/2.5/weather?"
         self.ow_forecast_url = "http://api.openweathermap.org/data/2.5/forecast?"
         self.ow_geocoding_url = "http://api.openweathermap.org/geo/1.0/zip?"
-        self.zipcode = self.get_zip_from_ip()  # zipcode of the current location via ip, if not manually set
+        self.zipcode = self.get_zip_from_ip() if not self.ds.zip_code else self.ds.zip_code  # zipcode of the current location via ip, if not manually set
         self.lat_long = self.get_lat_long()  # lat and long of the current location via zipcode
         if not self.ds.hide_other_weather:
             if len(self.ow_alt_weather_zip) == 5 and self.ow_alt_weather_zip.isdigit():

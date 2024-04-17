@@ -7,7 +7,8 @@
         "detailed_weather_forecast": true,
         "metric_units": false,
         "hide_other_weather": true,
-        "hours_idle_until_detailed_weather": 5
+        "hours_idle_until_detailed_weather": 5,
+        "zip_code": null
     },
     "main_settings": {
         "twenty_four_hour_clock": false,

@@ -28,6 +28,7 @@ class DisplaySettings():
             self.name_2 = clock_names["name_2"]
             # weather_settings
             self.weather_settings = display_settings["weather_settings"]
+            self.zip_code = self.weather_settings["zip_code"]
             self.metric_units = self.weather_settings["metric_units"]
             self.hide_other_weather = self.weather_settings["hide_other_weather"] 
             self.detailed_weather_forecast = self.weather_settings["detailed_weather_forecast"]
