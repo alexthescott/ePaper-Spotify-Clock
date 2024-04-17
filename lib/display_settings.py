@@ -28,10 +28,13 @@ class DisplaySettings():
             self.name_2 = clock_names["name_2"]
             # weather_settings
             self.weather_settings = display_settings["weather_settings"]
-            self.zip_code = str(self.weather_settings["zip_code"])
+            self.zip_code = str(self.weather_settings["zip_code"]) if self.weather_settings["zip_code"] else None
             self.metric_units = self.weather_settings["metric_units"]
-            self.hide_other_weather = self.weather_settings["hide_other_weather"] 
+            self.hide_other_weather = self.weather_settings["hide_other_weather"]
             self.detailed_weather_forecast = self.weather_settings["detailed_weather_forecast"]
+
+            if self.zip_code and (not self.zip_code.isdigit() or not len(self.zip_code) == 5):
+                raise ValueError("Zip code must be a 5 digit number")
 
             if self.partial_update and self.four_gray_scale:
                 raise ValueError("Partial updates are not supported in 4 Gray Scale, you must choose one or another")
