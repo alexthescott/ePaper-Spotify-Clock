@@ -355,7 +355,7 @@ class Draw():
                 logger.info("* Dithering took %.2f seconds *", after_dither - before_dither)
         chosen_album_image = "album_art/AlbumImage_thumbnail_dither.PNG" if self.weather_mode else "album_art/AlbumImage_dither.PNG"
         self.album_image = Image.open(chosen_album_image)
-        if convert_image and dark_mode:
+        if dark_mode:
             self.album_image = ImageMath.eval('255-(a)', a=self.album_image)
         self.image_obj.paste(self.album_image, pos)
 
