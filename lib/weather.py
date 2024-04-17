@@ -70,8 +70,9 @@ class Weather():
             data = response.json()
             if 'lat' in data and 'lon' in data:
                 return data['lat'], data['lon']
-        except requests.exceptions.RequestException:
-            return None, None
+        except requests.exceptions.RequestException as e:
+            logger.error("Failed to get lat/long from %s: %s", self.ow_geocoding_url, e)
+        return None, None
 
     def get_sunset_info(self):
         """
@@ -83,12 +84,13 @@ class Weather():
         local_weather_url_request = f"{self.ow_current_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&appid={self.ow_key}"
         local_weather_response = requests.get(local_weather_url_request, timeout=20)
 
-        if local_weather_response.status_code == 200:
-            local_weather_json = local_weather_response.json()
-
-            sunset_unix = int(local_weather_json['sys']['sunset']) + 1440
-            sunset_hour = int(strftime('%H', localtime(sunset_unix)))
-            sunset_minute = int(strftime('%-M', localtime(sunset_unix)))
+        if local_weather_response.status_code != 200:
+            return None, None
+        
+        local_weather_json = local_weather_response.json()
+        sunset_unix = int(local_weather_json['sys']['sunset']) + 1440
+        sunset_hour = int(strftime('%H', localtime(sunset_unix)))
+        sunset_minute = int(strftime('%-M', localtime(sunset_unix)))
 
         return sunset_hour, sunset_minute
 
@@ -107,8 +109,8 @@ class Weather():
             https://en.wikipedia.org/wiki/Metric_Conversion_Act
             https://www.geographyrealm.com/the-only-metric-highway-in-the-united-states/
         """
-        if self.zipcode is None:
-            return False, False, False, False
+        if self.zipcode is None or self.lat_long[0] is None or self.lat_long[1] is None:
+            return "NA", "NA", "NA", "NA"
 
         local_weather_url_request = f"{self.ow_current_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&appid={self.ow_key}"
         local_weather_response = requests.get(local_weather_url_request, timeout=20)

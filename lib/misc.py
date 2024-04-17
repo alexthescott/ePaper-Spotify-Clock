@@ -55,7 +55,7 @@ class Misc():
         Returns:
             bool: True if the sun has set, False otherwise.
         """
-        if not sunset_info:
+        if sunset_info is None or None in sunset_info:
             logger.error("has_sun_set() given invalid sunset_info")
             return False
         date = dt.now()
