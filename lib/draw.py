@@ -1,11 +1,11 @@
 import os
-import json
 import subprocess
 from time import time
-from datetime import timedelta, datetime as dt
+from datetime import datetime as dt
 from PIL import Image, ImageFont, ImageDraw, ImageMath
 
 from lib.clock_logging import logger
+from lib.display_settings import display_settings
 
 class Draw():
     """ Draw to EPaper - Alex Scott 2024
@@ -21,7 +21,7 @@ class Draw():
         self.local_run = local_run
         self.width, self.height = 400, 300
         self.set_dictionaries()
-        self.load_display_settings()
+        self.ds = display_settings
         self.load_resources()
         self.album_image = None
         self.dt = None
@@ -32,7 +32,7 @@ class Draw():
         os.makedirs("album_art", exist_ok=True)
         self.dir_path = os.path.abspath('album_art')
 
-        if self.four_gray_scale:
+        if self.ds.four_gray_scale:
             # Create four grayscale color palette
             self.image_mode = 'L'
             subprocess.run([
@@ -82,25 +82,6 @@ class Draw():
         self.dj_icon = Image.open('Icons/dj.png')
         self.collection_icon = Image.open('Icons/collection.png')
         self.failure_icon = Image.open('Icons/failure.png')
-
-    def load_display_settings(self):
-        """
-        Load display settings from config/display_settings.json
-        """
-        # EPD Settings imported from config/display_settings.json ---------------------------------------------------
-        with open('config/display_settings.json', 'r', encoding='utf-8') as display_settings:
-            display_settings = json.load(display_settings)
-            # main_settings
-            main_settings = display_settings["main_settings"]
-            single_user_settings = display_settings["single_user_settings"]
-            self.twenty_four_hour_clock =   main_settings["twenty_four_hour_clock"] # (True -> 22:53, False -> 10:53pm)
-            self.time_on_right = main_settings["time_on_right"]           # (True -> time is displayed on the right, False -> time is displayed on the left)
-            self.four_gray_scale = main_settings["four_gray_scale"]       # (True -> 4 gray scale, False -> Black and White)
-            self.album_art_right_side = single_user_settings["album_art_right_side"]       # (True -> 4 gray scale, False -> Black and White)
-            # weather_settings
-            self.weather_settings = display_settings["weather_settings"]             # (True -> weather mode, False -> normal mode)
-            self.hide_other_weather = self.weather_settings["hide_other_weather"] # (True -> weather not shown in top right, False -> weather is shown in top right)
-            self.metric_units = self.weather_settings["metric_units"]             # (True -> C°, False -> F°)
 
     def set_dictionaries(self):
         """
@@ -379,7 +360,7 @@ class Draw():
             self.album_image = Image.open(f"album_art/{image_file_name}")
             self.album_image = self.album_image.convert(self.image_mode)
             
-            if self.four_gray_scale and image_file_name!="NA.png":
+            if self.ds.four_gray_scale and image_file_name!="NA.png":
                 before_dither = time()
                 self.dither_album_art()
                 after_dither = time()
@@ -404,7 +385,7 @@ class Draw():
             temp_degrees = ""
         else:
             temp, temp_high, temp_low, _ = weather_info
-            temp_degrees = "C" if self.metric_units else "F"
+            temp_degrees = "C" if self.ds.metric_units else "F"
 
         # main temp pos calculations
         temp_start_x, temp_width = pos[0], self.image_draw.textlength(str(temp), font=self.DSfnt64)
@@ -439,7 +420,7 @@ class Draw():
         """
         if not time_str:
             date = dt.now()
-            time_str = date.strftime("%-H:%M") if self.twenty_four_hour_clock else date.strftime("%-I:%M") + date.strftime("%p").lower()
+            time_str = date.strftime("%-H:%M") if self.ds.twenty_four_hour_clock else date.strftime("%-I:%M") + date.strftime("%p").lower()
         am_pm = time_str[-2:] if "am" in time_str or "pm" in time_str else ""
         current_time = time_str[:-2] if am_pm else time_str
         text_width, text_height = self.image_draw.textlength(current_time, font=self.DSfnt64), self.DSfnt64.size/1.3
@@ -461,7 +442,7 @@ class Draw():
             temp, temp_high, temp_low, other_temp = 0, 0, 0, 0
         else:
             temp, temp_high, temp_low, other_temp = weather_info
-        temp_degrees = "C" if self.metric_units else "F"
+        temp_degrees = "C" if self.ds.metric_units else "F"
         left_elem_x = 10
         bar_height = 74  # the height of the bottom bar
         self.time_str = time_str
@@ -470,7 +451,7 @@ class Draw():
         temp_width, temp_height = self.image_draw.textlength(str(temp), font=self.DSfnt64), self.DSfnt64.size/1.3
         time_width, time_height = self.calculate_time_dimensions()
 
-        if self.time_on_right:
+        if self.ds.time_on_right:
             left_elem_y = self.height - (bar_height // 2) - (temp_height // 2)
             self.draw_weather((left_elem_x, left_elem_y), weather_info)
 
@@ -495,7 +476,7 @@ class Draw():
         self.image_draw.text((date_x, date_y), self.dt.strftime("%a, %b %-d"), font=self.DSfnt32)
 
         # Draw "upper temp" next to name of right user
-        if not self.hide_other_weather:
+        if not self.ds.hide_other_weather:
             high_temp_x = 387 - self.get_text_width(str(other_temp), 1)
             self.image_draw.text((high_temp_x, 0), str(other_temp), font=self.DSfnt32)
             self.image_draw.text((high_temp_x + 2 + self.get_text_width(str(other_temp), 1), 2), temp_degrees, font=self.DSfnt16)

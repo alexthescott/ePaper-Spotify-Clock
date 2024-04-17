@@ -7,6 +7,7 @@ from requests.exceptions import ReadTimeout
 from spotipy.exceptions import SpotifyException
 
 from lib.clock_logging import logger
+from lib.display_settings import display_settings
 from lib.json_io import LocalJsonIO
 spotify_logger = logging.getLogger('spotipy.client')
 
@@ -42,6 +43,7 @@ class SpotifyUser():
     def __init__(self, name: str = "CHANGE_ME", single_user: bool = False, main_user: bool = True):
         # Generate Spotify client_id and client_secret
         # https://developer.spotify.com/dashboard/
+        self.ds = display_settings
         self.scope = "user-read-private, user-read-recently-played, user-read-playback-state, user-read-currently-playing"
         self.redirect_uri = 'http://www.google.com/'
         self.single_user = single_user
@@ -55,11 +57,9 @@ class SpotifyUser():
         self.sp = None
         self.dt = None
         self.ctx_io = LocalJsonIO()
-        self.album_art_right_side = None
-        self.right_side = (self.single_user and self.album_art_right_side) or not self.single_user and not self.main_user
+        self.right_side = (self.single_user and self.ds.album_art_right_side) or not self.single_user and not self.main_user
         logger.info("User: %s Right Side: %s", self.name, self.right_side)
         self.load_credentials()
-        self.load_display_settings()
         self.update_spotipy_token()
 
     def load_credentials(self):
@@ -70,15 +70,6 @@ class SpotifyUser():
             credentials = json.load(f)
             self.spot_client_id = credentials['spot_client_id_me'] if self.main_user else credentials['spot_client_id_you']
             self.spot_client_secret = credentials['spot_client_secret_me'] if self.main_user else credentials['spot_client_secret_you']
-
-    def load_display_settings(self):
-        """
-        Load display settings from config/display_settings.json
-        """
-        with open("config/display_settings.json", encoding="utf-8") as display_settings:
-            display_settings = json.load(display_settings)
-            single_user_settings = display_settings["single_user_settings"]
-            self.album_art_right_side = single_user_settings["album_art_right_side"]
 
     # Spotify Functions
     def update_spotipy_token(self):

@@ -3,6 +3,7 @@ from time import localtime, strftime
 import requests
 
 from lib.clock_logging import logger
+from lib.display_settings import display_settings
 
 class Weather():
     """
@@ -13,29 +14,18 @@ class Weather():
     Used to get the weather and sunset time for the current location and sometimes the other user's location.
     """
     def __init__(self):
-        self.load_display_settings()
+        self.ds = display_settings
         self.load_credentials()
-        self.url_units = "units=metric" if self.metric_units else "units=imperial"
+        self.url_units = "units=metric" if self.ds.metric_units else "units=imperial"
         self.ow_current_url = "http://api.openweathermap.org/data/2.5/weather?"
         self.ow_forecast_url = "http://api.openweathermap.org/data/2.5/forecast?"
         self.ow_geocoding_url = "http://api.openweathermap.org/geo/1.0/zip?"
         self.zipcode = self.get_zip_from_ip()  # zipcode of the current location via ip, if not manually set
         self.lat_long = self.get_lat_long()  # lat and long of the current location via zipcode
         self.local_weather_json = None
-        if not self.hide_other_weather:
+        if not self.ds.hide_other_weather:
             if len(self.ow_alt_weather_zip) == 5 and self.ow_alt_weather_zip.isdigit():
                 raise ValueError("ow_alt_weather_zip pair must be a zip code")
-            
-    def load_display_settings(self):
-        """
-        Load display settings from config/display_settings.json
-        """
-        with open('config/display_settings.json', encoding='utf-8') as display_settings:
-            display_settings = json.load(display_settings)
-            # weather_settings
-            self.weather_settings = display_settings["weather_settings"]             # (True -> weather mode, False -> normal mode)
-            self.hide_other_weather = self.weather_settings["hide_other_weather"] # (True -> weather not shown in top right, False -> weather is shown in top right)
-            self.metric_units = self.weather_settings["metric_units"]             # (True -> C°, False -> F°)
 
     def load_credentials(self):
         """
@@ -144,7 +134,7 @@ class Weather():
         temp = round(self.local_weather_json['main']['feels_like'])
         temp_min, temp_max = temp, temp
 
-        if self.hide_other_weather:
+        if self.ds.hide_other_weather:
             other_temp = None
         else:
             # Fix this lol
