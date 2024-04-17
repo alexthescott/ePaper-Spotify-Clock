@@ -52,7 +52,7 @@ class Clock:
         self.spotify_user_2 = SpotifyUser(self.ds.name_2, self.ds.single_user, main_user=False) if not self.ds.single_user else None
         self.ctx_type_2, self.ctx_title_2 = "", ""
 
-    def set_weather_info(self):
+    def set_weather(self):
         """
         Sets the weather information for the clock.
         """
@@ -208,10 +208,10 @@ class Clock:
             self.draw_track_info(track_2, artist_2, ctx_type_2, ctx_title_2, 207, 26, self.spotify_user_2, time_since_2)
         else:
             # check to see if we need to display detailed weather
-            if self.detailed_weather_forcast:
-                draw_detailed_weather = "minutes" in time_since_1 and self.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())\
-                                        or "hours" in time_since_1 and self.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())*60\
-                                        or "days" in time_since_1 and self.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())*1440
+            if self.ds.detailed_weather_forecast:
+                draw_detailed_weather = "minutes" in time_since_1 and self.ds.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())\
+                                        or "hours" in time_since_1 and self.ds.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())*60\
+                                        or "days" in time_since_1 and self.ds.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())*1440
                 self.image_obj.set_weather_mode(draw_detailed_weather)
             get_new_album_art = self.old_album_name1 != self.album_name_1 or self.get_new_album_art
             if get_new_album_art and track_image_link:

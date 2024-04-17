@@ -30,7 +30,8 @@ class DisplaySettings():
             self.weather_settings = display_settings["weather_settings"]
             self.metric_units = self.weather_settings["metric_units"]
             self.hide_other_weather = self.weather_settings["hide_other_weather"] 
-            self.detailed_weather_forcast = self.weather_settings["detailed_weather_forcast"]
+            self.detailed_weather_forecast = self.weather_settings["detailed_weather_forecast"]
+            self.minutes_idle_until_detailed_weather = self.weather_settings["minutes_idle_until_detailed_weather"]
 
             if self.partial_update and self.four_gray_scale:
                 raise ValueError("Partial updates are not supported in 4 Gray Scale, you must choose one or another")
