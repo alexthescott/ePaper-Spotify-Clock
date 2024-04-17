@@ -3,6 +3,7 @@ from time import localtime, strftime
 import requests
 
 from lib.clock_logging import logger
+from lib.display_settings import display_settings
 
 class Weather():
     """
@@ -13,28 +14,17 @@ class Weather():
     Used to get the weather and sunset time for the current location and sometimes the other user's location.
     """
     def __init__(self):
-        self.load_display_settings()
+        self.ds = display_settings
         self.load_credentials()
-        self.url_units = "units=metric" if self.metric_units else "units=imperial"
+        self.url_units = "units=metric" if self.ds.metric_units else "units=imperial"
         self.ow_current_url = "http://api.openweathermap.org/data/2.5/weather?"
         self.ow_forecast_url = "http://api.openweathermap.org/data/2.5/forecast?"
         self.ow_geocoding_url = "http://api.openweathermap.org/geo/1.0/zip?"
-        self.zipcode = self.get_zip_from_ip()  # zipcode of the current location via ip, if not manually set
+        self.zipcode = self.get_zip_from_ip() if not self.ds.zip_code else self.ds.zip_code  # zipcode of the current location via ip, if not manually set
         self.lat_long = self.get_lat_long()  # lat and long of the current location via zipcode
-        if not self.hide_other_weather:
+        if not self.ds.hide_other_weather:
             if len(self.ow_alt_weather_zip) == 5 and self.ow_alt_weather_zip.isdigit():
                 raise ValueError("ow_alt_weather_zip pair must be a zip code")
-            
-    def load_display_settings(self):
-        """
-        Load display settings from config/display_settings.json
-        """
-        with open('config/display_settings.json', encoding='utf-8') as display_settings:
-            display_settings = json.load(display_settings)
-            # weather_settings
-            self.weather_settings = display_settings["weather_settings"]             # (True -> weather mode, False -> normal mode)
-            self.hide_other_weather = self.weather_settings["hide_other_weather"] # (True -> weather not shown in top right, False -> weather is shown in top right)
-            self.metric_units = self.weather_settings["metric_units"]             # (True -> C°, False -> F°)
 
     def load_credentials(self):
         """
@@ -80,8 +70,9 @@ class Weather():
             data = response.json()
             if 'lat' in data and 'lon' in data:
                 return data['lat'], data['lon']
-        except requests.exceptions.RequestException:
-            return None, None
+        except requests.exceptions.RequestException as e:
+            logger.error("Failed to get lat/long from %s: %s", self.ow_geocoding_url, e)
+        return None, None
 
     def get_sunset_info(self):
         """
@@ -93,12 +84,13 @@ class Weather():
         local_weather_url_request = f"{self.ow_current_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&appid={self.ow_key}"
         local_weather_response = requests.get(local_weather_url_request, timeout=20)
 
-        if local_weather_response.status_code == 200:
-            local_weather_json = local_weather_response.json()
-
-            sunset_unix = int(local_weather_json['sys']['sunset']) + 1440
-            sunset_hour = int(strftime('%H', localtime(sunset_unix)))
-            sunset_minute = int(strftime('%-M', localtime(sunset_unix)))
+        if local_weather_response.status_code != 200:
+            return None, None
+        
+        local_weather_json = local_weather_response.json()
+        sunset_unix = int(local_weather_json['sys']['sunset']) + 1440
+        sunset_hour = int(strftime('%H', localtime(sunset_unix)))
+        sunset_minute = int(strftime('%-M', localtime(sunset_unix)))
 
         return sunset_hour, sunset_minute
 
@@ -117,8 +109,8 @@ class Weather():
             https://en.wikipedia.org/wiki/Metric_Conversion_Act
             https://www.geographyrealm.com/the-only-metric-highway-in-the-united-states/
         """
-        if self.zipcode is None:
-            return False, False, False, False
+        if self.zipcode is None or self.lat_long[0] is None or self.lat_long[1] is None:
+            return "NA", "NA", "NA", "NA"
 
         local_weather_url_request = f"{self.ow_current_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&appid={self.ow_key}"
         local_weather_response = requests.get(local_weather_url_request, timeout=20)
@@ -128,7 +120,7 @@ class Weather():
             temp = round(local_weather_json['main']['feels_like'])
             temp_min, temp_max = temp, temp
 
-        if self.hide_other_weather:
+        if self.ds.hide_other_weather:
             other_temp = None
         else:
             # Fix this lol
