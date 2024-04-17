@@ -3,15 +3,16 @@ from lib.clock_logging import logger
 
 class DisplaySettings():
     """
-    The DisplaySettings class is responsible for loading display settings from config/display_settings.json 
+    The DisplaySettings class is responsible for loading display settings 
+    from config/display_settings.json + a few validation checks
     """
     def __init__(self):
-        with open("config/display_settings.json", encoding="utf-8") as display_settings:
-            display_settings = json.load(display_settings)
+        with open("config/display_settings.json", encoding="utf-8") as f_display_settings:
+            f_display_settings = json.load(f_display_settings)
             # main settings
-            main_settings = display_settings["main_settings"]
-            clock_names = display_settings["clock_names"]
-            single_user_settings = display_settings["single_user_settings"]
+            main_settings = f_display_settings["main_settings"]
+            clock_names = f_display_settings["clock_names"]
+            single_user_settings = f_display_settings["single_user_settings"]
             self.sunset_flip = main_settings["sunset_flip"]
             self.always_dark_mode = main_settings["always_dark_mode"]
             self.twenty_four_hour_clock = main_settings["twenty_four_hour_clock"]
@@ -27,7 +28,7 @@ class DisplaySettings():
             self.name_1 = clock_names["name_1"]
             self.name_2 = clock_names["name_2"]
             # weather_settings
-            self.weather_settings = display_settings["weather_settings"]
+            self.weather_settings = f_display_settings["weather_settings"]
             self.zip_code = str(self.weather_settings["zip_code"]) if self.weather_settings["zip_code"] else None
             self.metric_units = self.weather_settings["metric_units"]
             self.hide_other_weather = self.weather_settings["hide_other_weather"]
