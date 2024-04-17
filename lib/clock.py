@@ -1,3 +1,4 @@
+import threading
 from time import time, sleep
 from datetime import timedelta, datetime as dt
 
@@ -67,6 +68,15 @@ class Clock:
         Saves the image object "clock_output.png" for later reference
         """
         self.image_obj.save_png("clock_output")
+        
+    def init_epd(self):
+        """
+        Used to initialize the EPD display within a thread to prevent blocking the main loop.
+        """
+        try:
+            self.epd.init()
+        except RuntimeError as e:
+            logger.error("Failed to init EPD: %s", e)
 
     def tick_tock(self):
         """
@@ -92,15 +102,21 @@ class Clock:
                 break
             elif not self.did_epd_init:
                 if not self.local_run:
-                    self.epd.init()
+                    # try initing the EPD for a total of 45 seconds
+                    thread = threading.Thread(target=self.init_epd)
+                    thread.start()
+                    thread.join(45)
+                    if thread.is_alive():
+                        logger.error("Failed to init EPD in 45 seconds")
+                    else:
+                        logger.info("EPD Initialized")
+                    
                     if self.ds.four_gray_scale:
                         logger.info("Initializing EPD 4Gray...")
                         self.epd.Init_4Gray()
                     elif self.ds.partial_update:
                         logger.info("Initializing Partial EPD...")
                         self.epd.init_fast(self.epd.Seconds_1_5S)
-                    else:
-                        logger.info("Initializing EPD...")
                 self.did_epd_init = True
 
             self.image_obj.clear_image()
