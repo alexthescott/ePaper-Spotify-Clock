@@ -1,7 +1,10 @@
 import os
 from datetime import datetime as dt
+
+import requests
 from requests import get as get_request
 from PIL import Image
+
 from lib.clock_logging import logger
 
 class Misc():
@@ -16,9 +19,14 @@ class Misc():
         file_name (str): The name of the file to save the image as.
         """
         os.makedirs("album_art", exist_ok=True)
-        img_data = get_request(track_image_link, timeout=20).content
+        try:
+            img_data = get_request(track_image_link, timeout=25).content
+        except requests.exceptions.RequestException as e:
+            logger.error("Failed to get %s: %s", track_image_link, e)
+            return False
         with open(f"album_art/{file_name}", 'wb') as handler:
             handler.write(img_data)
+        return True
 
     def resize_image(self, image_name: str, size=(199, 199)):
         """
@@ -65,6 +73,8 @@ class Misc():
             track_image_link (str): The URL of the track image.
             album_image_name (str): The name of the album image file (default is "AlbumImage.PNG").
         """
-        self.save_image_from_url(track_image_link, album_image_name)
-        self.resize_image(album_image_name)
-        self.resize_image(album_image_name, (46, 46))
+        if self.save_image_from_url(track_image_link, album_image_name):
+            self.resize_image(album_image_name)
+            self.resize_image(album_image_name, (46, 46))
+            return True
+        return False
