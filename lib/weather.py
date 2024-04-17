@@ -23,6 +23,7 @@ class Weather():
         self.zipcode = self.get_zip_from_ip() if not self.ds.zip_code else self.ds.zip_code  # zipcode of the current location via ip, if not manually set
         self.lat_long = self.get_lat_long()  # lat and long of the current location via zipcode
         self.local_weather_json = None
+        self.local_weather_forecast_json = None
         if not self.ds.hide_other_weather:
             if len(self.ow_alt_weather_zip) == 5 and self.ow_alt_weather_zip.isdigit():
                 raise ValueError("ow_alt_weather_zip pair must be a zip code")
@@ -86,6 +87,18 @@ class Weather():
             self.local_weather_json = local_weather_response.json()
             return True
         return False
+    
+    def set_local_weather_forecast_json(self):
+        """
+        Sets the local weather forecast JSON from the OpenWeather API.
+        """
+        local_weather_forecast_request = f"{self.ow_forecast_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&cnt=12&appid={self.ow_key}"
+        local_weather_forecast_response = requests.get(local_weather_forecast_request, timeout=20)
+
+        if local_weather_forecast_response.status_code == 200:
+            self.local_weather_forecast_json = local_weather_forecast_response.json()
+            return True
+        return False
 
     def get_local_weather_json(self):
         """
@@ -128,7 +141,6 @@ class Weather():
         if self.zipcode is None or self.lat_long[0] is None or self.lat_long[1] is None:
             return "NA", "NA", "NA", "NA"
         
-        
         if not self.set_local_weather_json():
             if not self.local_weather_json:
                 return "NA", "NA", "NA", "NA"
@@ -147,11 +159,10 @@ class Weather():
             else:
                 other_temp = "NA"
 
-        local_weather_forecast_request = f"{self.ow_forecast_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&cnt=12&appid={self.ow_key}"
-        local_weather_forecast_response = requests.get(local_weather_forecast_request, timeout=20)
-        if local_weather_forecast_response.status_code == 200:
-            forecast_json = local_weather_forecast_response.json()
-            for l in forecast_json['list']:
-                temp_min = min(round(l['main']['feels_like']), round(l['main']['temp_max']), temp_min)
-                temp_max = max(round(l['main']['feels_like']), round(l['main']['temp_min']), temp_max)
+        if not self.set_local_weather_forecast_json():
+            if not self.local_weather_forecast_json:
+                return temp, "NA", "NA", other_temp
+        for l in self.local_weather_forecast_json['list']:
+            temp_min = min(round(l['main']['feels_like']), round(l['main']['temp_max']), temp_min)
+            temp_max = max(round(l['main']['feels_like']), round(l['main']['temp_min']), temp_max)
         return temp, temp_max, temp_min, other_temp
