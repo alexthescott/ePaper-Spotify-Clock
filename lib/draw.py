@@ -304,6 +304,25 @@ class Draw():
         # draw text next to name displaying time since last played track
         self.image_draw.text((time_x, time_y), text, font=self.DSfnt16)
 
+    def detailed_weather_album_name(self, album_name: str):
+        """
+        Write the album_name in medium font in the top right of the display.
+        """
+        right_side = (253, 10)
+        album_width, formatted_album_name = 0, ""
+        # make sure we don't run past context width requirements
+        for c in album_name:
+            char_width = int(self.mf_dict.get(c, 23))
+            if album_width + char_width < 128:
+                album_width += char_width
+                formatted_album_name += c
+            else:
+                formatted_album_name += "..."
+                break
+        else:
+            self.image_obj.paste(self.album_icon, (right_side[0] + 122, right_side[1] + 2))
+        self.image_draw.text(right_side, formatted_album_name, font=self.DSfnt32)
+
     def draw_spot_context(self, context_type: str, context_text: str, context_x: int, context_y: int):
         """
         Draws both icon {playlist, album, artist} and context text in the bottom of Spot box.
