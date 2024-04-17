@@ -20,7 +20,7 @@ class Weather():
         self.ow_current_url = "http://api.openweathermap.org/data/2.5/weather?"
         self.ow_forecast_url = "http://api.openweathermap.org/data/2.5/forecast?"
         self.ow_geocoding_url = "http://api.openweathermap.org/geo/1.0/zip?"
-        self.zipcode = self.get_zip_from_ip()  # zipcode of the current location via ip, if not manually set
+        self.zipcode = self.get_zip_from_ip() if not self.ds.zip_code else self.ds.zip_code  # zipcode of the current location via ip, if not manually set
         self.lat_long = self.get_lat_long()  # lat and long of the current location via zipcode
         self.local_weather_json = None
         if not self.ds.hide_other_weather:
@@ -71,8 +71,9 @@ class Weather():
             data = response.json()
             if 'lat' in data and 'lon' in data:
                 return data['lat'], data['lon']
-        except requests.exceptions.RequestException:
-            return None, None
+        except requests.exceptions.RequestException as e:
+            logger.error("Failed to get lat/long from %s: %s", self.ow_geocoding_url, e)
+        return None, None
         
     def set_local_weather_json(self):
         """
@@ -124,13 +125,13 @@ class Weather():
             https://en.wikipedia.org/wiki/Metric_Conversion_Act
             https://www.geographyrealm.com/the-only-metric-highway-in-the-united-states/
         """
-        if self.zipcode is None:
-            return False, False, False, False
+        if self.zipcode is None or self.lat_long[0] is None or self.lat_long[1] is None:
+            return "NA", "NA", "NA", "NA"
         
         
         if not self.set_local_weather_json():
             if not self.local_weather_json:
-                return None, None, None, None
+                return "NA", "NA", "NA", "NA"
         temp = round(self.local_weather_json['main']['feels_like'])
         temp_min, temp_max = temp, temp
 

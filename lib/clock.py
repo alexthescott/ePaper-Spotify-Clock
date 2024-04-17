@@ -1,5 +1,6 @@
 import json
 import re
+import threading
 from time import time, sleep
 from datetime import timedelta, datetime as dt
 
@@ -74,6 +75,15 @@ class Clock:
         Saves the image object "clock_output.png" for later reference
         """
         self.image_obj.save_png("clock_output")
+        
+    def init_epd(self):
+        """
+        Used to initialize the EPD display within a thread to prevent blocking the main loop.
+        """
+        try:
+            self.epd.init()
+        except RuntimeError as e:
+            logger.error("Failed to init EPD: %s", e)
 
     def tick_tock(self):
         """
@@ -99,15 +109,21 @@ class Clock:
                 break
             elif not self.did_epd_init:
                 if not self.local_run:
-                    self.epd.init()
+                    # try initing the EPD for a total of 45 seconds
+                    thread = threading.Thread(target=self.init_epd)
+                    thread.start()
+                    thread.join(45)
+                    if thread.is_alive():
+                        logger.error("Failed to init EPD in 45 seconds")
+                    else:
+                        logger.info("EPD Initialized")
+                    
                     if self.ds.four_gray_scale:
                         logger.info("Initializing EPD 4Gray...")
                         self.epd.Init_4Gray()
                     elif self.ds.partial_update:
                         logger.info("Initializing Partial EPD...")
                         self.epd.init_fast(self.epd.Seconds_1_5S)
-                    else:
-                        logger.info("Initializing EPD...")
                 self.did_epd_init = True
 
             self.image_obj.clear_image()
@@ -122,11 +138,11 @@ class Clock:
             if self.did_epd_init:
                 if not self.local_run:
                     logger.info("\tDrawing Image to EPD")
-                    if self.four_gray_scale: 
+                    if self.ds.four_gray_scale:
                         self.epd.display_4Gray(self.epd.getbuffer_4Gray(self.image_obj.get_image_obj()))
                     else:
                         self.epd.display(self.epd.getbuffer(self.image_obj.get_image_obj()))
-                    if self.sleep_epd and (not self.partial_update or self.flip_to_dark):
+                    if self.ds.sleep_epd and (not self.ds.partial_update or self.flip_to_dark):
                         logger.info("\tSleeping EPD")
                         self.epd.sleep()
                         self.did_epd_init = False
@@ -160,7 +176,7 @@ class Clock:
                         if sec_left > 5 and partial_update_count < 2:
                             date = dt.now()
                             time_str = date.strftime("%-H:%M") if self.ds.twenty_four_hour_clock else date.strftime("%-I:%M") + date.strftime("%p").lower()
-                            logger.info("\ttimestr:%s", time_str)
+                            logger.info("\ttime_str:%s", time_str)
                             self.image_obj.draw_date_time_temp(self.weather_info, time_str)
                             if not self.local_run:
                                 self.epd.display_Fast(self.epd.getbuffer(self.image_obj.get_image_obj()))
@@ -213,8 +229,8 @@ class Clock:
                                         or "hours" in time_since_1 and self.ds.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())*60\
                                         or "days" in time_since_1 and self.ds.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())*1440
                 self.image_obj.set_weather_mode(draw_detailed_weather)
-            get_new_album_art = self.old_album_name1 != self.album_name_1 or self.get_new_album_art
-            if get_new_album_art and track_image_link:
+            self.get_new_album_art = self.old_album_name1 != self.album_name_1 or self.get_new_album_art
+            if self.get_new_album_art and track_image_link:
                 if self.misc.get_album_art(track_image_link):
                     self.get_new_album_art = False
             album_pos = (201, 0) if self.ds.album_art_right_side else (0, 0)
@@ -222,7 +238,7 @@ class Clock:
             image_file_name = "NA.png" if not track_image_link else None
             if not track_image_link:
                 logger.warning("No album art found, drawing NA.png")
-            self.image_obj.draw_album_image(self.flip_to_dark, image_file_name=image_file_name, pos=album_pos, convert_image=get_new_album_art)
+            self.image_obj.draw_album_image(self.flip_to_dark, image_file_name=image_file_name, pos=album_pos, convert_image=self.get_new_album_art)
             self.image_obj.draw_spot_context("album", self.album_name_1, context_pos[0], context_pos[1])
         self.image_obj.draw_date_time_temp(self.weather_info, time_str)
         self.image_obj.draw_border_lines()
