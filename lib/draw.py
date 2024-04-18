@@ -399,7 +399,7 @@ class Draw():
                 self.image_obj.paste(resized_icon, (box_x + 105, box_y+2))
             
             # Draw the temperature
-            t_fill = 80 if self.ds.four_gray_scale else 0
+            t_fill = 64 if self.ds.four_gray_scale else 0
             temp = info['temp']
             temp_width = self.get_text_width(str(temp), 1)
             self.image_draw.text((box_x + box_width - temp_width - 12, box_y + 5), f"{info['temp']}", font=self.DSfnt32, fill=t_fill)
@@ -505,7 +505,7 @@ class Draw():
         self.image_draw.text((temp_start_x + temp_width, 245), temp_degrees, font=self.DSfnt32)
 
         # draw forecast temp
-        f_fill = 80 if self.ds.four_gray_scale else 0
+        f_fill = 64 if self.ds.four_gray_scale else 0
         self.image_draw.text((forcast_temp_x - temp_high_width, 242), str(temp_high), font=self.DSfnt32, fill=f_fill)
         self.image_draw.text((forcast_temp_x + 2, 244), temp_degrees, font=self.DSfnt16, fill=f_fill)
         self.image_draw.text((forcast_temp_x - temp_low_width, 266), str(temp_low), font=self.DSfnt32, fill=f_fill)
