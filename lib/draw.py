@@ -341,7 +341,7 @@ class Draw():
 
     def draw_detailed_weather_border(self):
         # draw vertical and horizontal lines of width 3
-        b_fill = 80 if self.ds.four_gray_scale else 0
+        b_fill = 32 if self.ds.four_gray_scale else 0
         for i in range(2):
             self.image_draw.line([(self.width/2, 46 + i), (400, 46 + i)], fill=b_fill)
 
@@ -395,11 +395,11 @@ class Draw():
             desc_icon_id = info['desc_icon_id'][:2]
             if desc_icon_id in self.icon_dict:
                 icon = self.icon_dict[desc_icon_id]
-                resized_icon = icon.resize((30, 30))
-                self.image_obj.paste(resized_icon, (box_x + 105, box_y+2))
+                resized_icon = icon.resize((40, 40))
+                self.image_obj.paste(resized_icon, (box_x + 102, box_y - 2))
             
             # Draw the temperature
-            t_fill = 64 if self.ds.four_gray_scale else 0
+            t_fill = 32 if self.ds.four_gray_scale else 0
             temp = info['temp']
             temp_width = self.get_text_width(str(temp), 1)
             self.image_draw.text((box_x + box_width - temp_width - 12, box_y + 5), f"{info['temp']}", font=self.DSfnt32, fill=t_fill)
@@ -505,7 +505,7 @@ class Draw():
         self.image_draw.text((temp_start_x + temp_width, 245), temp_degrees, font=self.DSfnt32)
 
         # draw forecast temp
-        f_fill = 64 if self.ds.four_gray_scale else 0
+        f_fill = 32 if self.ds.four_gray_scale else 0
         self.image_draw.text((forcast_temp_x - temp_high_width, 242), str(temp_high), font=self.DSfnt32, fill=f_fill)
         self.image_draw.text((forcast_temp_x + 2, 244), temp_degrees, font=self.DSfnt16, fill=f_fill)
         self.image_draw.text((forcast_temp_x - temp_low_width, 266), str(temp_low), font=self.DSfnt32, fill=f_fill)
