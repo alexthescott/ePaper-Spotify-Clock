@@ -63,11 +63,22 @@ class Draw():
         - helveti16, helveti32, helveti64: Fonts from the Habbo.ttf file.
 
         Icons:
-        - playlist_icon: Icon for playlist.
-        - artist_icon: Icon for artist.
-        - album_icon: Icon for album.
-        - dj_icon: Icon for DJ.
-        - collection_icon: Icon for collection.
+            - music_context:
+                - playlist_icon: Icon for playlist.
+                - artist_icon: Icon for artist.
+                - album_icon: Icon for album.
+                - dj_icon: Icon for DJ.
+                - collection_icon: Icon for collection.
+            - weather:
+                - 01n: Icon for clear sky at night.
+                - 02n: Icon for few clouds at night.
+                - 03n: Icon for scattered clouds at night.
+                - 04n: Icon for broken clouds at night.
+                - 09n: Icon for shower rain at night.
+                - 10n: Icon for rain at night.
+                - 11n: Icon for thunderstorm at night.
+                - 13n: Icon for snow at night.
+                - 50n: Icon for mist at night.
         """
         self.DSfnt16 = ImageFont.truetype('ePaperFonts/Nintendo-DS-BIOS.ttf', 16)
         self.DSfnt32 = ImageFont.truetype('ePaperFonts/Nintendo-DS-BIOS.ttf', 32)
@@ -76,12 +87,40 @@ class Draw():
         self.helveti32 = ImageFont.truetype('ePaperFonts/Habbo.ttf', 32)
         self.helveti64 = ImageFont.truetype('ePaperFonts/Habbo.ttf', 64)
 
-        self.playlist_icon = Image.open('Icons/playlist.png')
-        self.artist_icon = Image.open('Icons/artist.png')
-        self.album_icon = Image.open('Icons/album.png')
-        self.dj_icon = Image.open('Icons/dj.png')
-        self.collection_icon = Image.open('Icons/collection.png')
-        self.failure_icon = Image.open('Icons/failure.png')
+        self.playlist_icon = Image.open('Icons/music_context/playlist.png')
+        self.artist_icon = Image.open('Icons/music_context/artist.png')
+        self.album_icon = Image.open('Icons/music_context/album.png')
+        self.dj_icon = Image.open('Icons/music_context/dj.png')
+        self.collection_icon = Image.open('Icons/music_context/collection.png')
+        self.failure_icon = Image.open('Icons/music_context/failure.png')
+        
+        self._01_icon = Image.open('Icons/weather/01.png')
+        self._02_icon = Image.open('Icons/weather/02.png')
+        self._03_icon = Image.open('Icons/weather/03.png')
+        self._04_icon = Image.open('Icons/weather/04.png')
+        self._09_icon = Image.open('Icons/weather/09.png')
+        self._10_icon = Image.open('Icons/weather/10.png')
+        self._11_icon = Image.open('Icons/weather/11.png')
+        self._13_icon = Image.open('Icons/weather/13.png')
+        self._50_icon = Image.open('Icons/weather/50.png')
+        
+        self.icon_dict = {
+            '01': self._01_icon,
+            '02': self._02_icon,
+            '03': self._03_icon,
+            '04': self._04_icon,
+            '09': self._09_icon,
+            '10': self._10_icon,
+            '11': self._11_icon,
+            '13': self._13_icon,
+            '50': self._50_icon,
+            'playlist': self.playlist_icon,
+            'artist': self.artist_icon,
+            'album': self.album_icon,
+            'dj': self.dj_icon,
+            'collection': self.collection_icon,
+            'failure': self.failure_icon,
+        }
 
     def set_dictionaries(self):
         """
@@ -287,10 +326,6 @@ class Draw():
         for i in range(3):
             self.image_draw.line([(0, 224 + i), (400, 224 + i)], fill=0)
             self.image_draw.line([(199 + i, 0), (199 + i, 225)], fill=0)
-        if not self.weather_mode:
-            return True
-        for i in range(2):
-            self.image_draw.line([(self.width/2, 46 + i), (400, 46 + i)], fill=0)
 
     def draw_name(self, text: str, name_x: int, name_y: int):
         name_width, name_height = self.image_draw.textlength(text, font=self.helveti32), self.helveti32.size/1.3
@@ -303,6 +338,12 @@ class Draw():
     def draw_user_time_ago(self, text: str, time_x: int, time_y: int):
         # draw text next to name displaying time since last played track
         self.image_draw.text((time_x, time_y), text, font=self.DSfnt16)
+
+    def draw_detailed_weather_border(self):
+        # draw vertical and horizontal lines of width 3
+        b_fill = 80 if self.ds.four_gray_scale else 0
+        for i in range(2):
+            self.image_draw.line([(self.width/2, 46 + i), (400, 46 + i)], fill=b_fill)
 
     def detailed_weather_album_name(self, album_name: str):
         """
@@ -320,8 +361,50 @@ class Draw():
                 formatted_album_name += "..."
                 break
         else:
-            self.image_obj.paste(self.album_icon, (right_side[0] + 122, right_side[1] + 2))
+            self.image_obj.paste(self.album_icon, (right_side[0] + 122, right_side[1] + 3))
         self.image_draw.text(right_side, formatted_album_name, font=self.DSfnt32)
+
+    def draw_detailed_weather_information(self, weather_info: dict):
+        """
+        Draw a four hour forecast of the weather in the top right of the display.
+        
+        example weather_info:
+        {'11PM': {'description': 'scattered clouds', 'temp': 61},
+        '2AM': {'description': 'broken clouds', 'temp': 60},
+        '5AM': {'description': 'overcast clouds', 'temp': 58},
+        '8PM': {'description': 'scattered clouds', 'temp': 62}}
+        """
+        weather_x, weather_y = 210, 53
+        # Calculate the width and height of each weather forecast box
+        box_width = 180
+        box_height = 35
+
+        # Iterate over the weather_info dictionary and draw each forecast box
+        for i, (hour_str, info) in enumerate(weather_info.items()):
+            # Calculate the x and y coordinates for each box
+            box_x = weather_x
+            box_y = weather_y + (box_height + 8) * i
+
+            # debug box drawing
+            # self.image_draw.rectangle([(box_x, box_y), (box_x + box_width, box_y + box_height)], outline=0)
+
+            # Draw the time
+            self.image_draw.text((box_x + 5, box_y + 5), hour_str, font=self.DSfnt32, fill=0)
+
+            # Draw the weather description icon
+            desc_icon_id = info['desc_icon_id'][:2]
+            if desc_icon_id in self.icon_dict:
+                icon = self.icon_dict[desc_icon_id]
+                resized_icon = icon.resize((30, 30))
+                self.image_obj.paste(resized_icon, (box_x + 105, box_y+2))
+            
+            # Draw the temperature
+            t_fill = 80 if self.ds.four_gray_scale else 0
+            temp = info['temp']
+            temp_width = self.get_text_width(str(temp), 1)
+            self.image_draw.text((box_x + box_width - temp_width - 12, box_y + 5), f"{info['temp']}", font=self.DSfnt32, fill=t_fill)
+            unit = "C" if self.ds.metric_units else "F"
+            self.image_draw.text((box_x + box_width - 10, box_y + 7), unit, font=self.DSfnt16, fill=t_fill)
 
     def draw_spot_context(self, context_type: str, context_text: str, context_x: int, context_y: int):
         """
@@ -422,10 +505,11 @@ class Draw():
         self.image_draw.text((temp_start_x + temp_width, 245), temp_degrees, font=self.DSfnt32)
 
         # draw forecast temp
-        self.image_draw.text((forcast_temp_x - temp_high_width, 242), str(temp_high), font=self.DSfnt32)
-        self.image_draw.text((forcast_temp_x + 2, 244), temp_degrees, font=self.DSfnt16)
-        self.image_draw.text((forcast_temp_x - temp_low_width, 266), str(temp_low), font=self.DSfnt32)
-        self.image_draw.text((forcast_temp_x + 2, 268), temp_degrees, font=self.DSfnt16)
+        f_fill = 80 if self.ds.four_gray_scale else 0
+        self.image_draw.text((forcast_temp_x - temp_high_width, 242), str(temp_high), font=self.DSfnt32, fill=f_fill)
+        self.image_draw.text((forcast_temp_x + 2, 244), temp_degrees, font=self.DSfnt16, fill=f_fill)
+        self.image_draw.text((forcast_temp_x - temp_low_width, 266), str(temp_low), font=self.DSfnt32, fill=f_fill)
+        self.image_draw.text((forcast_temp_x + 2, 268), temp_degrees, font=self.DSfnt16, fill=f_fill)
 
     def draw_time(self, pos: tuple, time_str: str=""):
         """

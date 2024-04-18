@@ -41,7 +41,9 @@ class Clock:
         self.weather_info = None
         self.sunset_info = None
         self.sunset_time_tuple = None
+        self.for_day_forecast = None
         self.get_new_album_art = False if self.ds.single_user else None
+        self.draw_detailed_weather = False
 
         # Initialize Info/Drawing Libs/Users
         self.image_obj = Draw(self.local_run)
@@ -69,6 +71,12 @@ class Clock:
             self.flip_to_dark = self.misc.has_sun_set(self.sunset_info, self.ds.sunset_flip) or self.ds.always_dark_mode
             if not flip_to_dark_before and self.flip_to_dark:
                 self.get_new_album_art = True
+
+    def set_for_day_forecast(self):
+        """
+        Sets the 4-hour forecast for the clock.
+        """
+        self.for_day_forecast = self.weather.get_four_hour_forecast()
 
     def save_local_file(self):
         """
@@ -130,6 +138,8 @@ class Clock:
             if self.weather_info is None or self.count_to_5 >= 4:
                 self.set_weather()
                 self.set_sunset_info()
+                if self.ds.detailed_weather_forecast:
+                    self.set_for_day_forecast()
             sec_left, time_str = self.get_time_from_date_time()
             logger.info("Time: %s", time_str)
 
@@ -227,15 +237,20 @@ class Clock:
             context_pos = (227, 204) if self.ds.album_art_right_side else (25, 204)
             # check to see if we need to display detailed weather
             if self.ds.detailed_weather_forecast:
-                draw_detailed_weather = "is listening to" in time_since_1 and self.ds.minutes_idle_until_detailed_weather == 0\
+                self.draw_detailed_weather = "is listening to" in time_since_1 and self.ds.minutes_idle_until_detailed_weather == 0\
                                         or "minutes" in time_since_1 and self.ds.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())\
                                         or "hours" in time_since_1 and self.ds.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())*60\
                                         or "days" in time_since_1 and self.ds.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())*1440
-                self.image_obj.set_weather_mode(draw_detailed_weather)
-                self.image_obj.detailed_weather_album_name(self.album_name_1)
+                if self.draw_detailed_weather:
+                    self.image_obj.set_weather_mode(self.draw_detailed_weather)
+                    if not self.for_day_forecast:
+                        self.set_for_day_forecast()
+                    self.image_obj.draw_detailed_weather_border()
+                    self.image_obj.detailed_weather_album_name(self.album_name_1)
+                    self.image_obj.draw_detailed_weather_information(self.for_day_forecast)
                 
             # Call draw_spot_context only once, outside of the if-else block
-            if not self.ds.detailed_weather_forecast or not draw_detailed_weather:
+            if not self.ds.detailed_weather_forecast or not self.draw_detailed_weather:
                 self.image_obj.draw_spot_context("album", self.album_name_1, context_pos[0], context_pos[1])
                 
             self.get_new_album_art = self.old_album_name1 != self.album_name_1 or self.get_new_album_art

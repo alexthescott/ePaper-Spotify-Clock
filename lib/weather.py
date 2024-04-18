@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 from time import localtime, strftime
 import requests
@@ -166,3 +167,18 @@ class Weather():
             temp_min = min(round(l['main']['feels_like']), round(l['main']['temp_max']), temp_min)
             temp_max = max(round(l['main']['feels_like']), round(l['main']['temp_min']), temp_max)
         return temp, temp_max, temp_min, other_temp
+
+    def get_four_hour_forecast(self):
+        """
+        Get the four hour forecast from OpenWeather API
+        Returns:
+            forecast: List of four hour forecast
+        """
+        if not self.set_local_weather_forecast_json():
+            return None
+        forecasts = self.local_weather_forecast_json['list'][:4]
+        four_day_forecast = {}
+        for l in forecasts:
+            hour_forecast = datetime.fromtimestamp(l['dt']).strftime('%I%p').lstrip('0')
+            four_day_forecast[hour_forecast] = {"temp":round(l['main']['feels_like']), "desc_icon_id":l['weather'][0]['icon']}
+        return four_day_forecast
