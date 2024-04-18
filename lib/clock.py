@@ -238,9 +238,9 @@ class Clock:
             # check to see if we need to display detailed weather
             if self.ds.detailed_weather_forecast:
                 self.draw_detailed_weather = "is listening to" in time_since_1 and self.ds.minutes_idle_until_detailed_weather == 0\
-                                        or "minutes" in time_since_1 and self.ds.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())\
-                                        or "hours" in time_since_1 and self.ds.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())*60\
-                                        or "days" in time_since_1 and self.ds.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())*1440
+                                        or "minute" in time_since_1 and self.ds.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())\
+                                        or "hour" in time_since_1 and self.ds.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())*60\
+                                        or "day" in time_since_1 and self.ds.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())*1440
                 self.image_obj.set_weather_mode(self.draw_detailed_weather)
                 if self.draw_detailed_weather:
                     if not self.for_day_forecast:
