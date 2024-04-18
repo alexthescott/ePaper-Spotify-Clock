@@ -467,8 +467,10 @@ class Draw():
                 self.dither_album_art()
                 after_dither = time()
                 logger.info("* Dithering took %.2f seconds *", after_dither - before_dither)
-        chosen_album_image = "album_art/AlbumImage_thumbnail_dither.PNG" if self.weather_mode else "album_art/AlbumImage_dither.PNG"
-        self.album_image = Image.open(chosen_album_image)
+        chosen_album_image = "album_art/AlbumImage"
+        chosen_album_image += "_thumbnail" if self.weather_mode else "_resize"
+        chosen_album_image = chosen_album_image.replace("_resize", "_dither") if self.ds.four_gray_scale else chosen_album_image
+        self.album_image = Image.open(f"{chosen_album_image}.PNG")
         if dark_mode:
             self.album_image = ImageMath.eval('255-(a)', a=self.album_image)
         self.image_obj.paste(self.album_image, pos)
@@ -693,7 +695,7 @@ class Draw():
     def dither_album_art(self):
         # Define the file paths
         palette_path = os.path.join(self.dir_path, 'palette.PNG')
-        resize_path = os.path.join(self.dir_path, 'AlbumImage_thumbnail.PNG') if self.weather_mode else os.path.join(self.dir_path, 'AlbumImage_resize.PNG')
+        resize_path = os.path.join(self.dir_path, 'AlbumImage_thumbnail_resize.PNG') if self.weather_mode else os.path.join(self.dir_path, 'AlbumImage_resize.PNG')
         dither_path = os.path.join(self.dir_path, 'AlbumImage_thumbnail_dither.PNG') if self.weather_mode else os.path.join(self.dir_path, 'AlbumImage_dither.PNG')
 
         # Check if the files exist
