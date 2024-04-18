@@ -160,7 +160,14 @@ class SpotifyUser():
         else:
             # get recently played info if user is not currently playing a song
             # only use that info if it's newer than stored json info
-            recent = self.sp.current_user_recently_played(1)
+            try:
+                recent = self.sp.current_user_recently_played(1)
+            except SpotifyException as e:
+                if 'The access token expired' in str(e):
+                    self.update_spotipy_token()
+                    recent = self.sp.current_user_recently_played(1)
+                else:
+                    raise e
             unix_timestamp = int(recent['cursors']['after'])
             old_context = self.ctx_io.read_json_ctx(self.right_side)
             if old_context and 'unix_timestamp' in old_context and old_context['unix_timestamp'] > unix_timestamp:
