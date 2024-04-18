@@ -241,8 +241,8 @@ class Clock:
                                         or "minutes" in time_since_1 and self.ds.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())\
                                         or "hours" in time_since_1 and self.ds.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())*60\
                                         or "days" in time_since_1 and self.ds.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())*1440
+                self.image_obj.set_weather_mode(self.draw_detailed_weather)
                 if self.draw_detailed_weather:
-                    self.image_obj.set_weather_mode(self.draw_detailed_weather)
                     if not self.for_day_forecast:
                         self.set_for_day_forecast()
                     self.image_obj.draw_detailed_weather_border()
