@@ -387,9 +387,15 @@ class Draw():
 
             # debug box drawing
             # self.image_draw.rectangle([(box_x, box_y), (box_x + box_width, box_y + box_height)], outline=0)
+            hour_str = hour_str.lower()
+            am_pm = hour_str[-2:] if "am" in hour_str or "pm" in hour_str else ""
+            current_time = hour_str[:-2] if am_pm else hour_str
+            time_pos = (box_x + 5, box_y + 5)
+            self.image_draw.text(time_pos, current_time, font=self.DSfnt32)
 
-            # Draw the time
-            self.image_draw.text((box_x + 5, box_y + 5), hour_str, font=self.DSfnt32, fill=0)
+            if am_pm:
+                am_pm_x = time_pos[0] + self.image_draw.textlength(current_time, font=self.DSfnt32)
+                self.image_draw.text((am_pm_x + 1, time_pos[1] + 11), am_pm, font=self.DSfnt16)
 
             # Draw the weather description icon
             desc_icon_id = info['desc_icon_id'][:2]
