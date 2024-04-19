@@ -475,7 +475,8 @@ class Draw():
                 logger.info("* Dithering took %.2f seconds *", after_dither - before_dither)
         chosen_album_image = "album_art/AlbumImage"
         chosen_album_image += "_thumbnail" if self.weather_mode else "_resize"
-        chosen_album_image = chosen_album_image.replace("_resize", "_dither") if self.ds.four_gray_scale and self.weather_mode else chosen_album_image
+        chosen_album_image = chosen_album_image.replace("_resize", "_dither") if self.ds.four_gray_scale else chosen_album_image
+        chosen_album_image += "_dither" if self.ds.four_gray_scale and self.weather_mode else ""
         self.album_image = Image.open(f"{chosen_album_image}.PNG")
         if dark_mode:
             self.album_image = ImageMath.eval('255-(a)', a=self.album_image)
