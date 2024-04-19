@@ -378,6 +378,11 @@ class Draw():
         # Calculate the width and height of each weather forecast box
         box_width = 180
         box_height = 35
+        
+        # assign weather_info if None
+        if weather_info is None:
+            logger.error("Weather info is None")
+            return None
 
         # Iterate over the weather_info dictionary and draw each forecast box
         for i, (hour_str, info) in enumerate(weather_info.items()):
@@ -468,7 +473,7 @@ class Draw():
             self.album_image = Image.open(f"album_art/{image_file_name}")
             self.album_image = self.album_image.convert(self.image_mode)
             
-            if self.ds.four_gray_scale and image_file_name!="NA.png":
+            if self.ds.four_gray_scale:
                 before_dither = time()
                 self.dither_album_art()
                 after_dither = time()
