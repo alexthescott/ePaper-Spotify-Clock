@@ -9,12 +9,12 @@ from lib.display_settings import display_settings
 
 class Draw():
     """ Draw to EPaper - Alex Scott 2024
-    Companion functions for mainSpotifyClock.py
+    Companion functions for Draw() within clock.py for the Spotify EPaper display Clock project
 
-    Functions here rely on PIL to draw to an existing draw object
-    Draw context, date time temp, artist and track info, time since, and names
+    Functions rely on PIL to draw to an self stored draw object
+    Draw() draws context, date time temp, artist and track info, time since, detailed_weather, and names
 
-    Made for the Waveshare 4.2inch e-Paper Module
+    Made in companion with the Waveshare 4.2inch e-Paper Module
     https://www.waveshare.com/wiki/4.2inch_e-Paper_Module
     """
     def __init__(self, local_run=False):
@@ -125,7 +125,7 @@ class Draw():
     def set_dictionaries(self):
         """
         This method initializes three dictionaries: sf_dict, mf_dict, and lf_dict. Each dictionary represents a mapping
-        from characters to their corresponding pixel lengths in different font sizes. his method is used to get the 
+        from characters to their corresponding pixel lengths in different font sizes. This method is used to get the 
         pixel length of strings as they're built.
         """
         self.sf_dict = {' ': '2', '!': '2', '"': '4', '#': '8', '$': '6', '%': '8',
@@ -224,7 +224,7 @@ class Draw():
         os.makedirs("test_output", exist_ok=True)
         self.image_obj.save(os.path.join("test_output", f"{file_name}.png"))
 
-    # ---- Formatting Funcs ----------------------------------------------------------------------------
+    # ---- Formatting Functions ----------------------------------------------------------------------------
     def get_text_width(self, text: str, size: int):
         """ Return an int representing the size of a word
 
