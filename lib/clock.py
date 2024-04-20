@@ -32,7 +32,8 @@ class Clock:
         else:
             self.epd = None
         self.did_epd_init = False
-        self.count_to_5 = 0  # count_to_5 is used to get weather every 5 minutes
+        self.loops_until_weather_refresh = 5
+        self.weather_refresh_loop_count = 0
         self.time_elapsed = 15.0
         self.old_time = None
         self.flip_to_dark = self.ds.always_dark_mode
@@ -135,7 +136,7 @@ class Clock:
                 self.did_epd_init = True
 
             self.image_obj.clear_image()
-            if self.weather_info is None or self.count_to_5 >= 4:
+            if self.weather_info is None or self.weather_refresh_loop_count >= self.loops_until_weather_refresh:
                 self.set_weather()
                 self.set_sunset_info()
                 if self.ds.detailed_weather_forecast:
@@ -201,7 +202,7 @@ class Clock:
                 sleep(max(2+remaining_time+240, 0))
 
             # Increment counter for Weather requests
-            self.count_to_5 = 0 if self.count_to_5 == 4 else self.count_to_5 + 1
+            self.weather_refresh_loop_count = 0 if self.weather_refresh_loop_count == self.loops_until_weather_refresh else self.weather_refresh_loop_count + 1
 
     def build_image(self, time_str=None):
         """
