@@ -34,6 +34,7 @@ class DisplaySettings():
             self.hide_other_weather = self.weather_settings["hide_other_weather"]
             self.detailed_weather_forecast = self.weather_settings["detailed_weather_forecast"]
             self.minutes_idle_until_detailed_weather = self.weather_settings["minutes_idle_until_detailed_weather"]
+            self.use_one_call_api = self.weather_settings["use_one_call_api"]
 
             if self.zip_code and (not self.zip_code.isdigit() or not len(self.zip_code) == 5):
                 raise ValueError("Zip code must be a 5 digit number")

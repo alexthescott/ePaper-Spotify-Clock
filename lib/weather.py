@@ -19,15 +19,17 @@ class Weather():
         self.load_credentials()
         self.url_units = "units=metric" if self.ds.metric_units else "units=imperial"
         self.ow_current_url = "http://api.openweathermap.org/data/2.5/weather?"
+        self.ow_one_call_url = "https://api.openweathermap.org/data/3.0/onecall?"
         self.ow_forecast_url = "http://api.openweathermap.org/data/2.5/forecast?"
         self.ow_geocoding_url = "http://api.openweathermap.org/geo/1.0/zip?"
         self.zipcode = self.get_zip_from_ip() if not self.ds.zip_code else self.ds.zip_code  # zipcode of the current location via ip, if not manually set
         self.lat_long = self.get_lat_long()  # lat and long of the current location via zipcode
         self.local_weather_json = None
         self.local_weather_forecast_json = None
-        if not self.ds.hide_other_weather:
-            if len(self.ow_alt_weather_zip) == 5 and self.ow_alt_weather_zip.isdigit():
-                raise ValueError("ow_alt_weather_zip pair must be a zip code")
+        self.one_call_json = None
+        # if not self.ds.hide_other_weather:
+        #     if len(self.ow_alt_weather_zip) == 5 and self.ow_alt_weather_zip.isdigit():
+        #         raise ValueError("ow_alt_weather_zip pair must be a zip code")
 
     def load_credentials(self):
         """
@@ -36,7 +38,7 @@ class Weather():
         with open('config/keys.json', 'r', encoding='utf-8') as f:
             credentials = json.load(f)
             self.ow_key = credentials['ow_key']
-            self.ow_alt_weather_zip = credentials['ow_alt_weather_zip']
+            # self.ow_alt_weather_zip = credentials['ow_alt_weather_zip']
 
     def get_zip_from_ip(self):
         """
@@ -64,7 +66,7 @@ class Weather():
         """ 
         Get latitude and longitude from zipcode 
         """
-        local_zip = self.zipcode if current_zip else self.ow_alt_weather_zip
+        local_zip = self.zipcode if current_zip else None # self.ow_alt_weather_zip
         if local_zip is None:
             return None, None
         url = f"{self.ow_geocoding_url}zip={local_zip}&appid={self.ow_key}"
@@ -76,6 +78,17 @@ class Weather():
         except requests.exceptions.RequestException as e:
             logger.error("Failed to get lat/long from %s: %s", self.ow_geocoding_url, e)
         return None, None
+    
+    def set_one_call_json(self):
+        """
+        Sets the one call JSON from the OpenWeather API.
+        """
+        one_call_url_request = f"{self.ow_one_call_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&appid={self.ow_key}"
+        one_call_response = requests.get(one_call_url_request, timeout=20)
+        if one_call_response.status_code == 200:
+            self.one_call_json = one_call_response.json()
+            return True
+        return False
         
     def set_local_weather_json(self):
         """
@@ -93,9 +106,8 @@ class Weather():
         """
         Sets the local weather forecast JSON from the OpenWeather API.
         """
-        local_weather_forecast_request = f"{self.ow_forecast_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&cnt=12&appid={self.ow_key}"
+        local_weather_forecast_request = f"{self.ow_forecast_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&appid={self.ow_key}"
         local_weather_forecast_response = requests.get(local_weather_forecast_request, timeout=20)
-
         if local_weather_forecast_response.status_code == 200:
             self.local_weather_forecast_json = local_weather_forecast_response.json()
             return True
@@ -174,6 +186,25 @@ class Weather():
         Returns:
             forecast: List of four hour forecast
         """
+        if self.ds.use_one_call_api:
+            if not self.one_call_json:
+                if not self.set_one_call_json():
+                    return None
+            # get the next 4 hours of forecast excluding the current hour
+            forecasts = self.one_call_json["hourly"][1:5]
+            four_day_forecast = {}
+            for forecast in forecasts:
+                timestamp = forecast['dt']
+                dt_object = datetime.fromtimestamp(timestamp)
+
+                # Convert to local timezone
+                local_dt_object = dt_object.astimezone()
+                # Format the time
+                formatted_time = local_dt_object.strftime("%-I%p").lower()
+                
+                four_day_forecast[formatted_time] = {"temp":round(forecast['feels_like']), "desc_icon_id":forecast['weather'][0]['icon']}
+            return four_day_forecast
+        # if we chose not to use one call api
         if not self.set_local_weather_forecast_json():
             return None
         forecasts = self.local_weather_forecast_json['list'][:4]

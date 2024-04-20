@@ -5,6 +5,7 @@
     },
     "weather_settings": {
         "detailed_weather_forecast": true,
+        "use_one_call_api": true,
         "metric_units": false,
         "hide_other_weather": true,
         "minutes_idle_until_detailed_weather": 30,
