@@ -1,6 +1,7 @@
-from datetime import datetime
 import json
+from datetime import datetime
 from time import localtime, strftime
+
 import requests
 
 from lib.clock_logging import logger
@@ -87,7 +88,9 @@ class Weather():
         one_call_response = requests.get(one_call_url_request, timeout=20)
         if one_call_response.status_code == 200:
             self.one_call_json = one_call_response.json()
+            logger.info("One Call API response: %s", self.one_call_json)
             return True
+        logger.error("One Call API response: %s", one_call_response.json())
         return False
         
     def set_local_weather_json(self):
@@ -99,7 +102,9 @@ class Weather():
 
         if local_weather_response.status_code == 200:
             self.local_weather_json = local_weather_response.json()
+            logger.info("Local Weather API response: %s", self.local_weather_json)
             return True
+        logger.error("Local Weather API response: %s", local_weather_response.json())
         return False
     
     def set_local_weather_forecast_json(self):
@@ -110,14 +115,10 @@ class Weather():
         local_weather_forecast_response = requests.get(local_weather_forecast_request, timeout=20)
         if local_weather_forecast_response.status_code == 200:
             self.local_weather_forecast_json = local_weather_forecast_response.json()
+            logger.info("Local Weather Forecast API response: %s", self.local_weather_forecast_json)
             return True
+        logger.error("Local Weather Forecast API response: %s", local_weather_forecast_response.json())
         return False
-
-    def get_local_weather_json(self):
-        """
-        Returns the local weather JSON if it has been set.
-        """
-        return self.local_weather_json if self.local_weather_json else None
 
     def get_sunset_info(self):
         """
@@ -145,7 +146,6 @@ class Weather():
             temp_min: Min temperature
             other_temp: Other temperature
             
-
         Fun Fact:
             America is a strange country with broken metric promises 
             https://en.wikipedia.org/wiki/Metric_Conversion_Act
@@ -197,14 +197,13 @@ class Weather():
                 timestamp = forecast['dt']
                 dt_object = datetime.fromtimestamp(timestamp)
 
-                # Convert to local timezone
+                # Convert and format to local timezone
                 local_dt_object = dt_object.astimezone()
-                # Format the time
                 formatted_time = local_dt_object.strftime("%-I%p").lower()
                 
                 four_day_forecast[formatted_time] = {"temp":round(forecast['feels_like']), "desc_icon_id":forecast['weather'][0]['icon']}
             return four_day_forecast
-        # if we chose not to use one call api
+        # if we chose not to use (paid+free) one call api
         if not self.set_local_weather_forecast_json():
             return None
         forecasts = self.local_weather_forecast_json['list'][:4]
