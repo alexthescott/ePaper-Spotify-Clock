@@ -406,8 +406,8 @@ class Draw():
             desc_icon_id = info['desc_icon_id'][:2]
             if desc_icon_id in self.icon_dict:
                 icon = self.icon_dict[desc_icon_id]
-                resized_icon = icon.resize((40, 40))
-                self.image_obj.paste(resized_icon, (box_x + 102, box_y - 2))
+                resized_icon = icon.resize((44, 44))
+                self.image_obj.paste(resized_icon, (box_x + 98, box_y - 4))
             
             # Draw the temperature
             t_fill = 32 if self.ds.four_gray_scale else 0
