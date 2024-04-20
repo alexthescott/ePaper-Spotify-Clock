@@ -95,10 +95,12 @@ class Weather():
                 with open(file_path, 'r', encoding='utf-8') as f:
                     potential_one_call_json = json.load(f)
                 # Check if the lat and lon in the JSON match self.lat_lon
-                if potential_one_call_json.get('lat') == self.lat_long[0] and potential_one_call_json.get('lon') == self.lat_long[1]:
-                    self.one_call_json = potential_one_call_json
-                    logger.info("Using one_call_response.json, created at %s", creation_time.strftime("%I:%M:%S%p %m/%d/%y"))
-                    return True
+                if potential_one_call_json.get('lat') == self.lat_long[0] and \
+                   potential_one_call_json.get('lon') == self.lat_long[1] and \
+                   potential_one_call_json.get('units') == ("metric" if self.ds.metric_units else "imperial"):
+                        self.one_call_json = potential_one_call_json
+                        logger.info("Using one_call_response.json, created at %s", creation_time.strftime("%I:%M:%S%p %m/%d/%y"))
+                        return True
 
         # If the file doesn't exist or was created more than 10 minutes ago, try a request call
         one_call_url_request = f"{self.ow_one_call_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&appid={self.ow_key}"
@@ -118,6 +120,7 @@ class Weather():
 
         if one_call_response.status_code == 200:
             self.one_call_json = one_call_response.json()
+            self.one_call_json['units'] = "metric" if self.ds.metric_units else "imperial"
             logger.info("One Call API response: %s", one_call_response.status_code)
             # Write the JSON response to a file
             with open(file_path, 'w', encoding='utf-8') as f:
