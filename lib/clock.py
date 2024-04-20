@@ -139,7 +139,7 @@ class Clock:
             if self.weather_info is None or self.weather_refresh_loop_count >= self.loops_until_weather_refresh:
                 self.set_weather()
                 self.set_sunset_info()
-                if self.ds.detailed_weather_forecast:
+                if self.ds.detailed_weather_forecast and self.draw_detailed_weather:
                     self.set_four_day_forecast()
             sec_left, time_str = self.get_time_from_date_time()
             logger.info("Time: %s", time_str)
