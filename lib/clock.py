@@ -254,16 +254,19 @@ class Clock:
                 self.image_obj.draw_spot_context("album", self.album_name_1, context_pos[0], context_pos[1])
                 
             self.get_new_album_art = self.old_album_name1 != self.album_name_1 or self.get_new_album_art
+            got_new_album_art = False
             if self.get_new_album_art and track_image_link:
-                if self.misc.get_album_art(track_image_link):
+                got_new_album_art = self.misc.get_album_art(track_image_link)
+                if got_new_album_art:
                     self.get_new_album_art = False
 
             image_file_name = "NA.png" if not track_image_link else None
             if not track_image_link:
                 logger.warning("No album art found, drawing NA.png")
-            self.image_obj.draw_album_image(self.flip_to_dark, image_file_name=image_file_name, pos=album_pos, convert_image=self.get_new_album_art)
+            self.image_obj.draw_album_image(self.flip_to_dark, image_file_name=image_file_name, pos=album_pos, convert_image=got_new_album_art)
         self.image_obj.draw_date_time_temp(self.weather_info, time_str)
         self.image_obj.draw_border_lines()
+    
 
         # -------- Dark Mode --------
         # Dark mode ~25 minutes after the sunsets. Determined by the bool sunset_flip
