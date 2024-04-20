@@ -1,3 +1,4 @@
+import os
 import json
 from datetime import datetime
 from time import localtime, strftime
@@ -79,7 +80,7 @@ class Weather():
         except requests.exceptions.RequestException as e:
             logger.error("Failed to get lat/long from %s: %s", self.ow_geocoding_url, e)
         return None, None
-    
+
     def set_one_call_json(self):
         """
         Sets the one call JSON from the OpenWeather API.
@@ -89,9 +90,21 @@ class Weather():
         if one_call_response.status_code == 200:
             self.one_call_json = one_call_response.json()
             logger.info("One Call API response: %s", one_call_response.status_code)
+            # Write the JSON response to a file
+            with open('../cache/one_call_response.json', 'w', encoding='utf-8') as f:
+                json.dump(self.one_call_json, f)
             return True
-        logger.error("One Call API response: %s", one_call_response.json())
-        return False
+        else:
+            logger.error("One Call API response: %s", one_call_response.json())
+            # Check/Load JSON data from if one_call_response.json exists
+            if os.path.exists('../cache/one_call_response.json'):
+                creation_time = os.path.getctime('../cache/one_call_response.json')
+                creation_time = datetime.datetime.fromtimestamp(creation_time)
+                logger.info("Trying to use one_call_response.json, created at %s", creation_time.strftime("%I:%M:%S%p %m/%d/%y"))
+                with open('../cache/one_call_response.json', 'r', encoding='utf-8') as f:
+                    self.one_call_json = json.load(f)
+                return True
+            return False
         
     def set_local_weather_json(self):
         """
