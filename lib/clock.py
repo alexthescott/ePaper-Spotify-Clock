@@ -168,8 +168,10 @@ class Clock:
             if 5 < c_hour and c_hour < 23:
                 # 6:00am - 10:59pm update screen every 3 minutes
                 logger.info("\t%.2f\tseconds per loop\tsleeping for %d seconds", round(self.time_elapsed, 2), int(remaining_time/1+120))
-                # if we do partial updates and darkmode, you get a worrisome zebra stripe artifact on the EPD
-                if self.ds.partial_update and not self.flip_to_dark:
+                if not (self.ds.partial_update and not self.flip_to_dark):
+                    sleep(max(2+remaining_time+120, 0))
+                else:
+                    # if we do partial updates and darkmode, you get a worrisome zebra stripe artifact on the EPD
                     # Create new time image, push to display, full update after 2 partials
                     partial_update_count = 0
                     while partial_update_count < 3:
@@ -193,8 +195,6 @@ class Clock:
                             else:
                                 self.save_local_file()
                         partial_update_count += 1
-                else:
-                    sleep(max(2+remaining_time+120, 0))
             elif c_hour >= 23 or c_hour < 2:
                 # 11:00pm - 1:59am update screen every 5ish minutes
                 logger.info("\t%.2f\tseconds per loop\tsleeping for %d seconds", round(self.time_elapsed, 2), int(remaining_time+240))
@@ -267,7 +267,6 @@ class Clock:
         self.image_obj.draw_date_time_temp(self.weather_info, time_str)
         self.image_obj.draw_border_lines()
     
-
         # -------- Dark Mode --------
         # Dark mode ~25 minutes after the sunsets. Determined by the bool sunset_flip
         if self.flip_to_dark:
