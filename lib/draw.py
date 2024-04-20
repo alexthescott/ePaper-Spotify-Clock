@@ -722,7 +722,10 @@ class Draw():
                 logger.error("Error: File %s not found.", palette_path)
                 return False
             # Remap the colors in the image
+            start_time = time()
             subprocess.run(['convert', resize_path, '-dither', 'Floyd-Steinberg', '-remap', palette_path, dither_path], check=True)
+            end_time = time()
+            logger.info("* Dithering %s took %.2f seconds *", dither_path.split("/")[-1], end_time - start_time)
             if not os.path.exists(dither_path):
                 logger.error("Error: File %s not found.", dither_path)
                 return False
