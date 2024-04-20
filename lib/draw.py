@@ -707,23 +707,26 @@ class Draw():
     def dither_album_art(self):
         # Define the file paths
         palette_path = os.path.join(self.dir_path, 'palette.PNG')
-        resize_path = os.path.join(self.dir_path, 'AlbumImage_thumbnail.PNG') if self.weather_mode else os.path.join(self.dir_path, 'AlbumImage_resize.PNG')
-        dither_path = os.path.join(self.dir_path, 'AlbumImage_thumbnail_dither.PNG') if self.weather_mode else os.path.join(self.dir_path, 'AlbumImage_dither.PNG')
-
-        # Check if the files exist
-        if not os.path.exists(resize_path):
-            logger.error("Error: File %s not found.", resize_path)
-            return False
-        if not os.path.exists(palette_path):
-            logger.error("Error: File %s not found.", palette_path)
-            return False
-        # Remap the colors in the image
-        subprocess.run(['convert', resize_path, '-dither', 'Floyd-Steinberg', '-remap', palette_path, dither_path], check=True)
-        if not os.path.exists(dither_path):
-            logger.error("Error: File %s not found.", dither_path)
-            return False
-        self.album_image = Image.open(dither_path)
-
+        if not self.weather_mode:
+            resize_paths = [os.path.join(self.dir_path, 'AlbumImage_thumbnail.PNG'), os.path.join(self.dir_path, 'AlbumImage_resize.PNG')]
+            dither_paths = [os.path.join(self.dir_path, 'AlbumImage_thumbnail_dither.PNG'), os.path.join(self.dir_path, 'AlbumImage_dither.PNG')]
+        else:
+            resize_paths =[os.path.join(self.dir_path, 'AlbumImage_thumbnail.PNG')]
+            dither_paths = [os.path.join(self.dir_path, 'AlbumImage_thumbnail_dither.PNG')]
+        for resize_path, dither_path in zip(resize_paths, dither_paths):
+            # Check if the files exist
+            if not os.path.exists(resize_path):
+                logger.error("Error: File %s not found.", resize_path)
+                return False
+            if not os.path.exists(palette_path):
+                logger.error("Error: File %s not found.", palette_path)
+                return False
+            # Remap the colors in the image
+            subprocess.run(['convert', resize_path, '-dither', 'Floyd-Steinberg', '-remap', palette_path, dither_path], check=True)
+            if not os.path.exists(dither_path):
+                logger.error("Error: File %s not found.", dither_path)
+                return False
+            self.album_image = Image.open(dither_path)
 
     def dark_mode_flip(self):
         """
