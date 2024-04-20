@@ -85,7 +85,7 @@ class Weather():
         """
         Sets the one call JSON from the OpenWeather API.
         """
-        file_path = '../cache/one_call_response.json'
+        file_path = 'cache/one_call_response.json'
         one_call_json_is_cached = os.path.exists(file_path)
         if one_call_json_is_cached:
             creation_time = os.path.getctime(file_path)
@@ -111,10 +111,10 @@ class Weather():
             logger.error("One Call API response: %s", one_call_response.json())
             # Check/Load JSON data from if one_call_response.json exists
             if one_call_json_is_cached:
-                creation_time = os.path.getctime('../cache/one_call_response.json')
+                creation_time = os.path.getctime('cache/one_call_response.json')
                 creation_time = datetime.fromtimestamp(creation_time)
                 logger.info("Trying to use one_call_response.json, created at %s", creation_time.strftime("%I:%M:%S%p %m/%d/%y"))
-                with open('../cache/one_call_response.json', 'r', encoding='utf-8') as f:
+                with open('cache/one_call_response.json', 'r', encoding='utf-8') as f:
                     self.one_call_json = json.load(f)
                 return True
             return False
