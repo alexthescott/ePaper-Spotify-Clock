@@ -92,10 +92,13 @@ class Weather():
             creation_time = datetime.fromtimestamp(creation_time)
             # If the file was created less than 10 minutes ago
             if datetime.now() - creation_time < timedelta(minutes=10):
-                logger.info("Using one_call_response.json, created at %s", creation_time.strftime("%I:%M:%S%p %m/%d/%y"))
                 with open(file_path, 'r', encoding='utf-8') as f:
-                    self.one_call_json = json.load(f)
-                return True
+                    potential_one_call_json = json.load(f)
+                # Check if the lat and lon in the JSON match self.lat_lon
+                if potential_one_call_json.get('lat') == self.lat_long[0] and potential_one_call_json.get('lon') == self.lat_long[1]:
+                    self.one_call_json = potential_one_call_json
+                    logger.info("Using one_call_response.json, created at %s", creation_time.strftime("%I:%M:%S%p %m/%d/%y"))
+                    return True
 
         # If the file doesn't exist or was created more than 10 minutes ago, try a request call
         one_call_url_request = f"{self.ow_one_call_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&appid={self.ow_key}"
