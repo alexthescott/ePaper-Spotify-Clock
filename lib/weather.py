@@ -99,16 +99,10 @@ class Weather():
 
         # If the file doesn't exist or was created more than 10 minutes ago, try a request call
         one_call_url_request = f"{self.ow_one_call_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&appid={self.ow_key}"
-        one_call_response = requests.get(one_call_url_request, timeout=20)
-        if one_call_response.status_code == 200:
-            self.one_call_json = one_call_response.json()
-            logger.info("One Call API response: %s", one_call_response.status_code)
-            # Write the JSON response to a file
-            with open(file_path, 'w', encoding='utf-8') as f:
-                json.dump(self.one_call_json, f, indent=2)
-            return True
-        else:
-            logger.error("One Call API response: %s", one_call_response.json())
+        try:
+            one_call_response = requests.get(one_call_url_request, timeout=20)
+        except requests.exceptions.ConnectionError as e:
+            logger.error("Failed to establish a new connection: %s", e)
             # Check/Load JSON data from if one_call_response.json exists
             if one_call_json_is_cached:
                 creation_time = os.path.getctime('cache/one_call_response.json')
@@ -119,12 +113,27 @@ class Weather():
                 return True
             return False
 
+        if one_call_response.status_code == 200:
+            self.one_call_json = one_call_response.json()
+            logger.info("One Call API response: %s", one_call_response.status_code)
+            # Write the JSON response to a file
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(self.one_call_json, f, indent=2)
+            return True
+        else:
+            logger.error("One Call API response: %s", one_call_response.json())
+            return False
+
     def set_local_weather_json(self):
         """
         Sets the current local weather JSON from the OpenWeather API.
         """
         local_weather_url_request = f"{self.ow_current_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&appid={self.ow_key}"
-        local_weather_response = requests.get(local_weather_url_request, timeout=20)
+        try:
+            local_weather_response = requests.get(local_weather_url_request, timeout=20)
+        except requests.exceptions.ConnectionError as e:
+            logger.error("Failed to establish a new connection: %s", e)
+            return False
 
         if local_weather_response.status_code == 200:
             self.local_weather_json = local_weather_response.json()
@@ -138,7 +147,12 @@ class Weather():
         Sets the local weather forecast JSON from the OpenWeather API.
         """
         local_weather_forecast_request = f"{self.ow_forecast_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&appid={self.ow_key}"
-        local_weather_forecast_response = requests.get(local_weather_forecast_request, timeout=20)
+        try:
+            local_weather_forecast_response = requests.get(local_weather_forecast_request, timeout=20)
+        except requests.exceptions.ConnectionError as e:
+            logger.error("Failed to establish a new connection: %s", e)
+            return False
+
         if local_weather_forecast_response.status_code == 200:
             self.local_weather_forecast_json = local_weather_forecast_response.json()
             logger.info("Local Weather Forecast API response: %s", local_weather_forecast_response.status_code)
