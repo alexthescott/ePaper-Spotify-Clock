@@ -191,7 +191,7 @@ class Weather():
                 if not self.set_one_call_json():
                     return None
             # get the next 4 hours of forecast excluding the current hour
-            forecasts = self.one_call_json["hourly"][1:5]
+            forecasts = [self.one_call_json["hourly"][i] for i in range(7) if i % 2 == 0]
             four_day_forecast = {}
             for forecast in forecasts:
                 timestamp = forecast['dt']
