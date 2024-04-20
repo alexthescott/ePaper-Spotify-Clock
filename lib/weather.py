@@ -88,23 +88,23 @@ class Weather():
         one_call_response = requests.get(one_call_url_request, timeout=20)
         if one_call_response.status_code == 200:
             self.one_call_json = one_call_response.json()
-            logger.info("One Call API response: %s", self.one_call_json)
+            logger.info("One Call API response: %s", one_call_response.status_code)
             return True
         logger.error("One Call API response: %s", one_call_response.json())
         return False
         
     def set_local_weather_json(self):
         """
-        Sets the local weather JSON from the OpenWeather API.
+        Sets the current local weather JSON from the OpenWeather API.
         """
         local_weather_url_request = f"{self.ow_current_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&appid={self.ow_key}"
         local_weather_response = requests.get(local_weather_url_request, timeout=20)
 
         if local_weather_response.status_code == 200:
             self.local_weather_json = local_weather_response.json()
-            logger.info("Local Weather API response: %s", self.local_weather_json)
+            logger.info("Current Local Weather API response: %s", local_weather_response.status_code)
             return True
-        logger.error("Local Weather API response: %s", local_weather_response.json())
+        logger.error("Current Local Weather API response: %s", local_weather_response.json())
         return False
     
     def set_local_weather_forecast_json(self):
@@ -115,7 +115,7 @@ class Weather():
         local_weather_forecast_response = requests.get(local_weather_forecast_request, timeout=20)
         if local_weather_forecast_response.status_code == 200:
             self.local_weather_forecast_json = local_weather_forecast_response.json()
-            logger.info("Local Weather Forecast API response: %s", self.local_weather_forecast_json)
+            logger.info("Local Weather Forecast API response: %s", local_weather_forecast_response.status_code)
             return True
         logger.error("Local Weather Forecast API response: %s", local_weather_forecast_response.json())
         return False
@@ -187,8 +187,8 @@ class Weather():
             forecast: List of four hour forecast
         """
         if self.ds.use_one_call_api:
-            if not self.one_call_json:
-                if not self.set_one_call_json():
+            if not self.set_one_call_json():
+                if not self.one_call_json:
                     return None
             # get the next 4 hours of forecast excluding the current hour
             forecasts = [self.one_call_json["hourly"][i] for i in range(7) if i % 2 == 0]
@@ -205,7 +205,8 @@ class Weather():
             return four_day_forecast
         # if we chose not to use (paid+free) one call api
         if not self.set_local_weather_forecast_json():
-            return None
+            if not self.local_weather_forecast_json:
+                return None
         forecasts = self.local_weather_forecast_json['list'][:4]
         four_day_forecast = {}
         for l in forecasts:

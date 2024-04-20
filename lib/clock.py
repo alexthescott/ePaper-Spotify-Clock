@@ -41,7 +41,7 @@ class Clock:
         self.weather_info = None
         self.sunset_info = None
         self.sunset_time_tuple = None
-        self.for_day_forecast = None
+        self.four_day_forecast = None
         self.get_new_album_art = False if self.ds.single_user else None
         self.draw_detailed_weather = False
 
@@ -72,11 +72,11 @@ class Clock:
             if not flip_to_dark_before and self.flip_to_dark:
                 self.get_new_album_art = True
 
-    def set_for_day_forecast(self):
+    def set_four_day_forecast(self):
         """
         Sets the 4-hour forecast for the clock.
         """
-        self.for_day_forecast = self.weather.get_four_hour_forecast()
+        self.four_day_forecast = self.weather.get_four_hour_forecast()
 
     def save_local_file(self):
         """
@@ -139,7 +139,7 @@ class Clock:
                 self.set_weather()
                 self.set_sunset_info()
                 if self.ds.detailed_weather_forecast:
-                    self.set_for_day_forecast()
+                    self.set_four_day_forecast()
             sec_left, time_str = self.get_time_from_date_time()
             logger.info("Time: %s", time_str)
 
@@ -243,11 +243,11 @@ class Clock:
                                         or "day" in time_since_1 and self.ds.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())*1440
                 self.image_obj.set_weather_mode(self.draw_detailed_weather)
                 if self.draw_detailed_weather:
-                    if not self.for_day_forecast:
-                        self.set_for_day_forecast()
+                    if not self.four_day_forecast:
+                        self.set_four_day_forecast()
                     self.image_obj.draw_detailed_weather_border()
                     self.image_obj.detailed_weather_album_name(self.album_name_1)
-                    self.image_obj.draw_detailed_weather_information(self.for_day_forecast)
+                    self.image_obj.draw_detailed_weather_information(self.four_day_forecast)
                 
             # Call draw_spot_context only once, outside of the if-else block
             if not self.ds.detailed_weather_forecast or not self.draw_detailed_weather:
