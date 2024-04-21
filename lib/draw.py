@@ -592,12 +592,6 @@ class Draw():
         date_y = 239 + date_height
         self.image_draw.text((date_x, date_y), self.dt.strftime("%a, %b %-d"), font=self.DSfnt32)
 
-        # Draw "upper temp" next to name of right user
-        if not self.ds.hide_other_weather:
-            high_temp_x = 387 - self.get_text_width(str(other_temp), 1)
-            self.image_draw.text((high_temp_x, 0), str(other_temp), font=self.DSfnt32)
-            self.image_draw.text((high_temp_x + 2 + self.get_text_width(str(other_temp), 1), 2), temp_degrees, font=self.DSfnt16)
-
     def calculate_time_dimensions(self):
         if "am" in self.time_str or "pm" in self.time_str:
             time_width, time_height = self.image_draw.textlength(str(self.time_str[:-2]), font=self.DSfnt64), self.DSfnt64.size/1.3

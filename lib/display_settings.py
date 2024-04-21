@@ -31,7 +31,6 @@ class DisplaySettings():
             self.weather_settings = f_display_settings["weather_settings"]
             self.zip_code = str(self.weather_settings["zip_code"]) if self.weather_settings["zip_code"] else None
             self.metric_units = self.weather_settings["metric_units"]
-            self.hide_other_weather = self.weather_settings["hide_other_weather"]
             self.detailed_weather_forecast = self.weather_settings["detailed_weather_forecast"]
             self.minutes_idle_until_detailed_weather = self.weather_settings["minutes_idle_until_detailed_weather"]
             self.use_one_call_api = self.weather_settings["use_one_call_api"]
