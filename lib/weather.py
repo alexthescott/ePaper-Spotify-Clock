@@ -188,7 +188,6 @@ class Weather():
             temp: Current temperature
             temp_max: Max temperature
             temp_min: Min temperature
-            other_temp: Other temperature (will be removed in future updates)
             
         Fun Fact:
             America is a strange country with broken metric promises 
@@ -204,15 +203,13 @@ class Weather():
         temp = round(self.local_weather_json['main']['feels_like'])
         temp_min, temp_max = temp, temp
 
-        other_temp = None
-
         if not self.set_local_weather_forecast_json():
             if not self.local_weather_forecast_json:
-                return temp, "NA", "NA", other_temp
+                return temp, "NA", "NA"
         for l in self.local_weather_forecast_json['list']:
             temp_min = min(round(l['main']['feels_like']), round(l['main']['temp_max']), temp_min)
             temp_max = max(round(l['main']['feels_like']), round(l['main']['temp_min']), temp_max)
-        return temp, temp_max, temp_min, other_temp
+        return temp, temp_max, temp_min
 
     def get_four_hour_forecast(self):
         """

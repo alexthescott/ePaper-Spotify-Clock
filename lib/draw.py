@@ -95,32 +95,16 @@ class Draw():
         self.collection_icon = Image.open('Icons/music_context/collection.png')
         self.failure_icon = Image.open('Icons/music_context/failure.png')
         
-        self._01_icon = Image.open('Icons/weather/01.png')
-        self._02_icon = Image.open('Icons/weather/02.png')
-        self._03_icon = Image.open('Icons/weather/03.png')
-        self._04_icon = Image.open('Icons/weather/04.png')
-        self._09_icon = Image.open('Icons/weather/09.png')
-        self._10_icon = Image.open('Icons/weather/10.png')
-        self._11_icon = Image.open('Icons/weather/11.png')
-        self._13_icon = Image.open('Icons/weather/13.png')
-        self._50_icon = Image.open('Icons/weather/50.png')
-        
-        self.icon_dict = {
-            '01': self._01_icon,
-            '02': self._02_icon,
-            '03': self._03_icon,
-            '04': self._04_icon,
-            '09': self._09_icon,
-            '10': self._10_icon,
-            '11': self._11_icon,
-            '13': self._13_icon,
-            '50': self._50_icon,
-            'playlist': self.playlist_icon,
-            'artist': self.artist_icon,
-            'album': self.album_icon,
-            'dj': self.dj_icon,
-            'collection': self.collection_icon,
-            'failure': self.failure_icon,
+        self.weather_icon_dict = {
+            '01': Image.open('Icons/weather/01.png'),
+            '02': Image.open('Icons/weather/02.png'),
+            '03': Image.open('Icons/weather/03.png'),
+            '04': Image.open('Icons/weather/04.png'),
+            '09': Image.open('Icons/weather/09.png'),
+            '10': Image.open('Icons/weather/10.png'),
+            '11': Image.open('Icons/weather/11.png'),
+            '13': Image.open('Icons/weather/13.png'),
+            '50': Image.open('Icons/weather/50.png'),
         }
 
     def set_dictionaries(self):
@@ -408,8 +392,8 @@ class Draw():
 
             # Draw the weather description icon
             desc_icon_id = info['desc_icon_id'][:2]
-            if desc_icon_id in self.icon_dict:
-                icon = self.icon_dict[desc_icon_id]
+            if desc_icon_id in self.weather_icon_dict:
+                icon = self.weather_icon_dict[desc_icon_id]
                 resized_icon = icon.resize((44, 44))
                 self.image_obj.paste(resized_icon, (box_x + 98, box_y - 4))
             
@@ -504,7 +488,7 @@ class Draw():
             temp = temp_high = temp_low = "NA"
             temp_degrees = ""
         else:
-            temp, temp_high, temp_low, _ = weather_info
+            temp, temp_high, temp_low = weather_info
             temp_degrees = "C" if self.ds.metric_units else "F"
 
         # main temp pos calculations
@@ -560,10 +544,9 @@ class Draw():
         This function draws the date, time, and temperature on the display. 
         """
         if not weather_info:
-            temp, temp_high, temp_low, other_temp = 0, 0, 0, 0
+            temp, temp_high, temp_low = 0, 0, 0
         else:
-            temp, temp_high, temp_low, other_temp = weather_info
-        temp_degrees = "C" if self.ds.metric_units else "F"
+            temp, temp_high, temp_low = weather_info
         left_elem_x = 10
         bar_height = 74  # the height of the bottom bar
         self.time_str = time_str
