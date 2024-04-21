@@ -2,8 +2,9 @@ import json
 import logging
 from datetime import datetime, timedelta
 
-import spotipy
+import requests
 from requests.exceptions import ReadTimeout
+import spotipy
 from spotipy.exceptions import SpotifyException
 
 from lib.clock_logging import logger
@@ -79,7 +80,7 @@ class SpotifyUser():
         self.oauth = spotipy.oauth2.SpotifyOAuth(self.spot_client_id, self.spot_client_secret, self.redirect_uri, scope=self.scope, cache_path=self.cache, requests_timeout=10)
         try:
             self.oauth_token_info = self.oauth.get_cached_token()
-        except ConnectionError:
+        except requests.exceptions.ConnectionError:
             logger.error("Failed to update cached_token(): ConnectionError")
             return False
 
@@ -121,7 +122,7 @@ class SpotifyUser():
             except (SpotifyException, ReadTimeout) as e:
                 logger.error(e)
                 self.update_spotipy_token()
-            except ConnectionError as e:
+            except requests.exceptions.ConnectionError:
                 logger.error(e)
                 old_context = self.ctx_io.read_json_ctx(self.right_side)
                 return self.get_stored_json_info(old_context)
