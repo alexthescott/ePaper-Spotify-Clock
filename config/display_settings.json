@@ -5,9 +5,9 @@
     },
     "weather_settings": {
         "detailed_weather_forecast": true,
+        "use_one_call_api": true,
         "metric_units": false,
-        "hide_other_weather": true,
-        "hours_idle_until_detailed_weather": 5,
+        "minutes_idle_until_detailed_weather": 30,
         "zip_code": null
     },
     "main_settings": {

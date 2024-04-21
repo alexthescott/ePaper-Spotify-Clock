@@ -1,3 +1,5 @@
+import json
+import re
 import threading
 from time import time, sleep
 from datetime import timedelta, datetime as dt
@@ -30,7 +32,8 @@ class Clock:
         else:
             self.epd = None
         self.did_epd_init = False
-        self.count_to_5 = 0  # count_to_5 is used to get weather every 5 minutes
+        self.loops_until_weather_refresh = 5
+        self.weather_refresh_loop_count = 0
         self.time_elapsed = 15.0
         self.old_time = None
         self.flip_to_dark = self.ds.always_dark_mode
@@ -39,7 +42,9 @@ class Clock:
         self.weather_info = None
         self.sunset_info = None
         self.sunset_time_tuple = None
+        self.four_day_forecast = None
         self.get_new_album_art = False if self.ds.single_user else None
+        self.draw_detailed_weather = False
 
         # Initialize Info/Drawing Libs/Users
         self.image_obj = Draw(self.local_run)
@@ -51,17 +56,28 @@ class Clock:
         self.spotify_user_2 = SpotifyUser(self.ds.name_2, self.ds.single_user, main_user=False) if not self.ds.single_user else None
         self.ctx_type_2, self.ctx_title_2 = "", ""
 
-    def set_weather_and_sunset_info(self):
+    def set_weather(self):
         """
-        Sets the weather information and sunset information for the clock.
+        Sets the weather information for the clock.
         """
         self.weather_info = self.weather.get_current_temperature_info()
+
+    def set_sunset_info(self):
+        """
+        Sets the sunset information for the clock.
+        """
         self.sunset_info = self.weather.get_sunset_info()
         flip_to_dark_before = self.flip_to_dark
         if self.ds.sunset_flip:
             self.flip_to_dark = self.misc.has_sun_set(self.sunset_info, self.ds.sunset_flip) or self.ds.always_dark_mode
             if not flip_to_dark_before and self.flip_to_dark:
                 self.get_new_album_art = True
+
+    def set_four_day_forecast(self):
+        """
+        Sets the 4-hour forecast for the clock.
+        """
+        self.four_day_forecast = self.weather.get_four_hour_forecast()
 
     def save_local_file(self):
         """
@@ -120,8 +136,11 @@ class Clock:
                 self.did_epd_init = True
 
             self.image_obj.clear_image()
-            if self.weather_info is None or self.count_to_5 >= 4:
-                self.set_weather_and_sunset_info()
+            if self.weather_info is None or self.weather_refresh_loop_count >= self.loops_until_weather_refresh:
+                self.set_weather()
+                self.set_sunset_info()
+                if self.ds.detailed_weather_forecast and self.draw_detailed_weather:
+                    self.set_four_day_forecast()
             sec_left, time_str = self.get_time_from_date_time()
             logger.info("Time: %s", time_str)
 
@@ -150,8 +169,10 @@ class Clock:
             if 5 < c_hour and c_hour < 23:
                 # 6:00am - 10:59pm update screen every 3 minutes
                 logger.info("\t%.2f\tseconds per loop\tsleeping for %d seconds", round(self.time_elapsed, 2), int(remaining_time/1+120))
-                # if we do partial updates and darkmode, you get a worrisome zebra stripe artifact on the EPD
-                if self.ds.partial_update and not self.flip_to_dark:
+                if not (self.ds.partial_update and not self.flip_to_dark):
+                    sleep(max(2+remaining_time+120, 0))
+                else:
+                    # if we do partial updates and darkmode, you get a worrisome zebra stripe artifact on the EPD
                     # Create new time image, push to display, full update after 2 partials
                     partial_update_count = 0
                     while partial_update_count < 3:
@@ -168,22 +189,20 @@ class Clock:
                         if sec_left > 5 and partial_update_count < 2:
                             date = dt.now()
                             time_str = date.strftime("%-H:%M") if self.ds.twenty_four_hour_clock else date.strftime("%-I:%M") + date.strftime("%p").lower()
-                            logger.info("\ttimestr:%s", time_str)
+                            logger.info("\ttime_str:%s", time_str)
                             self.image_obj.draw_date_time_temp(self.weather_info, time_str)
                             if not self.local_run:
                                 self.epd.display_Fast(self.epd.getbuffer(self.image_obj.get_image_obj()))
                             else:
                                 self.save_local_file()
                         partial_update_count += 1
-                else:
-                    sleep(max(2+remaining_time+120, 0))
             elif c_hour >= 23 or c_hour < 2:
                 # 11:00pm - 1:59am update screen every 5ish minutes
                 logger.info("\t%.2f\tseconds per loop\tsleeping for %d seconds", round(self.time_elapsed, 2), int(remaining_time+240))
                 sleep(max(2+remaining_time+240, 0))
 
             # Increment counter for Weather requests
-            self.count_to_5 = 0 if self.count_to_5 == 4 else self.count_to_5 + 1
+            self.weather_refresh_loop_count = 0 if self.weather_refresh_loop_count == self.loops_until_weather_refresh else self.weather_refresh_loop_count + 1
 
     def build_image(self, time_str=None):
         """
@@ -193,7 +212,9 @@ class Clock:
         """
         # Get weather and sunset info if set
         if not self.weather_info:
-            self.set_weather_and_sunset_info()
+            self.set_weather()
+        if not self.sunset_info:
+            self.set_sunset_info()
         
         # get time_str if not passed
         if not time_str:
@@ -213,22 +234,40 @@ class Clock:
             track_2, artist_2, time_since_2, ctx_type_2, ctx_title_2, track_image_link, _ = self.spotify_user_2.get_spotipy_info()
             self.draw_track_info(track_2, artist_2, ctx_type_2, ctx_title_2, 207, 26, self.spotify_user_2, time_since_2)
         else:
-            self.get_new_album_art = self.old_album_name1 != self.album_name_1 or self.get_new_album_art
-            if self.get_new_album_art and track_image_link:
-                if self.misc.get_album_art(track_image_link):
-                    self.get_new_album_art = False
             album_pos = (201, 0) if self.ds.album_art_right_side else (0, 0)
             context_pos = (227, 204) if self.ds.album_art_right_side else (25, 204)
-            if track_image_link:
-                self.image_obj.draw_album_image(self.flip_to_dark, pos=album_pos, convert_image=self.get_new_album_art)
+            # check to see if we need to display detailed weather
+            if self.ds.detailed_weather_forecast:
+                self.draw_detailed_weather = "is listening to" in time_since_1 and self.ds.minutes_idle_until_detailed_weather == 0\
+                                        or "minute" in time_since_1 and self.ds.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())\
+                                        or "hour" in time_since_1 and self.ds.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())*60\
+                                        or "day" in time_since_1 and self.ds.minutes_idle_until_detailed_weather <= int(re.search(r'\d+', time_since_1).group())*1440
+                self.image_obj.set_weather_mode(self.draw_detailed_weather)
+                if self.draw_detailed_weather:
+                    if not self.four_day_forecast:
+                        self.set_four_day_forecast()
+                    self.image_obj.draw_detailed_weather_border()
+                    self.image_obj.detailed_weather_album_name(self.album_name_1)
+                    self.image_obj.draw_detailed_weather_information(self.four_day_forecast)
+                
+            # Call draw_spot_context only once, outside of the if-else block
+            if not self.ds.detailed_weather_forecast or not self.draw_detailed_weather:
                 self.image_obj.draw_spot_context("album", self.album_name_1, context_pos[0], context_pos[1])
-            else:
+                
+            self.get_new_album_art = self.old_album_name1 != self.album_name_1 or self.get_new_album_art
+            got_new_album_art = False
+            if self.get_new_album_art and track_image_link:
+                got_new_album_art = self.misc.get_album_art(track_image_link)
+                if got_new_album_art:
+                    self.get_new_album_art = False
+
+            image_file_name = "NA.png" if not track_image_link else None
+            if not track_image_link:
                 logger.warning("No album art found, drawing NA.png")
-                self.image_obj.draw_album_image(self.flip_to_dark, image_file_name="NA.png", pos=album_pos, convert_image=self.get_new_album_art)
-                self.image_obj.draw_spot_context("album", self.album_name_1, context_pos[0], context_pos[1])
+            self.image_obj.draw_album_image(self.flip_to_dark, image_file_name=image_file_name, pos=album_pos, convert_image=got_new_album_art)
         self.image_obj.draw_date_time_temp(self.weather_info, time_str)
         self.image_obj.draw_border_lines()
-
+    
         # -------- Dark Mode --------
         # Dark mode ~25 minutes after the sunsets. Determined by the bool sunset_flip
         if self.flip_to_dark:

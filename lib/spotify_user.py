@@ -95,6 +95,7 @@ class SpotifyUser():
                 token_info = self.oauth.get_access_token(code)
                 self.token = token_info['access_token']
         self.sp = spotipy.Spotify(auth=self.token)
+        logger.info("%s's Spotify access_token granted", self.name)
         return True
 
     def get_spotipy_info(self):
