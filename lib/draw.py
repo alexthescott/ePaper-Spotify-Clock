@@ -342,14 +342,16 @@ class Draw():
     def draw_detailed_weather_border(self):
         # draw vertical and horizontal lines of width 3
         b_fill = 32 if self.ds.four_gray_scale else 0
+        border_x = 200 if self.ds.album_art_right_side else 0
         for i in range(2):
-            self.image_draw.line([(self.width/2, 46 + i), (400, 46 + i)], fill=b_fill)
+            self.image_draw.line([(border_x, 46 + i), (border_x + 200, 46 + i)], fill=b_fill)
 
     def detailed_weather_album_name(self, album_name: str):
         """
         Write the album_name in medium font in the top right of the display.
         """
-        right_side = (253, 10)
+        album_name_x = 253 if self.ds.album_art_right_side else 53
+        album_name_y = 10
         album_width, formatted_album_name = 0, ""
         # make sure we don't run past context width requirements
         for c in album_name:
@@ -361,8 +363,8 @@ class Draw():
                 formatted_album_name += "..."
                 break
         else:
-            self.image_obj.paste(self.album_icon, (right_side[0] + 122, right_side[1] + 3))
-        self.image_draw.text(right_side, formatted_album_name, font=self.DSfnt32)
+            self.image_obj.paste(self.album_icon, (album_name_x + 122, album_name_y + 3))
+        self.image_draw.text((album_name_x, album_name_y), formatted_album_name, font=self.DSfnt32)
 
     def draw_detailed_weather_information(self, weather_info: dict):
         """
@@ -374,7 +376,8 @@ class Draw():
         '5AM': {'description': 'overcast clouds', 'temp': 58},
         '8PM': {'description': 'scattered clouds', 'temp': 62}}
         """
-        weather_x, weather_y = 210, 53
+        weather_x = 210 if self.ds.album_art_right_side else 10
+        weather_y = 53
         # Calculate the width and height of each weather forecast box
         box_width = 180
         box_height = 35
