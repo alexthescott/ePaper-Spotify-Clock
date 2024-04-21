@@ -1,6 +1,7 @@
-import logging
 import os
+import logging
 from logging.handlers import RotatingFileHandler
+
 from lib.arg_parser import args
 
 # Create and set level of a custom logger

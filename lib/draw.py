@@ -2,6 +2,7 @@ import os
 import subprocess
 from time import time
 from datetime import datetime as dt
+
 from PIL import Image, ImageFont, ImageDraw, ImageMath
 
 from lib.clock_logging import logger

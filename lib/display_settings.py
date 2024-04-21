@@ -1,4 +1,5 @@
 import json
+
 from lib.clock_logging import logger
 
 class DisplaySettings():
