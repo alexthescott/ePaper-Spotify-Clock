@@ -93,12 +93,13 @@ class Weather():
                 # Check if the lat and lon in the JSON match self.lat_lon
                 if potential_one_call_json.get('lat') == self.lat_long[0] and \
                    potential_one_call_json.get('lon') == self.lat_long[1] and \
-                   potential_one_call_json.get('units') == ("metric" if self.ds.metric_units else "imperial"):
+                   potential_one_call_json.get('units') == ("metric" if self.ds.metric_units else "imperial") and \
+                   potential_one_call_json.get('24_hour_clock') == self.ds.twenty_four_hour_clock:
                         self.one_call_json = potential_one_call_json
                         logger.info("Using one_call_response.json, created at %s", creation_time.strftime("%I:%M:%S%p %m/%d/%y"))
                         return True
 
-        # If the file doesn't exist or was created more than 10 minutes ago, try a request call
+        # If the file doesn't exist, was created more than 10 minutes ago, or fails to meet criteria, try a request call
         one_call_url_request = f"{self.ow_one_call_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&appid={self.ow_key}"
         try:
             one_call_response = requests.get(one_call_url_request, timeout=20)
@@ -117,6 +118,7 @@ class Weather():
         if one_call_response.status_code == 200:
             self.one_call_json = one_call_response.json()
             self.one_call_json['units'] = "metric" if self.ds.metric_units else "imperial"
+            self.one_call_json['24_hour_clock'] = self.ds.twenty_four_hour_clock
             logger.info("One Call API response: %s", one_call_response.status_code)
             # Write the JSON response to a file
             with open(file_path, 'w', encoding='utf-8') as f:
@@ -231,7 +233,7 @@ class Weather():
 
                 # Convert and format to local timezone
                 local_dt_object = dt_object.astimezone()
-                formatted_time = local_dt_object.strftime("%-I%p").lower()
+                formatted_time = local_dt_object.strftime('%H') if self.ds.twenty_four_hour_clock else local_dt_object.strftime('%I%p').lstrip('0')
                 
                 four_day_forecast[formatted_time] = {"temp":round(forecast['feels_like']), "desc_icon_id":forecast['weather'][0]['icon']}
             return four_day_forecast
@@ -242,6 +244,7 @@ class Weather():
         forecasts = self.local_weather_forecast_json['list'][:4]
         four_day_forecast = {}
         for l in forecasts:
-            hour_forecast = datetime.fromtimestamp(l['dt']).strftime('%I%p').lstrip('0')
+            l_datetime = datetime.fromtimestamp(l['dt'])
+            hour_forecast = l_datetime.strftime('%H') if self.ds.twenty_four_hour_clock else l_datetime.strftime('%I%p').lstrip('0')
             four_day_forecast[hour_forecast] = {"temp":round(l['main']['feels_like']), "desc_icon_id":l['weather'][0]['icon']}
         return four_day_forecast
