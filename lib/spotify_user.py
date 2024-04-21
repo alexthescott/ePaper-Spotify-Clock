@@ -122,7 +122,7 @@ class SpotifyUser():
             except (SpotifyException, ReadTimeout) as e:
                 logger.error(e)
                 self.update_spotipy_token()
-            except requests.exceptions.ConnectionError:
+            except requests.exceptions.ConnectionError as e:
                 logger.error(e)
                 old_context = self.ctx_io.read_json_ctx(self.right_side)
                 return self.get_stored_json_info(old_context)
