@@ -5,10 +5,10 @@
 	<img src="spotify_epaper_preview2.png" width="400">
 </p>
 
-### 🕰️ Quick Overview 
+### 🕰️ Quick Project Overview
 This is a E-Paper Clock built with Python3 to display [two](https://open.spotify.com/user/bassguitar1234?si=hHnnqHUGTe25liNezp9cJQ) [users'](https://open.spotify.com/user/ermisk?si=0G5DmMxCRLuUm1G6-EWhFA) recent Spotify history, and the local weather. Written for [Waveshare's 4.2 e-paper display](https://www.waveshare.com/product/4.2inch-e-paper-module.htm), the E-Paper Clock uses Spotify's API via [Spotipy](https://spotipy.readthedocs.io/en/2.22.1/) to display the recent listening information, and the [OpenWeathermap](https://openweathermap.org/) API to get the current and forecasted local weather. Email me, atscott@ucsc.edu, if you have any questions regarding the implementation, suggestions to improve the project, or if you built one yourself!
 
-# 2024 rewrite notes
+#### 2024 rewrite notes
 
 Install imagemagick via 
 sudo apt-get install imagemagick
