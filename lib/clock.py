@@ -124,6 +124,8 @@ class Clock:
                     thread.join(45)
                     if thread.is_alive():
                         logger.error("Failed to init EPD in 45 seconds")
+                        sleep(3)
+                        return False
                     else:
                         logger.info("EPD Initialized")
                     
