@@ -513,7 +513,7 @@ class Draw():
         self.image_draw.text((forcast_temp_x - temp_low_width, 266), str(temp_low), font=self.DSfnt32, fill=f_fill)
         self.image_draw.text((forcast_temp_x + 2, 268), temp_degrees, font=self.DSfnt16, fill=f_fill)
 
-    def draw_time(self, pos: tuple, time_str: str=""):
+    def draw_time(self, pos: tuple):
         """
         Draws the given time at the specified position on the image.
 
@@ -523,11 +523,11 @@ class Draw():
         pos (tuple): A tuple containing the x and y coordinates where the time should be drawn.
         time (str): The time to be drawn. This should be a string in the format "HH:MM" or "HH:MM am/pm".
         """
-        if not time_str:
+        if not self.time_str:
             date = dt.now()
-            time_str = date.strftime("%-H:%M") if self.ds.twenty_four_hour_clock else date.strftime("%-I:%M") + date.strftime("%p").lower()
-        am_pm = time_str[-2:] if "am" in time_str or "pm" in time_str else ""
-        current_time = time_str[:-2] if am_pm else time_str
+            self.time_str = date.strftime("%-H:%M") if self.ds.twenty_four_hour_clock else date.strftime("%-I:%M") + date.strftime("%p").lower()
+        am_pm = self.time_str[-2:] if "am" in self.time_str or "pm" in self.time_str else ""
+        current_time = self.time_str[:-2] if am_pm else self.time_str
         text_width, text_height = self.image_draw.textlength(current_time, font=self.DSfnt64), self.DSfnt64.size/1.3
         if am_pm:
             text_width += self.image_draw.textlength(am_pm, font=self.DSfnt32)
