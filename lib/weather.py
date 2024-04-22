@@ -9,6 +9,21 @@ import requests
 from lib.clock_logging import logger
 from lib.display_settings import display_settings
 
+class WeatherInfo:
+    def __init__(self, temp: Union[int, str], temp_max: Union[int, str], temp_min: Union[int, str]):
+        self.temp = temp
+        self.temp_max = temp_max
+        self.temp_min = temp_min
+
+class SunsetInfo:
+    def __init__(self, sunset_hour: int, sunset_minute: int):
+        self.sunset_hour = sunset_hour
+        self.sunset_minute = sunset_minute
+
+class FourHourForecast:
+    def __init__(self, forecast_data: Dict[str, Dict[str, Union[int, str]]]):
+        self.forecast_data = forecast_data
+
 class Weather():
     """
     Initializes the Weather class.
@@ -175,7 +190,7 @@ class Weather():
         logger.info("Local Weather Forecast API response: %s", local_weather_forecast_response.status_code)
         return True
 
-    def get_sunset_info(self) -> Tuple[Optional[int], Optional[int]]:
+    def get_sunset_info(self) -> SunsetInfo:
         """
         Get Sunset time from OpenWeather API
         Returns:
@@ -192,7 +207,7 @@ class Weather():
 
         return sunset_hour, sunset_minute
 
-    def get_current_temperature_info(self) -> Tuple[Union[int, str], Union[int, str], Union[int, str]]:
+    def get_current_temperature_info(self) -> WeatherInfo:
         """
         Get current temperature, min temperature, max temperature from OpenWeather API
         Returns:
@@ -222,7 +237,7 @@ class Weather():
             temp_max = max(round(l['main']['feels_like']), round(l['main']['temp_min']), temp_max)
         return temp, temp_max, temp_min
 
-    def get_four_hour_forecast(self) -> Optional[Dict[str, Dict[str, Union[int, str]]]]:
+    def get_four_hour_forecast(self) -> FourHourForecast:
         """
         Get the four hour forecast from OpenWeather API
         Returns:
