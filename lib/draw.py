@@ -2,6 +2,7 @@ import os
 import subprocess
 from time import time
 from datetime import datetime as dt
+
 from PIL import Image, ImageFont, ImageDraw, ImageMath
 
 from lib.clock_logging import logger
@@ -9,12 +10,12 @@ from lib.display_settings import display_settings
 
 class Draw():
     """ Draw to EPaper - Alex Scott 2024
-    Companion functions for mainSpotifyClock.py
+    Companion functions for Draw() within clock.py for the Spotify EPaper display Clock project
 
-    Functions here rely on PIL to draw to an existing draw object
-    Draw context, date time temp, artist and track info, time since, and names
+    Functions rely on PIL to draw to an self stored draw object
+    Draw() draws context, date time temp, artist and track info, time since, detailed_weather, and names
 
-    Made for the Waveshare 4.2inch e-Paper Module
+    Made in companion with the Waveshare 4.2inch e-Paper Module
     https://www.waveshare.com/wiki/4.2inch_e-Paper_Module
     """
     def __init__(self, local_run=False):
@@ -63,11 +64,22 @@ class Draw():
         - helveti16, helveti32, helveti64: Fonts from the Habbo.ttf file.
 
         Icons:
-        - playlist_icon: Icon for playlist.
-        - artist_icon: Icon for artist.
-        - album_icon: Icon for album.
-        - dj_icon: Icon for DJ.
-        - collection_icon: Icon for collection.
+            - music_context:
+                - playlist_icon: Icon for playlist.
+                - artist_icon: Icon for artist.
+                - album_icon: Icon for album.
+                - dj_icon: Icon for DJ.
+                - collection_icon: Icon for collection.
+            - weather:
+                - 01n: Icon for clear sky at night.
+                - 02n: Icon for few clouds at night.
+                - 03n: Icon for scattered clouds at night.
+                - 04n: Icon for broken clouds at night.
+                - 09n: Icon for shower rain at night.
+                - 10n: Icon for rain at night.
+                - 11n: Icon for thunderstorm at night.
+                - 13n: Icon for snow at night.
+                - 50n: Icon for mist at night.
         """
         self.DSfnt16 = ImageFont.truetype('ePaperFonts/Nintendo-DS-BIOS.ttf', 16)
         self.DSfnt32 = ImageFont.truetype('ePaperFonts/Nintendo-DS-BIOS.ttf', 32)
@@ -76,17 +88,29 @@ class Draw():
         self.helveti32 = ImageFont.truetype('ePaperFonts/Habbo.ttf', 32)
         self.helveti64 = ImageFont.truetype('ePaperFonts/Habbo.ttf', 64)
 
-        self.playlist_icon = Image.open('Icons/playlist.png')
-        self.artist_icon = Image.open('Icons/artist.png')
-        self.album_icon = Image.open('Icons/album.png')
-        self.dj_icon = Image.open('Icons/dj.png')
-        self.collection_icon = Image.open('Icons/collection.png')
-        self.failure_icon = Image.open('Icons/failure.png')
+        self.playlist_icon = Image.open('Icons/music_context/playlist.png')
+        self.artist_icon = Image.open('Icons/music_context/artist.png')
+        self.album_icon = Image.open('Icons/music_context/album.png')
+        self.dj_icon = Image.open('Icons/music_context/dj.png')
+        self.collection_icon = Image.open('Icons/music_context/collection.png')
+        self.failure_icon = Image.open('Icons/music_context/failure.png')
+        
+        self.weather_icon_dict = {
+            '01': Image.open('Icons/weather/01.png'),
+            '02': Image.open('Icons/weather/02.png'),
+            '03': Image.open('Icons/weather/03.png'),
+            '04': Image.open('Icons/weather/04.png'),
+            '09': Image.open('Icons/weather/09.png'),
+            '10': Image.open('Icons/weather/10.png'),
+            '11': Image.open('Icons/weather/11.png'),
+            '13': Image.open('Icons/weather/13.png'),
+            '50': Image.open('Icons/weather/50.png'),
+        }
 
     def set_dictionaries(self):
         """
         This method initializes three dictionaries: sf_dict, mf_dict, and lf_dict. Each dictionary represents a mapping
-        from characters to their corresponding pixel lengths in different font sizes. his method is used to get the 
+        from characters to their corresponding pixel lengths in different font sizes. This method is used to get the 
         pixel length of strings as they're built.
         """
         self.sf_dict = {' ': '2', '!': '2', '"': '4', '#': '8', '$': '6', '%': '8',
@@ -164,6 +188,13 @@ class Draw():
         'û': '25', 'ü': '25', '‘': '13', '’': '13', '“': '21', '”': '21',
         '…': '25', '€': '29', '™': '41', '\x00': '36'}
 
+    def set_weather_mode(self, weather_mode: bool):
+        """
+        Set the weather mode.
+        weather_mode (bool): Flag indicating whether to set the weather mode.
+        """
+        self.weather_mode = weather_mode
+
     def clear_image(self):
         """
         This method clears the current image by creating a new blank image filled with the color white (255)
@@ -178,7 +209,7 @@ class Draw():
         os.makedirs("test_output", exist_ok=True)
         self.image_obj.save(os.path.join("test_output", f"{file_name}.png"))
 
-    # ---- Formatting Funcs ----------------------------------------------------------------------------
+    # ---- Formatting Functions ----------------------------------------------------------------------------
     def get_text_width(self, text: str, size: int):
         """ Return an int representing the size of a word
 
@@ -293,6 +324,87 @@ class Draw():
         # draw text next to name displaying time since last played track
         self.image_draw.text((time_x, time_y), text, font=self.DSfnt16)
 
+    def draw_detailed_weather_border(self):
+        # draw vertical and horizontal lines of width 3
+        b_fill = 32 if self.ds.four_gray_scale else 0
+        border_x = 200 if self.ds.album_art_right_side else 0
+        for i in range(2):
+            self.image_draw.line([(border_x, 46 + i), (border_x + 200, 46 + i)], fill=b_fill)
+
+    def detailed_weather_album_name(self, album_name: str):
+        """
+        Write the album_name in medium font in the top right of the display.
+        """
+        album_name_x = 253 if self.ds.album_art_right_side else 53
+        album_name_y = 10
+        album_width, formatted_album_name = 0, ""
+        # make sure we don't run past context width requirements
+        for c in album_name:
+            char_width = int(self.mf_dict.get(c, 23))
+            if album_width + char_width < 128:
+                album_width += char_width
+                formatted_album_name += c
+            else:
+                formatted_album_name += "..."
+                break
+        else:
+            self.image_obj.paste(self.album_icon, (album_name_x + 122, album_name_y + 3))
+        self.image_draw.text((album_name_x, album_name_y), formatted_album_name, font=self.DSfnt32)
+
+    def draw_detailed_weather_information(self, weather_info: dict):
+        """
+        Draw a four hour forecast of the weather in the top right of the display.
+        
+        example weather_info:
+        {'11PM': {'description': 'scattered clouds', 'temp': 61},
+        '2AM': {'description': 'broken clouds', 'temp': 60},
+        '5AM': {'description': 'overcast clouds', 'temp': 58},
+        '8PM': {'description': 'scattered clouds', 'temp': 62}}
+        """
+        weather_x = 210 if self.ds.album_art_right_side else 10
+        weather_y = 53
+        # Calculate the width and height of each weather forecast box
+        box_width = 180
+        box_height = 35
+        
+        # assign weather_info if None
+        if weather_info is None:
+            logger.error("Weather info is None")
+            return None
+
+        # Iterate over the weather_info dictionary and draw each forecast box
+        for i, (hour_str, info) in enumerate(weather_info.items()):
+            # Calculate the x and y coordinates for each box
+            box_x = weather_x
+            box_y = weather_y + (box_height + 8) * i
+
+            # debug box drawing
+            # self.image_draw.rectangle([(box_x, box_y), (box_x + box_width, box_y + box_height)], outline=0)
+            hour_str = hour_str.lower()
+            am_pm = hour_str[-2:] if "am" in hour_str or "pm" in hour_str else ""
+            current_time = hour_str[:-2] if am_pm else hour_str
+            time_pos = (box_x + 5, box_y + 5)
+            self.image_draw.text(time_pos, current_time, font=self.DSfnt32)
+
+            if am_pm:
+                am_pm_x = time_pos[0] + self.image_draw.textlength(current_time, font=self.DSfnt32)
+                self.image_draw.text((am_pm_x + 1, time_pos[1] + 11), am_pm, font=self.DSfnt16)
+
+            # Draw the weather description icon
+            desc_icon_id = info['desc_icon_id'][:2]
+            if desc_icon_id in self.weather_icon_dict:
+                icon = self.weather_icon_dict[desc_icon_id]
+                resized_icon = icon.resize((44, 44))
+                self.image_obj.paste(resized_icon, (box_x + 98, box_y - 4))
+            
+            # Draw the temperature
+            t_fill = 32 if self.ds.four_gray_scale else 0
+            temp = info['temp']
+            temp_width = self.get_text_width(str(temp), 1)
+            self.image_draw.text((box_x + box_width - temp_width - 12, box_y + 5), f"{info['temp']}", font=self.DSfnt32, fill=t_fill)
+            unit = "C" if self.ds.metric_units else "F"
+            self.image_draw.text((box_x + box_width - 10, box_y + 7), unit, font=self.DSfnt16, fill=t_fill)
+
     def draw_spot_context(self, context_type: str, context_text: str, context_x: int, context_y: int):
         """
         Draws both icon {playlist, album, artist} and context text in the bottom of Spot box.
@@ -344,17 +456,21 @@ class Draw():
         pos (tuple, optional): The position (x, y) where the album image should be pasted on the display. Defaults to (0, 0).
         convert_image (bool, optional): Flag indicating whether to convert the image to the specified image mode. Defaults to True.
         """
+        image_file_name = "AlbumImage_resize.PNG" if image_file_name is None else image_file_name
         if convert_image or self.album_image is None:
             self.album_image = Image.open(f"album_art/{image_file_name}")
             self.album_image = self.album_image.convert(self.image_mode)
             
-            if self.ds.four_gray_scale and image_file_name!="NA.png":
+            if self.ds.four_gray_scale:
                 before_dither = time()
                 self.dither_album_art()
                 after_dither = time()
                 logger.info("* Dithering took %.2f seconds *", after_dither - before_dither)
-        chosen_album_image = "album_art/AlbumImage_thumbnail_dither.PNG" if self.weather_mode else "album_art/AlbumImage_dither.PNG"
-        self.album_image = Image.open(chosen_album_image)
+        chosen_album_image = "album_art/AlbumImage"
+        chosen_album_image += "_thumbnail" if self.weather_mode else "_resize"
+        chosen_album_image = chosen_album_image.replace("_resize", "_dither") if self.ds.four_gray_scale else chosen_album_image
+        chosen_album_image += "_dither" if self.ds.four_gray_scale and self.weather_mode else ""
+        self.album_image = Image.open(f"{chosen_album_image}.PNG")
         if dark_mode:
             self.album_image = ImageMath.eval('255-(a)', a=self.album_image)
         self.image_obj.paste(self.album_image, pos)
@@ -372,7 +488,7 @@ class Draw():
             temp = temp_high = temp_low = "NA"
             temp_degrees = ""
         else:
-            temp, temp_high, temp_low, _ = weather_info
+            temp, temp_high, temp_low = weather_info
             temp_degrees = "C" if self.ds.metric_units else "F"
 
         # main temp pos calculations
@@ -391,10 +507,11 @@ class Draw():
         self.image_draw.text((temp_start_x + temp_width, 245), temp_degrees, font=self.DSfnt32)
 
         # draw forecast temp
-        self.image_draw.text((forcast_temp_x - temp_high_width, 242), str(temp_high), font=self.DSfnt32)
-        self.image_draw.text((forcast_temp_x + 2, 244), temp_degrees, font=self.DSfnt16)
-        self.image_draw.text((forcast_temp_x - temp_low_width, 266), str(temp_low), font=self.DSfnt32)
-        self.image_draw.text((forcast_temp_x + 2, 268), temp_degrees, font=self.DSfnt16)
+        f_fill = 32 if self.ds.four_gray_scale else 0
+        self.image_draw.text((forcast_temp_x - temp_high_width, 242), str(temp_high), font=self.DSfnt32, fill=f_fill)
+        self.image_draw.text((forcast_temp_x + 2, 244), temp_degrees, font=self.DSfnt16, fill=f_fill)
+        self.image_draw.text((forcast_temp_x - temp_low_width, 266), str(temp_low), font=self.DSfnt32, fill=f_fill)
+        self.image_draw.text((forcast_temp_x + 2, 268), temp_degrees, font=self.DSfnt16, fill=f_fill)
 
     def draw_time(self, pos: tuple, time_str: str=""):
         """
@@ -427,10 +544,9 @@ class Draw():
         This function draws the date, time, and temperature on the display. 
         """
         if not weather_info:
-            temp, temp_high, temp_low, other_temp = 0, 0, 0, 0
+            temp, temp_high, temp_low = 0, 0, 0
         else:
-            temp, temp_high, temp_low, other_temp = weather_info
-        temp_degrees = "C" if self.ds.metric_units else "F"
+            temp, temp_high, temp_low = weather_info
         left_elem_x = 10
         bar_height = 74  # the height of the bottom bar
         self.time_str = time_str
@@ -462,12 +578,6 @@ class Draw():
         date_x =  left_elem_x + time_width + (right_elem_x - left_elem_x - time_width) // 2 - date_width // 2
         date_y = 239 + date_height
         self.image_draw.text((date_x, date_y), self.dt.strftime("%a, %b %-d"), font=self.DSfnt32)
-
-        # Draw "upper temp" next to name of right user
-        if not self.ds.hide_other_weather:
-            high_temp_x = 387 - self.get_text_width(str(other_temp), 1)
-            self.image_draw.text((high_temp_x, 0), str(other_temp), font=self.DSfnt32)
-            self.image_draw.text((high_temp_x + 2 + self.get_text_width(str(other_temp), 1), 2), temp_degrees, font=self.DSfnt16)
 
     def calculate_time_dimensions(self):
         if "am" in self.time_str or "pm" in self.time_str:
@@ -578,23 +688,29 @@ class Draw():
     def dither_album_art(self):
         # Define the file paths
         palette_path = os.path.join(self.dir_path, 'palette.PNG')
-        resize_path = os.path.join(self.dir_path, 'AlbumImage_thumbnail.PNG') if self.weather_mode else os.path.join(self.dir_path, 'AlbumImage_resize.PNG')
-        dither_path = os.path.join(self.dir_path, 'AlbumImage_thumbnail_dither.PNG') if self.weather_mode else os.path.join(self.dir_path, 'AlbumImage_dither.PNG')
-
-        # Check if the files exist
-        if not os.path.exists(resize_path):
-            logger.error("Error: File %s not found.", resize_path)
-            return False
-        if not os.path.exists(palette_path):
-            logger.error("Error: File %s not found.", palette_path)
-            return False
-        # Remap the colors in the image
-        subprocess.run(['convert', resize_path, '-dither', 'Floyd-Steinberg', '-remap', palette_path, dither_path], check=True)
-        if not os.path.exists(dither_path):
-            logger.error("Error: File %s not found.", dither_path)
-            return False
-        self.album_image = Image.open(dither_path)
-
+        if not self.weather_mode:
+            resize_paths = [os.path.join(self.dir_path, 'AlbumImage_thumbnail.PNG'), os.path.join(self.dir_path, 'AlbumImage_resize.PNG')]
+            dither_paths = [os.path.join(self.dir_path, 'AlbumImage_thumbnail_dither.PNG'), os.path.join(self.dir_path, 'AlbumImage_dither.PNG')]
+        else:
+            resize_paths =[os.path.join(self.dir_path, 'AlbumImage_thumbnail.PNG')]
+            dither_paths = [os.path.join(self.dir_path, 'AlbumImage_thumbnail_dither.PNG')]
+        for resize_path, dither_path in zip(resize_paths, dither_paths):
+            # Check if the files exist
+            if not os.path.exists(resize_path):
+                logger.error("Error: File %s not found.", resize_path)
+                return False
+            if not os.path.exists(palette_path):
+                logger.error("Error: File %s not found.", palette_path)
+                return False
+            # Remap the colors in the image
+            start_time = time()
+            subprocess.run(['convert', resize_path, '-dither', 'Floyd-Steinberg', '-remap', palette_path, dither_path], check=True)
+            end_time = time()
+            logger.info("* Dithering %s took %.2f seconds *", dither_path.split("/")[-1], end_time - start_time)
+            if not os.path.exists(dither_path):
+                logger.error("Error: File %s not found.", dither_path)
+                return False
+            self.album_image = Image.open(dither_path)
 
     def dark_mode_flip(self):
         """
