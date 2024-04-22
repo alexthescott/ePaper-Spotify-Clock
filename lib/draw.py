@@ -341,7 +341,7 @@ class Draw():
         # make sure we don't run past context width requirements
         for c in album_name:
             char_width = int(self.mf_dict.get(c, 23))
-            if album_width + char_width < 128:
+            if album_width + char_width < 126:
                 album_width += char_width
                 formatted_album_name += c
             else:
