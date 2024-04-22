@@ -1,5 +1,6 @@
 import json
 import re
+import sys
 import threading
 from time import time, sleep
 from datetime import timedelta, datetime as dt
@@ -124,8 +125,9 @@ class Clock:
                     thread.join(45)
                     if thread.is_alive():
                         logger.error("Failed to init EPD in 45 seconds")
+                        print("Failed to initialize EPD within 45 seconds, exiting program.", file=sys.stdout)
                         sleep(3)
-                        return False
+                        sys.exit(1)
                     else:
                         logger.info("EPD Initialized")
                     
