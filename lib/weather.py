@@ -234,8 +234,20 @@ class Weather():
             if not self.set_one_call_json():
                 if not self.one_call_json:
                     return None
+                
             # get the next 4 hours of forecast excluding the current hour
-            forecasts = [self.one_call_json["hourly"][i] for i in range(7) if i % 2 == 0]
+            local_dt_object = datetime.now().astimezone()
+            current_hour = int(local_dt_object.strftime('%H')) if self.ds.twenty_four_hour_clock else int(local_dt_object.strftime('%I'))
+
+            # Get the hour of the first forecast
+            forecast_hour = datetime.fromtimestamp(self.one_call_json["hourly"][0]['dt']).hour
+            if not self.ds.twenty_four_hour_clock and forecast_hour > 12:
+                forecast_hour -= 12
+
+            # If the current hour doesn't match the forecast hour, shift the range by one
+            start, end = (0, 7) if current_hour == forecast_hour else (1, 9)
+
+            forecasts = [self.one_call_json["hourly"][i] for i in range(start, end) if i % 2 == 0]
             
             for forecast in forecasts:
                 timestamp = forecast['dt']
