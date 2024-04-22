@@ -126,7 +126,6 @@ class Clock:
                     if thread.is_alive():
                         logger.error("Failed to init EPD in 45 seconds")
                         print("Failed to initialize EPD within 45 seconds, exiting program.", file=sys.stdout)
-                        sleep(3)
                         sys.exit(1)
                     else:
                         logger.info("EPD Initialized")
