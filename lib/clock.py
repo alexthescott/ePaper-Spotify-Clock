@@ -317,8 +317,7 @@ class Clock:
         )
         self.image_obj.set_weather_mode(self.draw_detailed_weather)
         if self.draw_detailed_weather:
-            if not self.four_hour_forecast:
-                self.set_four_hour_forecast()
+            self.set_four_hour_forecast()
             self.image_obj.draw_detailed_weather_border()
             self.image_obj.detailed_weather_album_name(self.album_name_1)
             self.image_obj.draw_detailed_weather_information(self.four_hour_forecast)
