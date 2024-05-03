@@ -2,6 +2,7 @@ import subprocess
 import getpass
 import time
 import datetime
+import os
 
 def git_pull_every_15_min():
     """
@@ -22,14 +23,14 @@ def git_pull_every_15_min():
         try:
             # Change the current working directory + Stash any uncommitted changes
             # Execute git pull + Pop the stash to reapply uncommitted changes
-            subprocess.check_call(["cd", repo_path])
+            os.chdir(repo_path)
             subprocess.check_call(["git", "stash"])
             subprocess.check_call(["git", "pull"])
             subprocess.check_call(["git", "stash", "pop"])
 
             # If all subprocess calls are successful, write the current date and time to .last_update.out
             with open('.last_update.out', 'w', encoding='utf-8') as f:
-                f.write(f"Last Update: {datetime.datetime.now().strftime('%m/%d/%Y - %I:%M%p')}")
+                f.write(f"Last Update: {datetime.datetime.now().strftime('%m/%d/%Y - %I:%M%p')}\n")
 
         except subprocess.CalledProcessError:
             print("An error occurred while executing a subprocess call.")
