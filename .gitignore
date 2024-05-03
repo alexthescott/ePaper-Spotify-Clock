@@ -10,4 +10,4 @@ Icons/weather_backup
 *.pyc
 failures.txt
 .vscode/*
-.last_update
+.last_update.out
