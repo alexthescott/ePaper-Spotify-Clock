@@ -3,9 +3,11 @@ test_output/
 config/secrets.txt
 config/keys.json
 cache/
+Icons/weather_backup
 *context.*
 .*cache*
 *.log
 *.pyc
 failures.txt
 .vscode/*
+.last_update.out

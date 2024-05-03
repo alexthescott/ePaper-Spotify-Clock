@@ -178,15 +178,32 @@ class Weather():
         Returns:
             bool: True if successful, False otherwise
         """
+        file_path = 'cache/local_weather_forecast.json'
+        
+        if os.path.exists(file_path):
+            creation_time = datetime.fromtimestamp(os.path.getctime(file_path))
+            # If the file was created less than 10 minutes ago
+            if datetime.now() - creation_time < timedelta(minutes=10):
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    self.local_weather_forecast_json = json.load(f)
+                return True
+
         local_weather_forecast_request = f"{self.ow_forecast_url}lat={self.lat_long[0]}&lon={self.lat_long[1]}&{self.url_units}&appid={self.ow_key}"
         try:
             local_weather_forecast_response = requests.get(local_weather_forecast_request, timeout=20)
             local_weather_forecast_response.raise_for_status()
         except (requests.exceptions.RequestException, requests.exceptions.ConnectionError) as e:
             logger.error("Failed to establish a new connection: %s", e)
+            if os.path.exists(file_path):
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    self.local_weather_forecast_json = json.load(f)
+                return True
             return False
 
         self.local_weather_forecast_json = local_weather_forecast_response.json()
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(self.local_weather_forecast_json, f, indent=4)
+
         logger.info("Local Weather Forecast API response: %s", local_weather_forecast_response.status_code)
         return True
 
