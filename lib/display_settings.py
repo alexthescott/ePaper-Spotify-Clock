@@ -55,7 +55,7 @@ class DisplaySettings:
         Parameters:
         single_user_settings (dict): A dictionary containing the single user settings.
         """
-        # show two users or one user
+        # show two Spotify users or one Spotify user + AlbumArt or Weather Info
         self.single_user = single_user_settings["enable_single_user"]
         # if single_user is enabled, decide which side the album art should go on
         self.album_art_right_side = single_user_settings["album_art_right_side"]
@@ -88,6 +88,5 @@ class DisplaySettings:
 
         if self.zip_code and (not self.zip_code.isdigit() or not len(self.zip_code) == 5):
             raise ValueError("Zip code must be a 5 digit number")
-
 
 display_settings = DisplaySettings()
