@@ -34,17 +34,18 @@ class Weather():
     """
     def __init__(self):
         self.ds = display_settings
-        self.load_credentials()
+        self.local_weather_json = None
+        self.local_weather_forecast_json = None
+        self.one_call_json = None
         self.url_units = "units=metric" if self.ds.metric_units else "units=imperial"
         self.ow_current_url = "http://api.openweathermap.org/data/2.5/weather?"
         self.ow_one_call_url = "https://api.openweathermap.org/data/3.0/onecall?"
         self.ow_forecast_url = "http://api.openweathermap.org/data/2.5/forecast?"
         self.ow_geocoding_url = "http://api.openweathermap.org/geo/1.0/zip?"
+        self.load_credentials()
         self.zipcode = self.get_zip_from_ip() if not self.ds.zip_code else self.ds.zip_code  # zipcode of the current location via ip, if not manually set
         self.lat_long = self.get_lat_long()  # lat and long of the current location via zipcode
-        self.local_weather_json = None
-        self.local_weather_forecast_json = None
-        self.one_call_json = None
+
 
     def load_credentials(self) -> NoReturn:
         """

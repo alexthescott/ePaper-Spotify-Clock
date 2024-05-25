@@ -29,14 +29,17 @@ class DisplaySettings:
         Raises:
         ValueError: If partial updates are enabled in 4 Gray Scale mode.
         """
+        # switch to Dark Mode mode 30 minutes after sunset from current location
         self.sunset_flip = main_settings["sunset_flip"]
         self.always_dark_mode = main_settings["always_dark_mode"]
+        # am/pm or 24 hour clock
         self.twenty_four_hour_clock = main_settings["twenty_four_hour_clock"]
         self.partial_update = main_settings["partial_update"]
         self.time_on_right = main_settings["time_on_right"]
         # it is not recommended to set sleep_epd to False as it might damage the display
         self.sleep_epd = main_settings["sleep_epd"]
         self.four_gray_scale = main_settings["four_gray_scale"]
+        # Use WaveShare's 4in2epd.py or 4in2epdv2.py
         self.use_epd_lib_V2 = main_settings["use_epd_libV2"]
 
         if self.partial_update and self.four_gray_scale:
@@ -52,7 +55,9 @@ class DisplaySettings:
         Parameters:
         single_user_settings (dict): A dictionary containing the single user settings.
         """
+        # show two Spotify users or one Spotify user + AlbumArt or Weather Info
         self.single_user = single_user_settings["enable_single_user"]
+        # if single_user is enabled, decide which side the album art should go on
         self.album_art_right_side = single_user_settings["album_art_right_side"]
 
     def load_clock_names(self, clock_names: dict) -> None:
@@ -75,8 +80,7 @@ class DisplaySettings:
         Raises:
         ValueError: If the zip code is not a 5 digit number.
         """
-        self.zip_code = str(
-            weather_settings["zip_code"]) if weather_settings["zip_code"] else None
+        self.zip_code = str(weather_settings["zip_code"]) if weather_settings["zip_code"] else None
         self.metric_units = weather_settings["metric_units"]
         self.detailed_weather_forecast = weather_settings["detailed_weather_forecast"]
         self.minutes_idle_until_detailed_weather = weather_settings[ "minutes_idle_until_detailed_weather"]
@@ -84,6 +88,5 @@ class DisplaySettings:
 
         if self.zip_code and (not self.zip_code.isdigit() or not len(self.zip_code) == 5):
             raise ValueError("Zip code must be a 5 digit number")
-
 
 display_settings = DisplaySettings()

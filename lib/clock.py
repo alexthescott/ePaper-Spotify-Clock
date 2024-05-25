@@ -109,8 +109,8 @@ class Clock:
             # Get 24H clock c_hour to determine sleep duration before refresh
             date = dt.now() + timedelta(seconds=self.time_elapsed)
             c_hour = int(date.strftime("%-H"))
-            # c_minute = int(date.strftime("%-M")) # in case we need it later
-            start = time() # Used to 'push' our clock timing forward to account for EPD time
+            # Used to 'push' our clock timing forward to account for EPD time
+            start = time() 
 
             # from 2:01 - 5:59am, don't init the display, return from main, and have .sh script run again in 3 mins
             if 2 <= c_hour <= 5:
