@@ -1,4 +1,5 @@
-# RaspberryPi E-Paper Spotify Clock  
+# RaspberryPi E-Paper Spotify Clock
+## TLDR: This project is a desktop clock to help me read/see what I'm listening to on Spotify
 
 <p align="center">
 	<img src="spotify_epaper_preview.png" width="400">
@@ -6,13 +7,7 @@
 </p>
 
 ### 🕰️ Quick Project Overview
-This is a E-Paper Clock built with Python3 to display [two](https://open.spotify.com/user/bassguitar1234?si=hHnnqHUGTe25liNezp9cJQ) [users'](https://open.spotify.com/user/ermisk?si=0G5DmMxCRLuUm1G6-EWhFA) recent Spotify history, and the local weather. Written for [Waveshare's 4.2 e-paper display](https://www.waveshare.com/product/4.2inch-e-paper-module.htm), the E-Paper Clock uses Spotify's API via [Spotipy](https://spotipy.readthedocs.io/en/2.22.1/) to display the recent listening information, and the [OpenWeathermap](https://openweathermap.org/) API to get the current and forecasted local weather. Email me, atscott@ucsc.edu, if you have any questions regarding the implementation, suggestions to improve the project, or if you built one yourself!
-
-#### 2024 rewrite notes
-
-Install imagemagick via 
-sudo apt-get install imagemagick
-as it's used in dither_image()
+Python + Bash with a Raspberry Pi and [Waveshare's 4.2 e-paper display](https://www.waveshare.com/product/4.2inch-e-paper-module.htm) and ePaper library, using [Spotipy](https://spotipy.readthedocs.io/en/2.22.1/) for track info, [OpenWeathermap](https://openweathermap.org/) for weather info, and [Pillow](https://pillow.readthedocs.io/en/stable/) to generate/display image.
 
 ### ⌛ Quick Install Guide
 Waveshare provides a set of [instructions](https://www.waveshare.com/wiki/4.2inch_e-Paper_Module) under the Hardware/Software setup tab to install the libraries required to drive the display. I'm using a [Raspberry Pi Zero W](https://www.raspberrypi.org/products/raspberry-pi-zero-w/) running this [bash script](https://github.com/alexthescott/ePaper-Spotify-Clock/blob/main/launch_epaper.sh) in [rc.local](https://www.raspberrypi.org/documentation/linux/usage/rc-local.md) to run [mainSpotifyClock.py](https://github.com/alexthescott/ePaper-Spotify-Clock/blob/main/mainSpotifyClock.py). Three custom Python modules were used, [Spotipy](https://spotipy.readthedocs.io/en/2.12.0/), [Requests](https://requests.readthedocs.io/en/master/), and [Pillow aka PIL](https://pillow.readthedocs.io/en/stable/), all of which can be installed using [Pip](https://pip.pypa.io/en/stable/). [Openweathermap](https://openweathermap.org/api) gets the current weather and forecast, and the [Spotipy](https://github.com/plamere/spotipy) wrapper interfaces with Spotify's API
@@ -36,7 +31,8 @@ sudo raspi-config
 
 ```bash
 sudo apt-get update
-sudo apt-get install git python3-pip python3-pil python3-numpy
+sudo apt-get install git python3-pip python3-pil python3-numpy imagemagick
+as it's used in dither_image()
 sudo pip3 install RPi.GPIO
 sudo pip3 install spidev
 sudo pip3 install spotipy
