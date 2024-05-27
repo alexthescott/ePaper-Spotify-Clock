@@ -32,7 +32,6 @@ sudo raspi-config
 ```bash
 sudo apt-get update
 sudo apt-get install git python3-pip python3-pil python3-numpy imagemagick
-as it's used in dither_image()
 sudo pip3 install RPi.GPIO
 sudo pip3 install spidev
 sudo pip3 install spotipy
