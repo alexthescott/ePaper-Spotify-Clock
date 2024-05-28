@@ -31,9 +31,9 @@ while (( "$#" )); do
 done
 
 runscript() {
-  if ! pgrep -f "python3 mainSpotifyClock.py" >/dev/null; then
+  if ! pgrep -f "python3 main.py" >/dev/null; then
     # Construct the python command with the parsed arguments
-    python_cmd="python3 mainSpotifyClock.py"
+    python_cmd="python3 main.py"
     [ "$verbose" = 1 ] && python_cmd="$python_cmd -v"
     [ "$clock" = 1 ] && python_cmd="$python_cmd --clock"
     [ "$local" = 1 ] && python_cmd="$python_cmd --local"
@@ -45,7 +45,7 @@ runscript() {
       $python_cmd 2>>failures.txt
     fi
     if [ $? -ne 0 ]; then
-      echo -e "Failure occurred in mainSpotifyClock.py at: $(date '+%Y-%m-%d %H:%M:%S')\n" >>failures.txt
+      echo -e "Failure occurred in main.py at: $(date '+%Y-%m-%d %H:%M:%S')\n" >>failures.txt
     fi
   fi
 }

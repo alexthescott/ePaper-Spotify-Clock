@@ -22,7 +22,7 @@ class Clock:
         logger.info("\n\t-- Clock Init --\n-----------------------------------------------------------------------------------------------------")
         self.local_run: bool = False
         try:
-            from waveshare_epd import epd4in2_V2, epd4in2
+            from waveshare_epd import epd4in2_V2, epd4in2 # type: ignore
         except ImportError:
             self.local_run = True
 
