@@ -6,7 +6,7 @@ ePaperClockLocation="/home/$USER/e-Paper/RaspberryPi_JetsonNano/python/examples/
 # Initialize our own variables
 verbose=0
 clock=0
-local=0
+local_run=0
 
 # Parse command-line arguments
 while (( "$#" )); do
@@ -19,8 +19,8 @@ while (( "$#" )); do
     clock=1
     shift
     ;;
-  --local)
-    local=1
+  --local_run)
+    local_run=1
     shift
     ;;
   *)
@@ -36,7 +36,7 @@ runscript() {
     python_cmd="python3 main.py"
     [ "$verbose" = 1 ] && python_cmd="$python_cmd -v"
     [ "$clock" = 1 ] && python_cmd="$python_cmd --clock"
-    [ "$local" = 1 ] && python_cmd="$python_cmd --local"
+    [ "$local_run" = 1 ] && python_cmd="$python_cmd --local"
 
     echo "Running command: $python_cmd"
     if [ "$verbose" = 1 ]; then
