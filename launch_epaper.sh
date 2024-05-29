@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # launch_epaper.sh
 # navigate to directory then execute python script
 ePaperClockLocation="/home/$USER/e-Paper/RaspberryPi_JetsonNano/python/examples/"
