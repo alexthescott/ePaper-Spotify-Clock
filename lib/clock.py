@@ -344,9 +344,10 @@ class Clock:
             if got_new_album_art:
                 self.get_new_album_art = False
         image_file_name = "NA.png" if not self.track_image_link else None
+        image_file_path = "Icons/album_na/" if not self.track_image_link else "cache/album_art/"
         if not self.track_image_link:
             logger.warning("No album art found, drawing NA.png")
-        self.image_obj.draw_album_image(self.flip_to_dark, image_file_name=image_file_name, pos=album_pos, convert_image=got_new_album_art)
+        self.image_obj.draw_album_image(self.flip_to_dark, image_file_name=image_file_name, image_file_path=image_file_path, pos=album_pos, convert_image=got_new_album_art)
 
     def handle_dark_mode(self) -> None:
         """

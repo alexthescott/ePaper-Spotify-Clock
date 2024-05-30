@@ -23,14 +23,15 @@ class Misc():
         Returns:
             bool: True if the image was successfully saved, False otherwise.
         """
-        os.makedirs("album_art", exist_ok=True)
+        os.makedirs("cache", exist_ok=True)
+        os.makedirs("cache/album_art", exist_ok=True)
         try:
             img_data = requests.get(track_image_link, timeout=25).content
         except requests.exceptions.RequestException as e:
             logger.error("Failed to get %s: %s", track_image_link, e)
             return False
 
-        with open(f"album_art/{file_name}", 'wb') as handler:
+        with open(f"cache/album_art/{file_name}", 'wb') as handler:
             handler.write(img_data)
 
         return True
@@ -43,14 +44,15 @@ class Misc():
             image_name (str): The name of the image file to resize.
             size (Tuple[int, int]): The desired size of the resized image. Default is (199, 199).
         """
-        os.makedirs("album_art", exist_ok=True)
+        os.makedirs("cache", exist_ok=True)
+        os.makedirs("cache/album_art", exist_ok=True)
         postfix = "resize" if any(s >= 100 for s in size) else "thumbnail"
         outfile = os.path.splitext(image_name)[0] + f"_{postfix}.PNG"
         try:
-            im = Image.open(f"album_art/{image_name}")
+            im = Image.open(f"cache/album_art/{image_name}")
             im.thumbnail(size)
             im = im.convert("L")
-            im.save(f"album_art/{outfile}", "PNG")
+            im.save(f"cache/album_art/{outfile}", "PNG")
         except IOError:
             logger.error("Cannot create %s for '%s'", postfix, image_name)
 

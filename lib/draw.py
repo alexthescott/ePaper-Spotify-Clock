@@ -32,8 +32,9 @@ class Draw:
         self.weather_mode = False
 
         # Make and get the full path to the 'album_art' directory
-        os.makedirs("album_art", exist_ok=True)
-        self.dir_path = os.path.abspath('album_art')
+        os.makedirs("cache", exist_ok=True)
+        os.makedirs("cache/album_art", exist_ok=True)
+        self.dir_path = os.path.abspath('cache/album_art')
 
         self.image_mode = 'L' if self.ds.four_gray_scale else '1'
         if self.ds.four_gray_scale:
@@ -506,7 +507,7 @@ class Draw:
 
         return True
 
-    def draw_album_image(self, dark_mode: bool, image_file_name: str="AlbumImage_resize.PNG", pos: tuple=(0, 0), convert_image: bool=True) -> None:
+    def draw_album_image(self, dark_mode: bool, image_file_name: str="AlbumImage_resize.PNG", image_file_path: str="cache/album_art/", pos: tuple=(0, 0), convert_image: bool=True) -> None:
         """
         Draws the album image on the ePaper display.
 
@@ -518,16 +519,19 @@ class Draw:
         """
         image_file_name = "AlbumImage_resize.PNG" if image_file_name is None else image_file_name
         if convert_image or self.album_image is None:
-            self.album_image = Image.open(f"album_art/{image_file_name}")
+            self.album_image = Image.open(f"{image_file_path}{image_file_name}")
             self.album_image = self.album_image.convert(self.image_mode)
             
             if self.ds.four_gray_scale:
                 before_dither = time()
-                self.dither_album_art()
+                if "NA" in image_file_name:
+                    self.dither_album_art("NA")
+                else:
+                    self.dither_album_art()
                 after_dither = time()
                 logger.info("* Dithering took %.2f seconds *", after_dither - before_dither)
 
-        chosen_album_image = "album_art/AlbumImage"
+        chosen_album_image = "cache/album_art/AlbumImage" if "NA" not in image_file_name else "cache/album_art/NA"
         chosen_album_image += "_thumbnail" if self.weather_mode else "_resize"
         chosen_album_image = chosen_album_image.replace("_resize", "_dither") if self.ds.four_gray_scale else chosen_album_image
         chosen_album_image += "_dither" if self.ds.four_gray_scale and self.weather_mode else ""
@@ -772,7 +776,7 @@ class Draw:
 
     # ---- DRAW MISC FUNCs ----------------------------------------------------------------------------
 
-    def dither_album_art(self) -> bool:
+    def dither_album_art(self, main_image_name: str = "AlbumImage") -> bool:
         """
         Dithers the album art image using the Floyd-Steinberg algorithm.
 
@@ -783,12 +787,14 @@ class Draw:
         """
         # Define the file paths
         palette_path = os.path.join(self.dir_path, 'palette.PNG')
-        resize_paths = [os.path.join(self.dir_path, 'AlbumImage_thumbnail.PNG')]
-        dither_paths = [os.path.join(self.dir_path, 'AlbumImage_thumbnail_dither.PNG')]
+        resize_paths = [os.path.join(self.dir_path, f'{main_image_name}_thumbnail.PNG')]
+        dither_paths = [os.path.join(self.dir_path, f'{main_image_name}_thumbnail_dither.PNG')]
 
         if not self.weather_mode:
-            resize_paths.append(os.path.join(self.dir_path, 'AlbumImage_resize.PNG'))
-            dither_paths.append(os.path.join(self.dir_path, 'AlbumImage_dither.PNG'))
+            resize_paths.append(os.path.join(self.dir_path, f'{main_image_name}_resize.PNG'))
+            dither_paths.append(os.path.join(self.dir_path, f'{main_image_name}_dither.PNG'))
+
+        import pdb; pdb.set_trace()
 
         for resize_path, dither_path in zip(resize_paths, dither_paths):
             # Check if the files exist
