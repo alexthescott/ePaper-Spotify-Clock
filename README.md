@@ -1,5 +1,5 @@
-# RaspberryPi E-Paper Spotify Clock
-## TLDR: Desktop clock to help read/see Spotify listening info
+# ePaper Clock: Spotify and Weather
+### TLDR: Desktop clock designed primarily to help read/see Spotify listening info
 
 <p align="center">
 	<img src="spotify_epaper_preview.png" width="400">
@@ -7,7 +7,19 @@
 </p>
 
 ### 🕰️ Quick Project Overview
-Python + Bash with a Raspberry Pi and [Waveshare's 4.2 ePaper display](https://www.waveshare.com/product/4.2inch-e-paper-module.htm) and ePaper library, using [Spotipy](https://spotipy.readthedocs.io/en/2.22.1/) for track info, [OpenWeathermap](https://openweathermap.org/) for weather info, and [Pillow](https://pillow.readthedocs.io/en/stable/) to generate/display image.
+Python + Bash with a Raspberry Pi and [Waveshare's 4.2in ePaper display](https://www.waveshare.com/product/4.2inch-e-paper-module.htm) and ePaper library, using [Spotipy](https://spotipy.readthedocs.io/en/2.22.1/) for track info, [OpenWeathermap](https://openweathermap.org/) for weather info, and [Pillow](https://pillow.readthedocs.io/en/stable/) to generate/display image.
+
+### 💽 Technical Overview
+- main.py only engages with ePaper functionality after determining the availability of Waveshare's epd library.
+- 
+- launch_epaper.sh is designed to run main.py indefinitely.
+```bash
+
+./launch_epaper.sh --clock		# push image to ePaper or save local .png every ~3 minutes most of the day 
+./launch_epaper.sh --local		# generate local .png every 60 seconds
+./launch_epaper.sh -v 			# enable STDOUT logging
+```
+- auth_update.py is also designed to run indefinitely and periodically updates the local branch to the origin every 15 minutes and can be added as a cron job. 
 
 ### ⌛ Install Guide
 - We presume you have a headless Raspberry Pi (I use a Zero W 2) with Waveshare's 4.2inch ePaper display attached via GPIO.
