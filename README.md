@@ -11,7 +11,12 @@ Python + Bash with a Raspberry Pi and [Waveshare's 4.2in ePaper display](https:/
 
 ### 💽 Technical Overview
 - main.py only engages with ePaper functionality after determining the availability of Waveshare's epd library.
-- 
+```bash
+
+python3 main.py --clock		# push image to ePaper or save local .png every ~3 minutes most of the day 
+python3 main.py --local		# generate local test_output/clock_output.png 
+python3 main.py -v 			# enable STDOUT logging
+```
 - launch_epaper.sh is designed to run main.py indefinitely.
 ```bash
 
