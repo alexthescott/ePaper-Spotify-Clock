@@ -794,8 +794,6 @@ class Draw:
             resize_paths.append(os.path.join(self.dir_path, f'{main_image_name}_resize.PNG'))
             dither_paths.append(os.path.join(self.dir_path, f'{main_image_name}_dither.PNG'))
 
-        import pdb; pdb.set_trace()
-
         for resize_path, dither_path in zip(resize_paths, dither_paths):
             # Check if the files exist
             if not os.path.exists(resize_path) or not os.path.exists(palette_path):
