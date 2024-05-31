@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # launch_epaper.sh
 # navigate to directory then execute python script
 ePaperClockLocation="/home/$USER/e-Paper/RaspberryPi_JetsonNano/python/examples/"
@@ -6,7 +6,7 @@ ePaperClockLocation="/home/$USER/e-Paper/RaspberryPi_JetsonNano/python/examples/
 # Initialize our own variables
 verbose=0
 clock=0
-local=0
+local_run=0
 
 # Parse command-line arguments
 while (( "$#" )); do
@@ -19,8 +19,8 @@ while (( "$#" )); do
     clock=1
     shift
     ;;
-  --local)
-    local=1
+  --local_run)
+    local_run=1
     shift
     ;;
   *)
@@ -31,12 +31,12 @@ while (( "$#" )); do
 done
 
 runscript() {
-  if ! pgrep -f "python3 mainSpotifyClock.py" >/dev/null; then
+  if ! pgrep -f "python3 main.py" >/dev/null; then
     # Construct the python command with the parsed arguments
-    python_cmd="python3 mainSpotifyClock.py"
+    python_cmd="python3 main.py"
     [ "$verbose" = 1 ] && python_cmd="$python_cmd -v"
     [ "$clock" = 1 ] && python_cmd="$python_cmd --clock"
-    [ "$local" = 1 ] && python_cmd="$python_cmd --local"
+    [ "$local_run" = 1 ] && python_cmd="$python_cmd --local"
 
     echo "Running command: $python_cmd"
     if [ "$verbose" = 1 ]; then
@@ -45,7 +45,7 @@ runscript() {
       $python_cmd 2>>failures.txt
     fi
     if [ $? -ne 0 ]; then
-      echo -e "Failure occurred in mainSpotifyClock.py at: $(date '+%Y-%m-%d %H:%M:%S')\n" >>failures.txt
+      echo -e "Failure occurred in main.py at: $(date '+%Y-%m-%d %H:%M:%S')\n" >>failures.txt
     fi
   fi
 }
