@@ -1,9 +1,6 @@
 #!/bin/bash
-# launch_epaper.sh
-# navigate to directory then execute python script
-ePaperClockLocation="/home/$USER/e-Paper/RaspberryPi_JetsonNano/python/examples/"
+ePaperClockLocation="/home/alex/Desktop/e-Paper/RaspberryPi_JetsonNano/python/examples/"
 
-# Initialize our own variables
 verbose=0
 clock=0
 local_run=0
@@ -50,7 +47,6 @@ runscript() {
   fi
 }
 
-cd $ePaperClockLocation
 while true; do
   runscript
   sleep_duration=60
