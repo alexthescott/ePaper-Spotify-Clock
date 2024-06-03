@@ -15,14 +15,14 @@ Python + Bash with a Raspberry Pi and [Waveshare's 4.2in ePaper display](https:/
 
 python3 main.py --clock		# push image to ePaper or save local .png every ~3 minutes most of the day 
 python3 main.py --local		# generate local test_output/clock_output.png 
-python3 main.py -v 			# enable STDOUT logging
+python3 main.py -v 		# enable STDOUT logging
 ```
 - launch_epaper.sh is designed to run main.py indefinitely.
 ```bash
 
-./launch_epaper.sh --clock		# push image to ePaper or save local .png every ~3 minutes most of the day 
-./launch_epaper.sh --local		# generate local .png every 60 seconds
-./launch_epaper.sh -v 			# enable STDOUT logging
+./launch_epaper.sh --clock	# push image to ePaper or save local .png every ~3 minutes most of the day 
+./launch_epaper.sh --local	# generate local .png every 60 seconds
+./launch_epaper.sh -v 		# enable STDOUT logging
 ```
 - auth_update.py is also designed to run indefinitely and periodically updates the local branch to the origin every 15 minutes and can be added as a cron job. 
 
