@@ -111,6 +111,12 @@ class Weather():
         Returns:
             bool: True if successful, False otherwise
         """
+        if self.zipcode is None:
+            self.zipcode = self.get_zip_from_ip()
+        
+        if self.lat_long[0] is None or self.lat_long[1] is None:
+            self.lat_long = self.get_lat_long()
+        
         file_path = 'cache/one_call_response.json'
         one_call_json_is_cached = os.path.exists(file_path)
         if one_call_json_is_cached:
@@ -238,7 +244,13 @@ class Weather():
             https://en.wikipedia.org/wiki/Metric_Conversion_Act
             https://www.geographyrealm.com/the-only-metric-highway-in-the-united-states/
         """
-        if self.zipcode is None or self.lat_long[0] is None or self.lat_long[1] is None:
+        if self.zipcode is None:
+            self.zipcode = self.get_zip_from_ip()
+        
+        if self.lat_long[0] is None or self.lat_long[1] is None:
+            self.lat_long = self.get_lat_long()
+            
+        if self.lat_long[0] is None or self.lat_long[1] is None:
             return "NA", "NA", "NA"
         
         if not self.set_local_weather_json():
