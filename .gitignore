@@ -1,3 +1,5 @@
+.DS_Store
+Icons/.DS_Store
 album_art/
 test_output/
 config/secrets.txt
