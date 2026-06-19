@@ -104,113 +104,121 @@ class Clock:
         """
         Main loop for the clock functionality.
         continuously updates the clock display and handles various operations based on the current time.
+
+        The loop body is wrapped in try/except so a single bad iteration logs and sleeps
+        instead of crashing the process and forcing launch_epaper.sh to restart it.
+        SystemExit (e.g. EPD init failure) and BaseException are deliberately not caught.
         """
         while True:
-            # Get 24H clock c_hour to determine sleep duration before refresh
-            date = dt.now() + timedelta(seconds=self.time_elapsed)
-            c_hour = int(date.strftime("%-H"))
-            # Used to 'push' our clock timing forward to account for EPD time
-            start = time() 
+            try:
+                # Get 24H clock c_hour to determine sleep duration before refresh
+                date = dt.now() + timedelta(seconds=self.time_elapsed)
+                c_hour = int(date.strftime("%-H"))
+                # Used to 'push' our clock timing forward to account for EPD time
+                start = time()
 
-            # from 2:01 - 5:59am, don't init the display, return from main, and have .sh script run again in 3 mins
-            if 2 <= c_hour <= 5:
-                if self.did_epd_init:
-                    self.epd.sleep()
-                    self.did_epd_init = False
-                    logger.info("epd.sleep()....")
-                else:
-                    logger.info("still sleeping... %s", dt.now().strftime('%-I:%M%p'))
-                    sleep(55)
-                break
-            elif not self.did_epd_init:
-                if not self.local_run:
-                    # try initing the EPD for a total of 45 seconds
-                    thread = threading.Thread(target=self.init_epd)
-                    thread.start()
-                    thread.join(45)
-                    if thread.is_alive():
-                        logger.error("Failed to init EPD in 45 seconds")
-                        print("Failed to initialize EPD within 45 seconds, exiting program.", file=sys.stdout)
-                        sys.exit(1)
-                    else:
-                        logger.info("EPD Initialized")
-                    
-                    if self.ds.four_gray_scale:
-                        logger.info("Initializing EPD 4Gray...")
-                        self.epd.Init_4Gray()
-                    elif self.ds.partial_update:
-                        logger.info("Initializing Partial EPD...")
-                        self.epd.init_fast(self.epd.Seconds_1_5S)
-                self.did_epd_init = True
-
-            self.image_obj.clear_image()
-            if self.weather_info is None or self.weather_refresh_loop_count >= self.loops_until_weather_refresh:
-                self.set_weather()
-                self.set_sunset_info()
-                if self.ds.detailed_weather_forecast and self.draw_detailed_weather:
-                    self.set_four_hour_forecast()
-            sec_left, time_str = self.get_time_from_date_time()
-            logger.info("Time: %s", time_str)
-
-            self.build_image(time_str)
-
-            if self.did_epd_init:
-                if not self.local_run:
-                    logger.info("\tDrawing Image to EPD")
-                    if self.ds.four_gray_scale:
-                        self.epd.display_4Gray(self.epd.getbuffer_4Gray(self.image_obj.get_image_obj()))
-                    else:
-                        self.epd.display(self.epd.getbuffer(self.image_obj.get_image_obj()))
-                    if self.ds.sleep_epd and (not self.ds.partial_update or self.flip_to_dark):
-                        logger.info("\tSleeping EPD")
+                # from 2:01 - 5:59am, don't init the display, return from main, and have .sh script run again in 3 mins
+                if 2 <= c_hour <= 5:
+                    if self.did_epd_init:
                         self.epd.sleep()
                         self.did_epd_init = False
-                else:
-                    logger.info("\tSaving Image Locally")
-                    self.save_local_file()
-
-            # Look @ start variable above. find out how long it takes to compute our image
-            stop = time()
-
-            self.time_elapsed = stop - start
-            remaining_time = sec_left - self.time_elapsed
-            if 5 < c_hour and c_hour < 23:
-                # 6:00am - 10:59pm update screen every 3 minutes
-                logger.info("\t%.2f\tseconds per loop\tsleeping for %d seconds", round(self.time_elapsed, 2), int(remaining_time/1+120))
-                if not (self.ds.partial_update and not self.flip_to_dark):
-                    sleep(max(2+remaining_time+120, 0))
-                else:
-                    # if we do partial updates and darkmode, you get a worrisome zebra stripe artifact on the EPD
-                    # Create new time image, push to display, full update after 2 partials
-                    partial_update_count = 0
-                    while partial_update_count < 3:
-                        date = dt.now()
-                        sec_left = 62 - int(date.strftime("%S"))
-
-                        if partial_update_count < 2:
-                            logger.info("\t%s sleep, partial_update", round(sec_left, 2))
-                            sleep(sec_left)
+                        logger.info("epd.sleep()....")
+                    else:
+                        logger.info("still sleeping... %s", dt.now().strftime('%-I:%M%p'))
+                        sleep(55)
+                    break
+                elif not self.did_epd_init:
+                    if not self.local_run:
+                        # try initing the EPD for a total of 45 seconds
+                        thread = threading.Thread(target=self.init_epd)
+                        thread.start()
+                        thread.join(45)
+                        if thread.is_alive():
+                            logger.error("Failed to init EPD in 45 seconds")
+                            print("Failed to initialize EPD within 45 seconds, exiting program.", file=sys.stdout)
+                            sys.exit(1)
                         else:
-                            logger.info("\t%.2f\tseconds per loop\tsleeping for %d seconds", round(self.time_elapsed, 2), int(remaining_time/1+120))
-                            sleep(sec_left-self.time_elapsed)
+                            logger.info("EPD Initialized")
 
-                        if sec_left > 5 and partial_update_count < 2:
+                        if self.ds.four_gray_scale:
+                            logger.info("Initializing EPD 4Gray...")
+                            self.epd.Init_4Gray()
+                        elif self.ds.partial_update:
+                            logger.info("Initializing Partial EPD...")
+                            self.epd.init_fast(self.epd.Seconds_1_5S)
+                    self.did_epd_init = True
+
+                self.image_obj.clear_image()
+                if self.weather_info is None or self.weather_refresh_loop_count >= self.loops_until_weather_refresh:
+                    self.set_weather()
+                    self.set_sunset_info()
+                    if self.ds.detailed_weather_forecast and self.draw_detailed_weather:
+                        self.set_four_hour_forecast()
+                sec_left, time_str = self.get_time_from_date_time()
+                logger.info("Time: %s", time_str)
+
+                self.build_image(time_str)
+
+                if self.did_epd_init:
+                    if not self.local_run:
+                        logger.info("\tDrawing Image to EPD")
+                        if self.ds.four_gray_scale:
+                            self.epd.display_4Gray(self.epd.getbuffer_4Gray(self.image_obj.get_image_obj()))
+                        else:
+                            self.epd.display(self.epd.getbuffer(self.image_obj.get_image_obj()))
+                        if self.ds.sleep_epd and (not self.ds.partial_update or self.flip_to_dark):
+                            logger.info("\tSleeping EPD")
+                            self.epd.sleep()
+                            self.did_epd_init = False
+                    else:
+                        logger.info("\tSaving Image Locally")
+                        self.save_local_file()
+
+                # Look @ start variable above. find out how long it takes to compute our image
+                stop = time()
+
+                self.time_elapsed = stop - start
+                remaining_time = sec_left - self.time_elapsed
+                if 5 < c_hour and c_hour < 23:
+                    # 6:00am - 10:59pm update screen every 3 minutes
+                    logger.info("\t%.2f\tseconds per loop\tsleeping for %d seconds", round(self.time_elapsed, 2), int(remaining_time/1+120))
+                    if not (self.ds.partial_update and not self.flip_to_dark):
+                        sleep(max(2+remaining_time+120, 0))
+                    else:
+                        # if we do partial updates and darkmode, you get a worrisome zebra stripe artifact on the EPD
+                        # Create new time image, push to display, full update after 2 partials
+                        partial_update_count = 0
+                        while partial_update_count < 3:
                             date = dt.now()
-                            time_str = date.strftime("%-H:%M") if self.ds.twenty_four_hour_clock else date.strftime("%-I:%M") + date.strftime("%p").lower()
-                            logger.info("\ttime_str:%s", time_str)
-                            self.image_obj.draw_date_time_temp(self.weather_info, time_str)
-                            if not self.local_run:
-                                self.epd.display_Fast(self.epd.getbuffer(self.image_obj.get_image_obj()))
-                            else:
-                                self.save_local_file()
-                        partial_update_count += 1
-            elif c_hour >= 23 or c_hour < 2:
-                # 11:00pm - 1:59am update screen every 5ish minutes
-                logger.info("\t%.2f\tseconds per loop\tsleeping for %d seconds", round(self.time_elapsed, 2), int(remaining_time+240))
-                sleep(max(2+remaining_time+240, 0))
+                            sec_left = 62 - int(date.strftime("%S"))
 
-            # Increment counter for Weather requests
-            self.weather_refresh_loop_count = 0 if self.weather_refresh_loop_count == self.loops_until_weather_refresh else self.weather_refresh_loop_count + 1
+                            if partial_update_count < 2:
+                                logger.info("\t%s sleep, partial_update", round(sec_left, 2))
+                                sleep(sec_left)
+                            else:
+                                logger.info("\t%.2f\tseconds per loop\tsleeping for %d seconds", round(self.time_elapsed, 2), int(remaining_time/1+120))
+                                sleep(sec_left-self.time_elapsed)
+
+                            if sec_left > 5 and partial_update_count < 2:
+                                date = dt.now()
+                                time_str = date.strftime("%-H:%M") if self.ds.twenty_four_hour_clock else date.strftime("%-I:%M") + date.strftime("%p").lower()
+                                logger.info("\ttime_str:%s", time_str)
+                                self.image_obj.draw_date_time_temp(self.weather_info, time_str)
+                                if not self.local_run:
+                                    self.epd.display_Fast(self.epd.getbuffer(self.image_obj.get_image_obj()))
+                                else:
+                                    self.save_local_file()
+                            partial_update_count += 1
+                elif c_hour >= 23 or c_hour < 2:
+                    # 11:00pm - 1:59am update screen every 5ish minutes
+                    logger.info("\t%.2f\tseconds per loop\tsleeping for %d seconds", round(self.time_elapsed, 2), int(remaining_time+240))
+                    sleep(max(2+remaining_time+240, 0))
+
+                # Increment counter for Weather requests
+                self.weather_refresh_loop_count = 0 if self.weather_refresh_loop_count == self.loops_until_weather_refresh else self.weather_refresh_loop_count + 1
+            except Exception as e:
+                logger.exception("tick_tock iteration failed: %s — sleeping 30s and retrying", e)
+                sleep(30)
 
     def build_image(self, time_str: Optional[str] = None) -> None:
         """
@@ -255,26 +263,36 @@ class Clock:
 
     def handle_spotify_user_1(self) -> None:
         """
-        This function handles the information for Spotify User 1. 
+        This function handles the information for Spotify User 1.
         It retrieves the Spotify information for User 1 and draws the track info on the image.
+        Wrapped in a try/except so a transient Spotify failure can't kill the loop.
         """
         self.old_album_name1 = self.album_name_1
-        self.track_1, self.artist_1, self.time_since_1, self.ctx_type_1, self.ctx_title_1, self.track_image_link, self.album_name_1 = self.spotify_user_1.get_spotipy_info()
+        try:
+            self.track_1, self.artist_1, self.time_since_1, self.ctx_type_1, self.ctx_title_1, self.track_image_link, self.album_name_1 = self.spotify_user_1.get_spotipy_info()
+        except Exception as e:
+            logger.exception("handle_spotify_user_1 swallowed: %s", e)
+            self.track_1, self.artist_1, self.time_since_1 = "—", "Spotify unavailable", ""
+            self.ctx_type_1, self.ctx_title_1, self.track_image_link, self.album_name_1 = "", "", None, ""
         x_spot_info = 5 if (self.ds.single_user and self.ds.album_art_right_side) or not self.ds.single_user else 207
         y_spot_info = 26
         self.draw_track_info(self.track_1, self.artist_1, self.ctx_type_1, self.ctx_title_1, x_spot_info, y_spot_info, self.spotify_user_1, self.time_since_1)
 
     def handle_spotify_user_2_or_album_art_display(self) -> None:
         """
-        This function handles the information for Spotify User 2 or album art display. 
-        If there is a single user, it calls the function to handle album art display. 
+        This function handles the information for Spotify User 2 or album art display.
+        If there is a single user, it calls the function to handle album art display.
         Otherwise, it retrieves the Spotify information for User 2 and draws the track info on the image.
 
         Args:
             time_str (str): The time string to be displayed.
         """
         if not self.ds.single_user:
-            track_2, artist_2, time_since_2, ctx_type_2, ctx_title_2, _, _ = self.spotify_user_2.get_spotipy_info()
+            try:
+                track_2, artist_2, time_since_2, ctx_type_2, ctx_title_2, _, _ = self.spotify_user_2.get_spotipy_info()
+            except Exception as e:
+                logger.exception("handle_spotify_user_2 swallowed: %s", e)
+                track_2, artist_2, time_since_2, ctx_type_2, ctx_title_2 = "—", "Spotify unavailable", "", "", ""
             self.draw_track_info(track_2, artist_2, ctx_type_2, ctx_title_2, 207, 26, self.spotify_user_2, time_since_2)
         else:
             self.handle_album_art_display()

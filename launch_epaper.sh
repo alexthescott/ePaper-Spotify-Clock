@@ -30,7 +30,23 @@ while (( "$#" )); do
   esac
 done
 
+rotate_failures() {
+  # Cap failures.txt at ~2MB. Keep one previous (.1), drop older (.2).
+  local f="failures.txt"
+  local max_bytes=$((2 * 1024 * 1024))
+  if [ -f "$f" ]; then
+    local size
+    size=$(stat -c%s "$f" 2>/dev/null || stat -f%z "$f" 2>/dev/null || echo 0)
+    if [ "$size" -ge "$max_bytes" ]; then
+      [ -f "$f.1" ] && mv "$f.1" "$f.2"
+      mv "$f" "$f.1"
+      : > "$f"
+    fi
+  fi
+}
+
 runscript() {
+  rotate_failures
   if ! pgrep -f "python3 main.py" >/dev/null; then
     # Construct the python command with the parsed arguments
     python_cmd="python3 main.py"

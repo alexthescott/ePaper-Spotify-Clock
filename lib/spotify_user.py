@@ -1,18 +1,61 @@
+import functools
 import json
 import logging
+import random
+import sys
+import time
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional, Tuple, Union
 
 import requests
 from requests.exceptions import ReadTimeout
 import spotipy
-from spotipy.exceptions import SpotifyException
+from spotipy.exceptions import SpotifyException, SpotifyOauthError
 
 from lib.clock_logging import logger
 from lib.display_settings import display_settings
 from lib.json_io import LocalJsonIO
 
 spotify_logger = logging.getLogger('spotipy.client')
+
+
+def _retry_with_backoff(
+    exceptions: Tuple[type, ...],
+    attempts: int = 3,
+    base: float = 1.0,
+    cap: float = 16.0,
+):
+    """
+    Retry decorator with exponential backoff and jitter.
+
+    Honors `Retry-After` on 429s, backs off on 5xx, re-raises other 4xx immediately.
+    Catches network-level errors listed in `exceptions` (e.g., ReadTimeout, ConnectionError).
+    """
+    def deco(fn):
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            last = None
+            for i in range(attempts):
+                try:
+                    return fn(*args, **kwargs)
+                except SpotifyException as e:
+                    last = e
+                    if e.http_status == 429:
+                        retry_after = (e.headers or {}).get('Retry-After')
+                        wait = float(retry_after) if retry_after else base * (2 ** i)
+                    elif 500 <= (e.http_status or 0) < 600:
+                        wait = min(cap, base * (2 ** i)) + random.uniform(0, 1)
+                    else:
+                        raise
+                except exceptions as e:
+                    last = e
+                    wait = min(cap, base * (2 ** i)) + random.uniform(0, 1)
+                if i < attempts - 1:
+                    logger.warning("retrying %s after %.1fs (%s)", fn.__name__, wait, type(last).__name__)
+                    time.sleep(wait)
+            raise last
+        return wrapper
+    return deco
 
 
 def get_time_from_timedelta(td: timedelta) -> Tuple[int, int]:
@@ -64,13 +107,16 @@ class SpotifyUser:
         self.name = name
         self.oauth = None
         self.oauth_token_info = None
+        self.token = None
+        self.token_expires_at: Optional[float] = None
         self.sp = None
         self.dt = None
         self.ctx_io = LocalJsonIO()
         self.right_side = (self.single_user and self.ds.album_art_right_side) or not self.single_user and not self.main_user
         logger.info("User: %s Right Side: %s", self.name, self.right_side)
         self.load_credentials()
-        self.update_spotipy_token()
+        if not self.update_spotipy_token():
+            logger.error("Spotify token init failed for %s — will retry in tick loop", self.name)
 
     def load_credentials(self):
         """
@@ -82,19 +128,38 @@ class SpotifyUser:
             self.spot_client_secret = credentials['spot_client_secret_me'] if self.main_user else credentials['spot_client_secret_you']
 
     def update_spotipy_token(self):
-        """ 
-        Updates Spotify Token from self.oauth if token_info is stale. 
+        """
+        Updates Spotify Token from self.oauth if token_info is stale.
+
+        Retries with exponential backoff on transient OAuth/network errors. Returns
+        True if a usable Spotify client is available afterward, False otherwise.
         """
         self.oauth = spotipy.oauth2.SpotifyOAuth(self.spot_client_id, self.spot_client_secret, self.redirect_uri, scope=self.scope, cache_path=self.cache, requests_timeout=10)
-        try:
-            self.oauth_token_info = self.oauth.get_cached_token()
-        except requests.exceptions.ConnectionError:
-            logger.error("Failed to update cached_token(): ConnectionError")
+
+        self.oauth_token_info = None
+        for attempt in range(3):
+            try:
+                self.oauth_token_info = self.oauth.get_cached_token()
+                break
+            except requests.exceptions.HTTPError as e:
+                if e.response is not None and 400 <= e.response.status_code < 500:
+                    logger.error("OAuth 4xx — credentials likely invalid: %s", e)
+                    return False
+                wait = min(16.0, 2.0 ** attempt) + random.uniform(0, 1)
+                logger.warning("OAuth HTTPError %s — retrying in %.1fs", e, wait)
+                time.sleep(wait)
+            except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout, SpotifyOauthError) as e:
+                wait = min(16.0, 2.0 ** attempt) + random.uniform(0, 1)
+                logger.warning("OAuth %s — retrying in %.1fs", type(e).__name__, wait)
+                time.sleep(wait)
+        else:
+            logger.error("OAuth failed after 3 attempts for %s", self.name)
             return False
 
         if self.oauth_token_info:
             self.token = self.oauth_token_info['access_token']
-        else:
+            self.token_expires_at = self.oauth_token_info.get('expires_at')
+        elif sys.stdin.isatty():
             auth_url = self.oauth.get_authorize_url()
             print(auth_url)
             response = input("Paste the above link into your browser, then paste the redirect url here: ")
@@ -103,9 +168,23 @@ class SpotifyUser:
                 print("Found Spotify auth code in Request URL! Trying to get valid access token...")
                 token_info = self.oauth.get_access_token(code)
                 self.token = token_info['access_token']
-        self.sp = spotipy.Spotify(auth=self.token)
+                self.token_expires_at = token_info.get('expires_at')
+        else:
+            logger.error("No cached Spotify token for %s and no TTY for interactive auth", self.name)
+            return False
+
+        if not self.token:
+            return False
+
+        self.sp = spotipy.Spotify(auth_manager=self.oauth, requests_timeout=10, retries=0)
         logger.info("%s's Spotify access_token granted", self.name)
         return True
+
+    def _ensure_fresh_token(self) -> None:
+        """Refresh token proactively when within 2 minutes of expiry."""
+        if self.token_expires_at and time.time() < self.token_expires_at - 120:
+            return
+        self.update_spotipy_token()
 
     def get_spotipy_info(self) -> Tuple[str, str, str, str, str, Optional[str], str]:
         """ 
@@ -135,27 +214,39 @@ class SpotifyUser:
         else:
             return self.get_recently_played_info()
 
+    @_retry_with_backoff((ReadTimeout, requests.exceptions.ConnectionError))
+    def _fetch_current_user_playing_track(self) -> Optional[Dict[str, Any]]:
+        return self.sp.current_user_playing_track()
+
     def get_recent_track(self) -> Optional[Dict[str, Any]]:
         """
         Tries to get the currently playing track for the user.
-        If it fails due to a SpotifyException or ReadTimeout, it tries to update the Spotify token and retry.
-        If it fails due to a ConnectionError, it logs the error and returns None.
-        If it fails after 3 attempts, it logs an error message and returns None.
 
-        Returns:
-            Optional[Dict[str, Any]]: The currently playing track for the user, or None if it fails to get it.
+        Proactively refreshes the token if it's near expiry. On 401, refreshes once and
+        retries. Network errors and transient 5xx are handled by the retry decorator.
+        Returns None if all recovery paths fail; caller falls back to stored context.
         """
-        for _ in range(3):
-            try:
-                return self.sp.current_user_playing_track()
-            except (SpotifyException, ReadTimeout) as e:
-                logger.error(e)
+        if not self.sp:
+            return None
+        self._ensure_fresh_token()
+        spotify_logger.disabled = True
+        try:
+            return self._fetch_current_user_playing_track()
+        except SpotifyException as e:
+            if e.http_status == 401:
                 self.update_spotipy_token()
-            except requests.exceptions.ConnectionError as e:
-                logger.error(e)
-                return None
-        logger.error("Failed to get current %s's Spotify Info", self.name)
-        return None
+                try:
+                    return self._fetch_current_user_playing_track()
+                except Exception as inner:
+                    logger.error("Retry after 401 failed for %s: %s", self.name, inner)
+                    return None
+            logger.error("SpotifyException for %s: %s", self.name, e)
+            return None
+        except Exception as e:
+            logger.error("Failed to get current track for %s: %s", self.name, e)
+            return None
+        finally:
+            spotify_logger.disabled = False
 
     def get_currently_playing_info(self, recent: Dict[str, Any]) -> Tuple[str, str, str, str, str, Optional[str], str]:
         """
@@ -241,7 +332,12 @@ class SpotifyUser:
         if recent is None:
             return None
 
-        unix_timestamp = int(recent['cursors']['after'])
+        cursors = recent.get('cursors') or {}
+        after = cursors.get('after')
+        if after is None:
+            logger.info("No 'cursors.after' for %s — using stored context", self.name)
+            return self.get_stored_json_info(self.ctx_io.read_json_ctx(self.right_side))
+        unix_timestamp = int(after)
         old_context = self.ctx_io.read_json_ctx(self.right_side)
 
         if old_context and 'unix_timestamp' in old_context and old_context['unix_timestamp'] > unix_timestamp:
@@ -249,22 +345,39 @@ class SpotifyUser:
 
         return self.get_track_info_from_recent(recent, unix_timestamp)
 
+    @_retry_with_backoff((ReadTimeout, requests.exceptions.ConnectionError))
+    def _fetch_recently_played(self) -> Optional[Dict[str, Any]]:
+        return self.sp.current_user_recently_played(1)
+
     def get_recently_played_track(self) -> Optional[Dict[str, Any]]:
         """
         Tries to get the most recently played track for the user.
-        If it fails due to a SpotifyException with an expired access token, it tries to update the Spotify token and retry.
-        If it fails due to a SpotifyException with a different reason, it raises the exception.
 
-        Returns:
-            Optional[Dict[str, Any]]: The most recently played track for the user, or None if it fails to get it.
+        On any 401, refreshes the token once and retries. Network errors and 5xx are
+        absorbed by the retry decorator. Returns None on unrecoverable failure so the
+        caller can fall back to stored context instead of crashing the loop.
         """
+        if not self.sp:
+            return None
+        self._ensure_fresh_token()
+        spotify_logger.disabled = True
         try:
-            return self.sp.current_user_recently_played(1)
+            return self._fetch_recently_played()
         except SpotifyException as e:
-            if 'The access token expired' in str(e):
+            if e.http_status == 401:
                 self.update_spotipy_token()
-                return self.sp.current_user_recently_played(1)
-            raise
+                try:
+                    return self._fetch_recently_played()
+                except Exception as inner:
+                    logger.error("Retry after 401 failed for %s: %s", self.name, inner)
+                    return None
+            logger.error("SpotifyException for %s: %s", self.name, e)
+            return None
+        except Exception as e:
+            logger.error("Failed to get recently played for %s: %s", self.name, e)
+            return None
+        finally:
+            spotify_logger.disabled = False
 
     def get_track_info_from_recent(self, recent: Dict[str, Any], unix_timestamp: int) -> Tuple[str, str, str, str, str, str, str]:
         """
@@ -284,7 +397,10 @@ class SpotifyUser:
                 track_image_link: link to the track image
                 album_name: name of the album
         """
-        tracks = recent["items"]
+        tracks = recent.get("items") or []
+        if not tracks:
+            logger.info("No recently played items for %s — using stored context", self.name)
+            return self.get_stored_json_info(self.ctx_io.read_json_ctx(self.right_side))
         track = tracks[0]
         track_name, artists = track['track']['name'], track['track']['artists']
         track_image_link = track['track']['album']['images'][0]['url']
@@ -338,10 +454,13 @@ class SpotifyUser:
             except SpotifyException:
                 if context_type == 'playlist':
                     context_name = "DJ"
+            except (ReadTimeout, requests.exceptions.ConnectionError) as e:
+                logger.warning("Context fetch for %s timed out: %s", context_type, type(e).__name__)
+            finally:
+                spotify_logger.disabled = False
         elif context_type == 'collection':
             context_name = "Liked Songs"
 
-        spotify_logger.disabled = False
         return context_type, context_name
 
     def get_stored_json_info(self, context_json: Dict[str, Any]) -> Tuple[str, str, str, str, str, Optional[str], str]:
