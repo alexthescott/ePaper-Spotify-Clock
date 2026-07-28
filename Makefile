@@ -40,6 +40,12 @@ ifeq ($(ON_PI),yes)
 	sudo apt-get install -y git python3-pip python3-pil python3-numpy imagemagick python3-venv \
 		libjpeg-dev zlib1g-dev libopenjp2-7-dev libtiff-dev
 	$(PIP) install $(PIP_V) RPi.GPIO spidev
+	@if [ "$$(sudo raspi-config nonint get_spi)" != "0" ]; then \
+		sudo raspi-config nonint do_spi 0; \
+		echo "SPI enabled — reboot required before the EPD will respond."; \
+	fi
+	sudo usermod -aG gpio,spi $(shell whoami)
+	@echo "Added $(shell whoami) to gpio/spi groups — log out and back in (or reboot) for this to take effect."
 else
 	@echo "Skipping system-deps: not running on Linux (ON_PI=$(ON_PI)). Run this target on the Pi."
 endif
@@ -54,6 +60,8 @@ ifeq ($(ON_PI),yes)
 		echo "$(WAVESHARE_DIR) already exists, skipping clone"; \
 	fi
 	cd $(WAVESHARE_DIR)/RaspberryPi_JetsonNano/python && $(PIP) install $(PIP_V) .
+	@$(PYTHON) -c "from waveshare_epd import epd4in2_V2" || \
+		(echo "ERROR: waveshare_epd installed but not importable from $(VENV) — check the install output above." && exit 1)
 else
 	@echo "Skipping waveshare: not running on Linux (ON_PI=$(ON_PI)). Run this target on the Pi."
 endif
