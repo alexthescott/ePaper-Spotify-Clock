@@ -4,6 +4,14 @@
 # (systemd's Restart=on-failure/RestartSec= owns the retry loop).
 cd "$(dirname "$(readlink -f "$0")")" || exit 1
 
+# Prefer the venv's python (has spotipy/Pillow/etc installed by `make setup`);
+# fall back to system python3 for environments without a venv (e.g. CI).
+if [ -x ".venv/bin/python3" ]; then
+  PYTHON=".venv/bin/python3"
+else
+  PYTHON="python3"
+fi
+
 # Initialize our own variables
 verbose=0
 clock=0
@@ -50,7 +58,7 @@ runscript() {
   rotate_failures
   if ! pgrep -f "python3 main.py" >/dev/null; then
     # Construct the python command with the parsed arguments
-    python_cmd="python3 main.py"
+    python_cmd="$PYTHON main.py"
     [ "$verbose" = 1 ] && python_cmd="$python_cmd -v"
     [ "$clock" = 1 ] && python_cmd="$python_cmd --clock"
     [ "$local_run" = 1 ] && python_cmd="$python_cmd --local"
