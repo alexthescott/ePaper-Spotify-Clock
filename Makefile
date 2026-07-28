@@ -39,7 +39,7 @@ ifeq ($(ON_PI),yes)
 	sudo apt-get update
 	sudo apt-get install -y git python3-pip python3-pil python3-numpy imagemagick python3-venv \
 		libjpeg-dev zlib1g-dev libopenjp2-7-dev libtiff-dev
-	$(PIP) install $(PIP_V) RPi.GPIO spidev
+	$(PIP) install $(PIP_V) RPi.GPIO spidev gpiozero
 	@if [ "$$(sudo raspi-config nonint get_spi)" != "0" ]; then \
 		sudo raspi-config nonint do_spi 0; \
 		echo "SPI enabled — reboot required before the EPD will respond."; \
