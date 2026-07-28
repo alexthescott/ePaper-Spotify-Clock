@@ -8,29 +8,38 @@ UNAME_S := $(shell uname -s)
 UNAME_M := $(shell uname -m)
 ON_PI := $(shell [ "$(UNAME_S)" = "Linux" ] && echo yes || echo no)
 
+# make setup V=1  -> trace every command (set -x) and pass -v to pip.
+ifdef V
+SHELL := /bin/bash -x
+PIP_V := -v
+else
+PIP_V :=
+endif
+
 .PHONY: setup venv deps system-deps waveshare configs systemd local-test clean
 
 # Full first-time setup. Safe to re-run.
-setup: venv deps waveshare configs systemd
+setup: venv system-deps deps waveshare configs systemd
 	@echo "Setup complete. Edit config/keys.json, then run 'python3 main.py --local' once per user to complete Spotify OAuth before starting the service."
 
 venv:
 	@test -d $(VENV) || python3 -m venv $(VENV)
 
 deps: venv
-	$(PIP) install --upgrade pip
-	$(PIP) install -r requirements.txt
+	$(PIP) install $(PIP_V) --upgrade pip
+	$(PIP) install $(PIP_V) -r requirements.txt
 
 # System packages needed by Pillow/imagemagick dithering/the waveshare lib.
 # RPi.GPIO/spidev are intentionally NOT in requirements.txt: they're
 # hardware-linked packages that need to build against the Pi's system
 # libraries, so they're installed here (and by the waveshare target)
 # rather than into the venv on non-Pi dev machines.
-system-deps:
+system-deps: venv
 ifeq ($(ON_PI),yes)
 	sudo apt-get update
-	sudo apt-get install -y git python3-pip python3-pil python3-numpy imagemagick python3-venv
-	$(PIP) install RPi.GPIO spidev
+	sudo apt-get install -y git python3-pip python3-pil python3-numpy imagemagick python3-venv \
+		libjpeg-dev zlib1g-dev libopenjp2-7-dev libtiff-dev
+	$(PIP) install $(PIP_V) RPi.GPIO spidev
 else
 	@echo "Skipping system-deps: not running on Linux (ON_PI=$(ON_PI)). Run this target on the Pi."
 endif
@@ -44,7 +53,7 @@ ifeq ($(ON_PI),yes)
 	else \
 		echo "$(WAVESHARE_DIR) already exists, skipping clone"; \
 	fi
-	cd $(WAVESHARE_DIR)/RaspberryPi_JetsonNano/python && $(PIP) install .
+	cd $(WAVESHARE_DIR)/RaspberryPi_JetsonNano/python && $(PIP) install $(PIP_V) .
 else
 	@echo "Skipping waveshare: not running on Linux (ON_PI=$(ON_PI)). Run this target on the Pi."
 endif
