@@ -1,0 +1,17 @@
+[Unit]
+Description=ePaper Spotify Clock
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+WorkingDirectory=__REPO_DIR__
+ExecStart=__REPO_DIR__/launch_epaper.sh --clock
+Restart=on-failure
+RestartSec=30
+StandardOutput=append:__REPO_DIR__/cache/systemd.log
+StandardError=append:__REPO_DIR__/cache/systemd.log
+
+[Install]
+WantedBy=multi-user.target

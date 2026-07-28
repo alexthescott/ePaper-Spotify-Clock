@@ -13,3 +13,5 @@ Icons/weather_backup
 failures.txt
 .vscode/*
 .last_update.out
+config/keys.json
+.venv/

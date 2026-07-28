@@ -91,14 +91,28 @@ class Draw:
         for font_file in font_files:
             for size in font_sizes:
                 font_attribute = f'DSfnt{size}' if "bios" in font_file.lower() else f'helveti{size}'
-                setattr(self, font_attribute, ImageFont.truetype(f'ePaperFonts/{font_file}', size))
+                try:
+                    setattr(self, font_attribute, ImageFont.truetype(f'ePaperFonts/{font_file}', size))
+                except OSError as e:
+                    logger.error("Failed to load font ePaperFonts/%s: %s", font_file, e)
+                    raise
 
         music_context_icons = ['playlist', 'artist', 'album', 'dj', 'collection', 'failure']
         for icon in music_context_icons:
-            setattr(self, f'{icon}_icon', Image.open(f'Icons/music_context/{icon}.png'))
+            try:
+                setattr(self, f'{icon}_icon', Image.open(f'Icons/music_context/{icon}.png'))
+            except (FileNotFoundError, OSError) as e:
+                logger.error("Failed to load icon Icons/music_context/%s.png: %s", icon, e)
+                raise
 
         weather_icons = ['01', '02', '03', '04', '09', '10', '11', '13', '50']
-        self.weather_icon_dict = {icon: Image.open(f'Icons/weather/{icon}.png') for icon in weather_icons}
+        self.weather_icon_dict = {}
+        for icon in weather_icons:
+            try:
+                self.weather_icon_dict[icon] = Image.open(f'Icons/weather/{icon}.png')
+            except (FileNotFoundError, OSError) as e:
+                logger.error("Failed to load weather icon Icons/weather/%s.png: %s", icon, e)
+                raise
 
     def set_dictionaries(self):
         """
@@ -519,9 +533,13 @@ class Draw:
         """
         image_file_name = "AlbumImage_resize.PNG" if image_file_name is None else image_file_name
         if convert_image or self.album_image is None:
-            self.album_image = Image.open(f"{image_file_path}{image_file_name}")
+            try:
+                self.album_image = Image.open(f"{image_file_path}{image_file_name}")
+            except (FileNotFoundError, OSError) as e:
+                logger.error("Failed to open album art %s%s: %s", image_file_path, image_file_name, e)
+                return
             self.album_image = self.album_image.convert(self.image_mode)
-            
+
             if self.ds.four_gray_scale:
                 before_dither = time()
                 if "NA" in image_file_name:
@@ -535,7 +553,11 @@ class Draw:
         chosen_album_image += "_thumbnail" if self.weather_mode else "_resize"
         chosen_album_image = chosen_album_image.replace("_resize", "_dither") if self.ds.four_gray_scale else chosen_album_image
         chosen_album_image += "_dither" if self.ds.four_gray_scale and self.weather_mode else ""
-        self.album_image = Image.open(f"{chosen_album_image}.PNG")
+        try:
+            self.album_image = Image.open(f"{chosen_album_image}.PNG")
+        except (FileNotFoundError, OSError) as e:
+            logger.error("Failed to open album art %s.PNG: %s", chosen_album_image, e)
+            return
 
         if dark_mode:
             self.album_image = ImageMath.eval('255-(a)', a=self.album_image)

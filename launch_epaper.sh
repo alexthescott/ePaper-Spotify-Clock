@@ -1,7 +1,8 @@
 #!/bin/bash
 # launch_epaper.sh
-# navigate to directory then execute python script
-ePaperClockLocation="/home/$USER/e-Paper/RaspberryPi_JetsonNano/python/examples/"
+# Single-shot runner for main.py, intended to be invoked by systemd
+# (systemd's Restart=on-failure/RestartSec= owns the retry loop).
+cd "$(dirname "$(readlink -f "$0")")" || exit 1
 
 # Initialize our own variables
 verbose=0
@@ -62,15 +63,9 @@ runscript() {
     fi
     if [ $? -ne 0 ]; then
       echo -e "Failure occurred in main.py at: $(date '+%Y-%m-%d %H:%M:%S')\n" >>failures.txt
+      exit 1
     fi
   fi
 }
 
-cd $ePaperClockLocation
-while true; do
-  runscript
-  sleep_duration=60
-  echo "Sleeping for $sleep_duration seconds"
-  sleep $sleep_duration
-  sleep 60
-done
+runscript

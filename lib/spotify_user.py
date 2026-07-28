@@ -10,13 +10,19 @@ from typing import Any, Dict, Optional, Tuple, Union
 import requests
 from requests.exceptions import ReadTimeout
 import spotipy
-from spotipy.exceptions import SpotifyException, SpotifyOauthError
+from spotipy.exceptions import SpotifyException
+from spotipy.oauth2 import SpotifyOauthError
 
 from lib.clock_logging import logger
 from lib.display_settings import display_settings
 from lib.json_io import LocalJsonIO
 
 spotify_logger = logging.getLogger('spotipy.client')
+
+# Sentinel distinguishing "the API call itself failed" from a legitimate
+# `None` response (e.g. current_user_playing_track() returns None when
+# nothing is currently playing, which is not a failure).
+_FETCH_FAILED = object()
 
 
 def _retry_with_backoff(
@@ -97,8 +103,8 @@ class SpotifyUser:
     """
     def __init__(self, name: str = "CHANGE_ME", single_user: bool = False, main_user: bool = True):
         self.ds = display_settings
-        self.scope = "user-read-private, user-read-recently-played, user-read-playback-state, user-read-currently-playing"
-        self.redirect_uri = 'http://www.google.com/'
+        self.scope = "user-read-private user-read-recently-played user-read-playback-state user-read-currently-playing"
+        self.redirect_uri = 'http://127.0.0.1:8080/callback'
         self.single_user = single_user
         self.main_user = main_user
         self.spot_client_id = ''
@@ -134,7 +140,15 @@ class SpotifyUser:
         Retries with exponential backoff on transient OAuth/network errors. Returns
         True if a usable Spotify client is available afterward, False otherwise.
         """
-        self.oauth = spotipy.oauth2.SpotifyOAuth(self.spot_client_id, self.spot_client_secret, self.redirect_uri, scope=self.scope, cache_path=self.cache, requests_timeout=10)
+        self.oauth = spotipy.oauth2.SpotifyOAuth(
+            client_id=self.spot_client_id,
+            client_secret=self.spot_client_secret,
+            redirect_uri=self.redirect_uri,
+            scope=self.scope,
+            cache_handler=spotipy.CacheFileHandler(cache_path=self.cache),
+            requests_timeout=10,
+            open_browser=False,
+        )
 
         self.oauth_token_info = None
         for attempt in range(3):
@@ -205,13 +219,15 @@ class SpotifyUser:
             return "Not Available", "Failed to get Spotify Data", "", "Failed", "Failed", None, "Failed"
         self.dt = datetime.now()
         recent = self.get_recent_track()
-        if recent is None:
+        if recent is _FETCH_FAILED:
             old_context = self.ctx_io.read_json_ctx(self.right_side)
             return self.get_stored_json_info(old_context)
 
         if recent and recent['item']:
             return self.get_currently_playing_info(recent)
         else:
+            # Nothing currently playing — fall back to play history rather
+            # than stale stored context.
             return self.get_recently_played_info()
 
     @_retry_with_backoff((ReadTimeout, requests.exceptions.ConnectionError))
@@ -224,10 +240,14 @@ class SpotifyUser:
 
         Proactively refreshes the token if it's near expiry. On 401, refreshes once and
         retries. Network errors and transient 5xx are handled by the retry decorator.
-        Returns None if all recovery paths fail; caller falls back to stored context.
+
+        Returns None if nothing is currently playing (a legitimate Spotify API
+        response) — caller falls back to recently-played history. Returns the
+        _FETCH_FAILED sentinel if the API call itself could not be completed —
+        caller falls back to stale stored context instead.
         """
         if not self.sp:
-            return None
+            return _FETCH_FAILED
         self._ensure_fresh_token()
         spotify_logger.disabled = True
         try:
@@ -239,12 +259,12 @@ class SpotifyUser:
                     return self._fetch_current_user_playing_track()
                 except Exception as inner:
                     logger.error("Retry after 401 failed for %s: %s", self.name, inner)
-                    return None
+                    return _FETCH_FAILED
             logger.error("SpotifyException for %s: %s", self.name, e)
-            return None
+            return _FETCH_FAILED
         except Exception as e:
             logger.error("Failed to get current track for %s: %s", self.name, e)
-            return None
+            return _FETCH_FAILED
         finally:
             spotify_logger.disabled = False
 
@@ -319,18 +339,19 @@ class SpotifyUser:
             "album_name": album_name
         }
 
-    def get_recently_played_info(self) -> Optional[Dict[str, Any]]:
+    def get_recently_played_info(self) -> Tuple[str, str, str, str, str, Optional[str], str]:
         """
         Gets the recently played track information for the user.
         If the track is not found or the stored timestamp is newer, it returns the stored information.
         Otherwise, it returns the track information from the recent track data.
 
         Returns:
-            Optional[Dict[str, Any]]: The recently played track information, or None if it fails to get it.
+            Tuple[str, str, str, str, str, Optional[str], str]: The recently played track
+                information, or the stale stored context if the API call failed.
         """
         recent = self.get_recently_played_track()
         if recent is None:
-            return None
+            return self.get_stored_json_info(self.ctx_io.read_json_ctx(self.right_side))
 
         cursors = recent.get('cursors') or {}
         after = cursors.get('after')

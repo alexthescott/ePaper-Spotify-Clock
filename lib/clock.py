@@ -1,5 +1,7 @@
 import json
+import os
 import re
+import shutil
 import sys
 import threading
 from time import time, sleep
@@ -365,7 +367,29 @@ class Clock:
         image_file_path = "Icons/album_na/" if not self.track_image_link else "cache/album_art/"
         if not self.track_image_link:
             logger.warning("No album art found, drawing NA.png")
+            self.ensure_na_album_art()
         self.image_obj.draw_album_image(self.flip_to_dark, image_file_name=image_file_name, image_file_path=image_file_path, pos=album_pos, convert_image=got_new_album_art)
+
+    def ensure_na_album_art(self) -> None:
+        """
+        Generates cache/album_art/NA_resize.PNG and NA_thumbnail.PNG from
+        Icons/album_na/NA.png if missing, mirroring the resize step that
+        real downloaded album art gets via Misc.get_album_art(). Without
+        this, dithering the "no album art" fallback fails since those
+        derived files are only ever produced by the download path.
+        """
+        na_resize = "cache/album_art/NA_resize.PNG"
+        na_thumbnail = "cache/album_art/NA_thumbnail.PNG"
+        if os.path.exists(na_resize) and os.path.exists(na_thumbnail):
+            return
+        os.makedirs("cache/album_art", exist_ok=True)
+        try:
+            shutil.copyfile("Icons/album_na/NA.png", "cache/album_art/NA.png")
+        except OSError as e:
+            logger.error("Failed to stage NA.png for resizing: %s", e)
+            return
+        self.misc.resize_image("NA.png")
+        self.misc.resize_image("NA.png", (46, 46))
 
     def handle_dark_mode(self) -> None:
         """

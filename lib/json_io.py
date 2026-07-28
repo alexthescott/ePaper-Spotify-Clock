@@ -29,6 +29,7 @@ class LocalJsonIO:
         """
         Read context.txt, returning ctx found if left_ctx, or right_ctx is empty. 
         """
+        position = 'right' if use_right_side else 'left'
         if os.path.exists(self.file_path):
             with open(self.file_path, 'r', encoding='utf-8') as j_cxt:
                 try:
@@ -36,7 +37,6 @@ class LocalJsonIO:
                     if full_json:
                         return json_ctx
                     if json_ctx:
-                        position = 'right' if use_right_side else 'left'
                         return next((item for item in json_ctx['context'] if item['position'] == position), None)
                 except (json.JSONDecodeError, IndexError) as e:
                     logger.error("error reading cache/context.txt for %s side-> %s", position, e)

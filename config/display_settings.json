@@ -5,17 +5,17 @@
     },
     "weather_settings": {
         "detailed_weather_forecast": true,
-        "use_one_call_api": true,
+        "use_one_call_api": false,
         "metric_units": false,
         "minutes_idle_until_detailed_weather": 30,
-        "zip_code": null
+        "zip_code": 92104
     },
     "main_settings": {
         "twenty_four_hour_clock": false,
         "partial_update": false,
         "time_on_right": true,
         "sunset_flip": true,
-        "always_dark_mode": false,
+        "always_dark_mode": true,
         "four_gray_scale": true,
         "use_epd_libV2": false,
         "sleep_epd": true

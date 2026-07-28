@@ -8,16 +8,24 @@ class DisplaySettings:
     from config/display_settings.json + a few validation checks
     """
     def __init__(self):
-        with open("config/display_settings.json", encoding="utf-8") as f:
-            settings = json.load(f)
-            # main settings
-            self.load_main_settings(settings["main_settings"])
-            # single_user_settings
-            self.load_single_user_settings(settings["single_user_settings"])
-            # clock names
-            self.load_clock_names(settings["clock_names"])
-            # weather_settings
-            self.load_weather_settings(settings["weather_settings"])
+        try:
+            with open("config/display_settings.json", encoding="utf-8") as f:
+                settings = json.load(f)
+        except FileNotFoundError as exc:
+            raise FileNotFoundError(
+                "config/display_settings.json not found — run `make setup` or restore it from git"
+            ) from exc
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"config/display_settings.json is not valid JSON: {exc}") from exc
+
+        # main settings
+        self.load_main_settings(settings["main_settings"])
+        # single_user_settings
+        self.load_single_user_settings(settings["single_user_settings"])
+        # clock names
+        self.load_clock_names(settings["clock_names"])
+        # weather_settings
+        self.load_weather_settings(settings["weather_settings"])
 
     def load_main_settings(self, main_settings: dict) -> None:
         """

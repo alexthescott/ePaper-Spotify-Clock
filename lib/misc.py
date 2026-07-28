@@ -31,8 +31,12 @@ class Misc():
             logger.error("Failed to get %s: %s", track_image_link, e)
             return False
 
-        with open(f"cache/album_art/{file_name}", 'wb') as handler:
-            handler.write(img_data)
+        try:
+            with open(f"cache/album_art/{file_name}", 'wb') as handler:
+                handler.write(img_data)
+        except OSError as e:
+            logger.error("Failed to write cache/album_art/%s: %s", file_name, e)
+            return False
 
         return True
 
