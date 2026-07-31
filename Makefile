@@ -62,6 +62,13 @@ ifeq ($(ON_PI),yes)
 		echo "$(WAVESHARE_DIR) already exists, skipping clone"; \
 	fi
 	cd $(WAVESHARE_DIR)/RaspberryPi_JetsonNano/python && $(PIP) install $(PIP_V) .
+	# waveshare-epd's setup.py picks its GPIO dep by checking for
+	# /sys/bus/platform/drivers/gpiomem-bcm2835; on some Pi kernels that
+	# path doesn't exist, so it wrongly installs Jetson.GPIO, which ships
+	# its own RPi.GPIO-namespace shim that shadows the real, working
+	# apt-provided RPi.GPIO (venv-local packages always win over
+	# --system-site-packages). Strip it so the real RPi.GPIO resolves.
+	@$(PIP) show Jetson.GPIO >/dev/null 2>&1 && $(PIP) uninstall -y Jetson.GPIO || true
 	@$(PYTHON) -c "from waveshare_epd import epd4in2_V2" || \
 		(echo "ERROR: waveshare_epd installed but not importable from $(VENV) — check the install output above." && exit 1)
 else
