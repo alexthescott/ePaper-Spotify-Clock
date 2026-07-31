@@ -23,23 +23,25 @@ setup: venv system-deps deps waveshare configs systemd
 	@echo "Setup complete. Edit config/keys.json, then run 'python3 main.py --local' once per user to complete Spotify OAuth before starting the service."
 
 venv:
-	@test -d $(VENV) || python3 -m venv $(VENV)
+	@test -d $(VENV) || python3 -m venv --system-site-packages $(VENV)
 
 deps: venv
 	$(PIP) install $(PIP_V) --upgrade pip
 	$(PIP) install $(PIP_V) -r requirements.txt
 
 # System packages needed by Pillow/imagemagick dithering/the waveshare lib.
-# RPi.GPIO/spidev are intentionally NOT in requirements.txt: they're
-# hardware-linked packages that need to build against the Pi's system
-# libraries, so they're installed here (and by the waveshare target)
-# rather than into the venv on non-Pi dev machines.
+# RPi.GPIO/spidev/gpiozero/lgpio are intentionally installed via apt, not pip:
+# Raspberry Pi OS ships prebuilt, proven bindings for these (python3-lgpio in
+# particular is the modern chardev GPIO backend — pip's sdist needs swig to
+# build from source and even then doesn't match the apt-provided one). The
+# venv is created with --system-site-packages (see the venv target) so it
+# can see these instead of needing its own copies.
 system-deps: venv
 ifeq ($(ON_PI),yes)
 	sudo apt-get update
 	sudo apt-get install -y git python3-pip python3-pil python3-numpy imagemagick python3-venv \
-		libjpeg-dev zlib1g-dev libopenjp2-7-dev libtiff-dev python3-dev
-	$(PIP) install $(PIP_V) RPi.GPIO spidev gpiozero lgpio
+		libjpeg-dev zlib1g-dev libopenjp2-7-dev libtiff-dev python3-dev \
+		python3-lgpio python3-rpi.gpio python3-spidev python3-gpiozero
 	@if [ "$$(sudo raspi-config nonint get_spi)" != "0" ]; then \
 		sudo raspi-config nonint do_spi 0; \
 		echo "SPI enabled — reboot required before the EPD will respond."; \
