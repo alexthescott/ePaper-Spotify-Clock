@@ -119,16 +119,18 @@ class Clock:
                 # Used to 'push' our clock timing forward to account for EPD time
                 start = time()
 
-                # from 2:01 - 5:59am, don't init the display, return from main, and have .sh script run again in 3 mins
+                # from 2:01 - 5:59am, put the EPD to sleep and idle in-process
+                # (checking every 5 min) instead of exiting — keeps us off
+                # systemd's restart cadence and keeps clock.log readable.
                 if 2 <= c_hour <= 5:
                     if self.did_epd_init:
                         self.epd.sleep()
                         self.did_epd_init = False
                         logger.info("epd.sleep()....")
-                    else:
+                    while 2 <= int(dt.now().strftime("%-H")) <= 5:
                         logger.info("still sleeping... %s", dt.now().strftime('%-I:%M%p'))
-                        sleep(55)
-                    break
+                        sleep(300)
+                    continue
                 elif not self.did_epd_init:
                     if not self.local_run:
                         # try initing the EPD for a total of 45 seconds
