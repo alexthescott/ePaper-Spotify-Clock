@@ -99,8 +99,14 @@ class Clock:
         """
         try:
             self.epd.init()
-        except RuntimeError as e:
+            self.epd_init_success = True
+        except Exception as e:
             logger.error("Failed to init EPD: %s", e)
+            self.epd_init_success = False
+            try:
+                self.epd.epdconfig.module_exit()
+            except Exception as cleanup_err:
+                logger.error("Failed to clean up EPD GPIO/SPI after failed init: %s", cleanup_err)
 
     def tick_tock(self):
         """
@@ -134,6 +140,7 @@ class Clock:
                 elif not self.did_epd_init:
                     if not self.local_run:
                         # try initing the EPD for a total of 45 seconds
+                        self.epd_init_success = False
                         thread = threading.Thread(target=self.init_epd)
                         thread.start()
                         thread.join(45)
@@ -141,6 +148,10 @@ class Clock:
                             logger.error("Failed to init EPD in 45 seconds")
                             print("Failed to initialize EPD within 45 seconds, exiting program.", file=sys.stdout)
                             sys.exit(1)
+                        elif not self.epd_init_success:
+                            logger.error("EPD init failed, retrying next loop")
+                            sleep(30)
+                            continue
                         else:
                             logger.info("EPD Initialized")
 
