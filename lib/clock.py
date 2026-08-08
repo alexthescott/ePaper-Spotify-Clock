@@ -98,7 +98,12 @@ class Clock:
         Used to initialize the EPD display within a thread to prevent blocking the main loop.
         """
         try:
-            self.epd.init()
+            if self.ds.four_gray_scale:
+                self.epd.Init_4Gray()
+            elif self.ds.partial_update:
+                self.epd.init_fast(self.epd.Seconds_1_5S)
+            else:
+                self.epd.init()
             self.epd_init_success = True
         except Exception as e:
             logger.error("Failed to init EPD: %s", e)
@@ -154,13 +159,6 @@ class Clock:
                             continue
                         else:
                             logger.info("EPD Initialized")
-
-                        if self.ds.four_gray_scale:
-                            logger.info("Initializing EPD 4Gray...")
-                            self.epd.Init_4Gray()
-                        elif self.ds.partial_update:
-                            logger.info("Initializing Partial EPD...")
-                            self.epd.init_fast(self.epd.Seconds_1_5S)
                     self.did_epd_init = True
 
                 self.image_obj.clear_image()
@@ -171,6 +169,11 @@ class Clock:
                         self.set_four_hour_forecast()
                 sec_left, time_str = self.get_time_from_date_time()
                 logger.info("Time: %s", time_str)
+                try:
+                    open_fd_count = len(os.listdir(f"/proc/{os.getpid()}/fd"))
+                    logger.info("Open FDs: %d", open_fd_count)
+                except OSError:
+                    pass
 
                 self.build_image(time_str)
 
