@@ -16,7 +16,11 @@ else
 PIP_V :=
 endif
 
-.PHONY: setup venv deps system-deps waveshare configs systemd local-test reauth clean
+.PHONY: setup venv deps system-deps waveshare configs systemd local-test reauth clean list
+
+# Lists all targets (derived from .PHONY, so keep that list current).
+list:
+	@grep -E '^\.PHONY:' Makefile | head -1 | cut -d: -f2 | tr ' ' '\n' | grep -v '^$$'
 
 # Full first-time setup. Safe to re-run.
 setup: venv system-deps deps waveshare configs systemd
