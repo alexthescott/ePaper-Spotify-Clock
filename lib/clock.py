@@ -15,6 +15,10 @@ from lib.spotify_user import SpotifyUser
 from lib.misc import Misc
 from lib.clock_logging import logger
 
+# How many days out from a refresh token's 180-day expiry to start showing
+# the on-screen reauth warning (see SpotifyUser.days_until_reauth_required).
+REAUTH_WARNING_DAYS = 14
+
 class Clock:
     """
     Clock updates the screen with the current Spotify info, time, date, and weather on a regular loop.
@@ -63,6 +67,21 @@ class Clock:
         self.spotify_user_2: Optional[SpotifyUser] = SpotifyUser(self.ds.name_2, self.ds.single_user, main_user=False) if not self.ds.single_user else None
         self.ctx_type_2: str = ""
         self.ctx_title_2: str = ""
+
+    def get_reauth_warning_days(self) -> Optional[int]:
+        """
+        Days left before a configured user's Spotify refresh token expires,
+        if within the warning window (or already expired, at 0) — else None.
+        Drives the bottom-bar reauth banner in Draw.draw_date_time_temp.
+        """
+        users = [self.spotify_user_1] + ([self.spotify_user_2] if self.spotify_user_2 else [])
+        if any(u.needs_reauth for u in users):
+            return 0
+        known_days = [days for u in users if (days := u.days_until_reauth_required()) is not None]
+        if not known_days:
+            return None
+        days_left = min(known_days)
+        return days_left if days_left <= REAUTH_WARNING_DAYS else None
 
     def set_weather(self) -> None:
         """
@@ -248,7 +267,7 @@ class Clock:
         """
         self.set_weather_and_sunset_info()
         time_str = self.get_time_str(time_str)
-        self.image_obj.draw_date_time_temp(self.weather_info, time_str)
+        self.image_obj.draw_date_time_temp(self.weather_info, time_str, self.get_reauth_warning_days())
         self.image_obj.draw_border_lines()
         self.handle_spotify_user_1()
         self.handle_spotify_user_2_or_album_art_display()
