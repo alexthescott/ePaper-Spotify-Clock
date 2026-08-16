@@ -16,11 +16,11 @@ else
 PIP_V :=
 endif
 
-.PHONY: setup venv deps system-deps waveshare configs systemd local-test clean
+.PHONY: setup venv deps system-deps waveshare configs systemd local-test reauth clean
 
 # Full first-time setup. Safe to re-run.
 setup: venv system-deps deps waveshare configs systemd
-	@echo "Setup complete. Edit config/keys.json, then run 'python3 main.py --local' once per user to complete Spotify OAuth before starting the service."
+	@echo "Setup complete. Edit config/keys.json, then run 'make local-test' once to complete Spotify OAuth before starting the service."
 
 venv:
 	@test -d $(VENV) || python3 -m venv --system-site-packages $(VENV)
@@ -39,7 +39,7 @@ deps: venv
 system-deps: venv
 ifeq ($(ON_PI),yes)
 	sudo apt-get update
-	sudo apt-get install -y git python3-pip python3-pil python3-numpy imagemagick python3-venv \
+	sudo apt-get install -y git python3-pip python3-pil python3-numpy python3-venv \
 		libjpeg-dev zlib1g-dev libopenjp2-7-dev libtiff-dev python3-dev \
 		python3-lgpio python3-rpi.gpio python3-spidev python3-gpiozero
 	@if [ "$$(sudo raspi-config nonint get_spi)" != "0" ]; then \
@@ -97,6 +97,13 @@ endif
 # Renders one frame locally (no EPD hardware required) for dev/testing.
 local-test: deps
 	$(PYTHON) main.py --local
+
+# Re-authorizes Spotify once the refresh token expires (Spotify caps these at
+# 180 days). Starts a loopback-only callback server — see the README's
+# "Re-authorizing Spotify" section for the SSH-tunnel steps. Pass
+# ARGS=--secondary to re-auth the second user instead of the main one.
+reauth: deps
+	$(PYTHON) -m lib.spotify_reauth $(ARGS)
 
 clean:
 	rm -rf $(VENV)

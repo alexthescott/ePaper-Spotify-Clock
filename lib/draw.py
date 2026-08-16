@@ -1,5 +1,4 @@
 import os
-import subprocess
 from time import time
 from datetime import datetime as dt
 from typing import List, Optional, Tuple
@@ -38,16 +37,7 @@ class Draw:
 
         self.image_mode = 'L' if self.ds.four_gray_scale else '1'
         if self.ds.four_gray_scale:
-            # Create four grayscale color palette
-            subprocess.run([
-                'convert', '-size', '1x4', 
-                'xc:#FFFFFF', 
-                'xc:#C0C0C0', 
-                'xc:#808080', 
-                'xc:#000000', 
-                '+append', 
-                os.path.join(self.dir_path, 'palette.PNG')
-            ], check=True)
+            self._four_gray_palette = self._make_four_gray_palette()
         
         self.image_obj = Image.new(self.image_mode, (self.width, self.height), 255)
         self.image_draw = ImageDraw.Draw(self.image_obj)
@@ -560,7 +550,7 @@ class Draw:
             return
 
         if dark_mode:
-            self.album_image = ImageMath.eval('255-(a)', a=self.album_image)
+            self.album_image = ImageMath.eval('255-(a)', a=self.album_image.convert('L'))
 
         self.image_obj.paste(self.album_image, pos)
 
@@ -798,6 +788,18 @@ class Draw:
 
     # ---- DRAW MISC FUNCs ----------------------------------------------------------------------------
 
+    @staticmethod
+    def _make_four_gray_palette() -> Image.Image:
+        palette_img = Image.new('P', (1, 1))
+        palette_img.putpalette(
+            [255, 255, 255,   # white
+             192, 192, 192,   # light gray
+             128, 128, 128,   # dark gray
+               0,   0,   0]  # black
+            + [0] * (768 - 12)
+        )
+        return palette_img
+
     def dither_album_art(self, main_image_name: str = "AlbumImage") -> bool:
         """
         Dithers the album art image using the Floyd-Steinberg algorithm.
@@ -807,8 +809,6 @@ class Draw:
         Returns:
         bool: True if the dithering was successful, False otherwise.
         """
-        # Define the file paths
-        palette_path = os.path.join(self.dir_path, 'palette.PNG')
         resize_paths = [os.path.join(self.dir_path, f'{main_image_name}_thumbnail.PNG')]
         dither_paths = [os.path.join(self.dir_path, f'{main_image_name}_thumbnail_dither.PNG')]
 
@@ -817,20 +817,18 @@ class Draw:
             dither_paths.append(os.path.join(self.dir_path, f'{main_image_name}_dither.PNG'))
 
         for resize_path, dither_path in zip(resize_paths, dither_paths):
-            # Check if the files exist
-            if not os.path.exists(resize_path) or not os.path.exists(palette_path):
-                logger.error("Error: File %s not found.", resize_path if not os.path.exists(resize_path) else palette_path)
+            if not os.path.exists(resize_path):
+                logger.error("Error: File %s not found.", resize_path)
                 return False
 
-            # Remap the colors in the image
             start_time = time()
-            subprocess.run(['convert', resize_path, '-dither', 'Floyd-Steinberg', '-remap', palette_path, dither_path], check=True)
+            dithered = Image.open(resize_path).convert('RGB').quantize(
+                palette=self._four_gray_palette,
+                dither=Image.Dither.FLOYDSTEINBERG,
+            )
+            dithered.save(dither_path)
             end_time = time()
             logger.info("* Dithering %s took %.2f seconds *", os.path.basename(dither_path), end_time - start_time)
-
-            if not os.path.exists(dither_path):
-                logger.error("Error: File %s not found.", dither_path)
-                return False
 
             self.album_image = Image.open(dither_path)
 
