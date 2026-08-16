@@ -64,6 +64,8 @@ If you're picking up this repo from a clone/fork made before this note was added
 ### 🔁 Re-authorizing Spotify
 Spotify caps refresh tokens at **180 days from the moment you originally authorized the app** — refreshing the access token (which the clock does automatically every hour) does *not* reset that clock. When it expires, Spotify's API starts returning `invalid_grant`; the clock detects this, stops hammering the token endpoint, and logs that re-authorization is needed (`cache/clock.log`). Nothing about the credentials themselves is wrong — you just need to redo the login/consent step.
 
+Starting ~14 days before expiry, the clock also shows a banner right on the display — a black pill in place of the bottom bar's date, e.g. `! REAUTH 9D`, with the date bumped up above it so you don't lose it. Once the token actually expires, it switches to `! REAUTH NEEDED`. No need to watch the logs for this — a glance at the clock is enough.
+
 Because Spotify now requires OAuth redirect URIs to be either HTTPS or the literal loopback address `127.0.0.1`, re-authorizing a headless Pi can't be done by just clicking a link on your phone over the LAN. Instead, forward the Pi's loopback port to your laptop over SSH and do the login from there:
 
 1. From your laptop (not the Pi), open a tunnel to the Pi's port 8080:
@@ -80,4 +82,4 @@ Because Spotify now requires OAuth redirect URIs to be either HTTPS or the liter
 3. It prints a link — `http://127.0.0.1:8080/`. Open that in a normal browser **on your laptop** (the SSH tunnel from step 1 routes it to the Pi). Click through, log into Spotify if prompted, and hit Agree.
 4. The Pi's script catches the redirect automatically, exchanges it for a fresh token, and writes it straight to `cache/.authcache1` (or `.authcache2`) — no copy-pasting URLs, no restarting the service. The clock resumes on its own within one tick.
 
-No advance-warning banner on the e-ink display yet — for now, the only signal is the log line in `cache/clock.log`, so it's worth periodically checking (or setting your own reminder ~6 months out) rather than waiting for the clock to visibly go stale.
+Once re-authorized, the banner clears on the clock's next tick and the date returns to normal.
