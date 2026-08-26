@@ -1,5 +1,4 @@
 import os
-import subprocess
 from time import time
 from datetime import datetime as dt
 from typing import List, Optional, Tuple
@@ -38,16 +37,7 @@ class Draw:
 
         self.image_mode = 'L' if self.ds.four_gray_scale else '1'
         if self.ds.four_gray_scale:
-            # Create four grayscale color palette
-            subprocess.run([
-                'convert', '-size', '1x4', 
-                'xc:#FFFFFF', 
-                'xc:#C0C0C0', 
-                'xc:#808080', 
-                'xc:#000000', 
-                '+append', 
-                os.path.join(self.dir_path, 'palette.PNG')
-            ], check=True)
+            self._four_gray_palette = self._make_four_gray_palette()
         
         self.image_obj = Image.new(self.image_mode, (self.width, self.height), 255)
         self.image_draw = ImageDraw.Draw(self.image_obj)
@@ -560,7 +550,7 @@ class Draw:
             return
 
         if dark_mode:
-            self.album_image = ImageMath.eval('255-(a)', a=self.album_image)
+            self.album_image = ImageMath.eval('255-(a)', a=self.album_image.convert('L'))
 
         self.image_obj.paste(self.album_image, pos)
 
@@ -634,9 +624,14 @@ class Draw:
             am_pm_x = pos[0] + self.image_draw.textlength(current_time, font=self.DSfnt64)
             self.image_draw.text((am_pm_x, pos[1] + 22), am_pm, font=self.DSfnt32)
 
-    def draw_date_time_temp(self, weather_info: Optional[Tuple[int, int, int]], time_str: str) -> None:
+    def draw_date_time_temp(self, weather_info: Optional[Tuple[int, int, int]], time_str: str, reauth_days_left: Optional[int] = None) -> None:
         """
-        This function draws the date, time, and temperature on the display. 
+        This function draws the date, time, and temperature on the display.
+
+        When reauth_days_left is not None (the Spotify refresh token is within
+        its ~14-day warning window, or already expired at 0), a black pill
+        with white text temporarily replaces the date in the same slot,
+        rather than adding new screen real estate.
         """
         temp, temp_high, temp_low = weather_info if weather_info else (0, 0, 0)
         left_elem_x = 10
@@ -664,12 +659,48 @@ class Draw:
             right_elem_y = self.height - (bar_height // 2) - (temp_height // 2)
             self.draw_weather((right_elem_x, right_elem_y), weather_info)
 
-        # Draw the date in the center of the bottom bar
+        # Draw the date (or reauth warning) in the center of the bottom bar
         self.dt = dt.now()
-        date_width, date_height = self.image_draw.textlength(self.dt.strftime("%a, %b %-d"), font=self.DSfnt32), self.DSfnt32.size/1.3
-        date_x =  left_elem_x + time_width + (right_elem_x - left_elem_x - time_width) // 2 - date_width // 2
-        date_y = 239 + date_height
-        self.image_draw.text((date_x, date_y), self.dt.strftime("%a, %b %-d"), font=self.DSfnt32)
+        if reauth_days_left is None:
+            date_width, date_height = self.image_draw.textlength(self.dt.strftime("%a, %b %-d"), font=self.DSfnt32), self.DSfnt32.size/1.3
+            date_x =  left_elem_x + time_width + (right_elem_x - left_elem_x - time_width) // 2 - date_width // 2
+            date_y = 239 + date_height
+            self.image_draw.text((date_x, date_y), self.dt.strftime("%a, %b %-d"), font=self.DSfnt32)
+        else:
+            self.draw_reauth_banner(reauth_days_left, left_elem_x, time_width, right_elem_x)
+
+    def draw_reauth_banner(self, days_left: int, left_elem_x: int, time_width: int, right_elem_x: int) -> None:
+        """
+        Draws a black pill with inverted white text in the date's slot,
+        centered between the time and weather like the date normally is, with
+        the date itself in small text just above it (there's still room in
+        the bottom bar above the pill).
+
+        Parameters:
+        days_left: Days remaining on the refresh token, per
+            SpotifyUser.days_until_reauth_required(); 0 means it's already expired.
+        left_elem_x, time_width, right_elem_x: same layout inputs draw_date_time_temp
+            uses to center the date, reused here so the banner lines up identically.
+        """
+        center_x = left_elem_x + time_width + (right_elem_x - left_elem_x - time_width) // 2
+
+        label = f"! REAUTH {days_left}D" if days_left > 0 else "! REAUTH NEEDED"
+        label_width, label_height = self.image_draw.textlength(label, font=self.DSfnt32), self.DSfnt32.size/1.3
+        label_x = center_x - label_width // 2
+        label_y = 239 + label_height
+
+        pad_x, pad_y = 5, 3
+        self.image_draw.rectangle(
+            [label_x - pad_x, label_y - pad_y, label_x + label_width + pad_x, label_y + label_height + pad_y],
+            fill=0,
+        )
+        self.image_draw.text((label_x, label_y), label, font=self.DSfnt32, fill=255)
+
+        date_str = self.dt.strftime("%a, %b %-d")
+        date_width, date_height = self.image_draw.textlength(date_str, font=self.DSfnt32), self.DSfnt32.size/1.3
+        date_x = center_x - date_width // 2
+        date_y = label_y - pad_y - 4 - date_height
+        self.image_draw.text((date_x, date_y), date_str, font=self.DSfnt32)
 
     def calculate_time_dimensions(self) -> tuple:
         """
@@ -798,6 +829,18 @@ class Draw:
 
     # ---- DRAW MISC FUNCs ----------------------------------------------------------------------------
 
+    @staticmethod
+    def _make_four_gray_palette() -> Image.Image:
+        palette_img = Image.new('P', (1, 1))
+        palette_img.putpalette(
+            [255, 255, 255,   # white
+             192, 192, 192,   # light gray
+             128, 128, 128,   # dark gray
+               0,   0,   0]  # black
+            + [0] * (768 - 12)
+        )
+        return palette_img
+
     def dither_album_art(self, main_image_name: str = "AlbumImage") -> bool:
         """
         Dithers the album art image using the Floyd-Steinberg algorithm.
@@ -807,8 +850,6 @@ class Draw:
         Returns:
         bool: True if the dithering was successful, False otherwise.
         """
-        # Define the file paths
-        palette_path = os.path.join(self.dir_path, 'palette.PNG')
         resize_paths = [os.path.join(self.dir_path, f'{main_image_name}_thumbnail.PNG')]
         dither_paths = [os.path.join(self.dir_path, f'{main_image_name}_thumbnail_dither.PNG')]
 
@@ -817,20 +858,18 @@ class Draw:
             dither_paths.append(os.path.join(self.dir_path, f'{main_image_name}_dither.PNG'))
 
         for resize_path, dither_path in zip(resize_paths, dither_paths):
-            # Check if the files exist
-            if not os.path.exists(resize_path) or not os.path.exists(palette_path):
-                logger.error("Error: File %s not found.", resize_path if not os.path.exists(resize_path) else palette_path)
+            if not os.path.exists(resize_path):
+                logger.error("Error: File %s not found.", resize_path)
                 return False
 
-            # Remap the colors in the image
             start_time = time()
-            subprocess.run(['convert', resize_path, '-dither', 'Floyd-Steinberg', '-remap', palette_path, dither_path], check=True)
+            dithered = Image.open(resize_path).convert('RGB').quantize(
+                palette=self._four_gray_palette,
+                dither=Image.Dither.FLOYDSTEINBERG,
+            )
+            dithered.save(dither_path)
             end_time = time()
             logger.info("* Dithering %s took %.2f seconds *", os.path.basename(dither_path), end_time - start_time)
-
-            if not os.path.exists(dither_path):
-                logger.error("Error: File %s not found.", dither_path)
-                return False
 
             self.album_image = Image.open(dither_path)
 

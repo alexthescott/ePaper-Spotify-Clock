@@ -1,6 +1,7 @@
 import functools
 import json
 import logging
+import os
 import random
 import sys
 import time
@@ -18,6 +19,11 @@ from lib.display_settings import display_settings
 from lib.json_io import LocalJsonIO
 
 spotify_logger = logging.getLogger('spotipy.client')
+
+# Spotify caps refresh tokens at 180 days from the moment of original
+# authorization; refreshing the access token does not reset this clock.
+# See: https://developer.spotify.com/blog/2026-06-18-refresh-token-expiration
+REFRESH_TOKEN_LIFETIME_DAYS = 180
 
 # Sentinel distinguishing "the API call itself failed" from a legitimate
 # `None` response (e.g. current_user_playing_track() returns None when
@@ -110,14 +116,18 @@ class SpotifyUser:
         self.spot_client_id = ''
         self.spot_client_secret = ''
         self.cache = 'cache/.authcache1' if self.main_user else 'cache/.authcache2'
+        self.meta_path = self.cache + '.meta.json'
         self.name = name
         self.oauth = None
         self.oauth_token_info = None
         self.token = None
         self.token_expires_at: Optional[float] = None
+        self.token_obtained_at: Optional[float] = self._load_token_obtained_at()
+        self.needs_reauth: bool = False
         self.sp = None
         self.dt = None
         self.ctx_io = LocalJsonIO()
+        self._network_ok: bool = True
         self.right_side = (self.single_user and self.ds.album_art_right_side) or not self.single_user and not self.main_user
         logger.info("User: %s Right Side: %s", self.name, self.right_side)
         self.load_credentials()
@@ -133,14 +143,8 @@ class SpotifyUser:
             self.spot_client_id = credentials['spot_client_id_me'] if self.main_user else credentials['spot_client_id_you']
             self.spot_client_secret = credentials['spot_client_secret_me'] if self.main_user else credentials['spot_client_secret_you']
 
-    def update_spotipy_token(self):
-        """
-        Updates Spotify Token from self.oauth if token_info is stale.
-
-        Retries with exponential backoff on transient OAuth/network errors. Returns
-        True if a usable Spotify client is available afterward, False otherwise.
-        """
-        self.oauth = spotipy.oauth2.SpotifyOAuth(
+    def _new_oauth_manager(self) -> spotipy.oauth2.SpotifyOAuth:
+        return spotipy.oauth2.SpotifyOAuth(
             client_id=self.spot_client_id,
             client_secret=self.spot_client_secret,
             redirect_uri=self.redirect_uri,
@@ -150,10 +154,82 @@ class SpotifyUser:
             open_browser=False,
         )
 
+    def _load_token_obtained_at(self) -> Optional[float]:
+        try:
+            with open(self.meta_path, 'r', encoding='utf-8') as f:
+                return json.load(f).get('refresh_token_obtained_at')
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
+            return None
+
+    def _stamp_token_obtained(self) -> None:
+        """
+        Records that a brand-new refresh token was just issued. Only call this
+        after a real authorization-code exchange — ordinary access-token
+        refreshes don't reset Spotify's 180-day refresh-token clock, so
+        stamping there would understate how soon re-auth is actually needed.
+        """
+        self.token_obtained_at = time.time()
+        tmp_path = self.meta_path + '.tmp'
+        try:
+            with open(tmp_path, 'w', encoding='utf-8') as f:
+                json.dump({'refresh_token_obtained_at': self.token_obtained_at}, f)
+            os.replace(tmp_path, self.meta_path)
+        except OSError as e:
+            logger.error("Failed to record token issue date for %s: %s", self.name, e)
+
+    def days_until_reauth_required(self) -> Optional[int]:
+        """
+        Days left on the refresh token's 180-day lifetime, or None if the
+        original grant date isn't known yet (true until the next full
+        re-authorization stamps it — see _stamp_token_obtained).
+        """
+        if self.token_obtained_at is None:
+            return None
+        remaining = self.token_obtained_at + REFRESH_TOKEN_LIFETIME_DAYS * 86400 - time.time()
+        return max(0, int(remaining // 86400))
+
+    def complete_reauth(self, code: str) -> bool:
+        """
+        Exchanges a fresh authorization code for tokens. Used by the loopback
+        re-auth server (lib/spotify_reauth.py) once the user finishes the
+        Spotify login/consent screen. Bypasses the cache lookup since the
+        currently cached refresh token is the expired one being replaced.
+        """
+        if not self.oauth:
+            self.oauth = self._new_oauth_manager()
+        try:
+            token_info = self.oauth.get_access_token(code, as_dict=True, check_cache=False)
+        except SpotifyOauthError as e:
+            logger.error("Re-authorization failed for %s: %s", self.name, e)
+            return False
+        if not token_info:
+            return False
+        self.token = token_info['access_token']
+        self.token_expires_at = token_info.get('expires_at')
+        self._stamp_token_obtained()
+        self.needs_reauth = False
+        self.sp = spotipy.Spotify(auth_manager=self.oauth, requests_timeout=10, retries=0)
+        logger.info("%s's Spotify re-authorization complete", self.name)
+        return True
+
+    def update_spotipy_token(self):
+        """
+        Updates Spotify Token from self.oauth if token_info is stale.
+
+        Retries with exponential backoff on transient OAuth/network errors. Returns
+        True if a usable Spotify client is available afterward, False otherwise.
+        """
+        self.oauth = self._new_oauth_manager()
+
         self.oauth_token_info = None
-        for attempt in range(3):
+        attempts = 3 if self._network_ok else 1
+        _net_fail = False
+        for attempt in range(attempts):
             try:
                 self.oauth_token_info = self.oauth.get_cached_token()
+                if not self._network_ok:
+                    logger.info("Network restored for %s (OAuth)", self.name)
+                self._network_ok = True
                 break
             except requests.exceptions.HTTPError as e:
                 if e.response is not None and 400 <= e.response.status_code < 500:
@@ -163,11 +239,25 @@ class SpotifyUser:
                 logger.warning("OAuth HTTPError %s — retrying in %.1fs", e, wait)
                 time.sleep(wait)
             except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout, SpotifyOauthError) as e:
-                wait = min(16.0, 2.0 ** attempt) + random.uniform(0, 1)
-                logger.warning("OAuth %s — retrying in %.1fs", type(e).__name__, wait)
-                time.sleep(wait)
+                if isinstance(e, SpotifyOauthError) and getattr(e, 'error', None) == 'invalid_grant':
+                    logger.error(
+                        "%s's Spotify refresh token has expired or been revoked (invalid_grant) — "
+                        "re-authorization required, see README's 'Re-authorizing Spotify' section",
+                        self.name,
+                    )
+                    self.needs_reauth = True
+                    return False
+                _net_fail = isinstance(e, (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout))
+                if self._network_ok:
+                    wait = min(16.0, 2.0 ** attempt) + random.uniform(0, 1)
+                    logger.warning("OAuth %s — retrying in %.1fs", type(e).__name__, wait)
+                    time.sleep(wait)
         else:
-            logger.error("OAuth failed after 3 attempts for %s", self.name)
+            if _net_fail:
+                if self._network_ok:
+                    logger.warning("Flagging network offline for %s", self.name)
+                self._network_ok = False
+            logger.error("OAuth failed after %d attempt(s) for %s", attempts, self.name)
             return False
 
         if self.oauth_token_info:
@@ -183,6 +273,7 @@ class SpotifyUser:
                 token_info = self.oauth.get_access_token(code)
                 self.token = token_info['access_token']
                 self.token_expires_at = token_info.get('expires_at')
+                self._stamp_token_obtained()
         else:
             logger.error("No cached Spotify token for %s and no TTY for interactive auth", self.name)
             return False
@@ -190,12 +281,21 @@ class SpotifyUser:
         if not self.token:
             return False
 
+        self.needs_reauth = False
         self.sp = spotipy.Spotify(auth_manager=self.oauth, requests_timeout=10, retries=0)
         logger.info("%s's Spotify access_token granted", self.name)
         return True
 
     def _ensure_fresh_token(self) -> None:
-        """Refresh token proactively when within 2 minutes of expiry."""
+        """
+        Refresh token proactively when within 2 minutes of expiry.
+
+        Once a refresh attempt has hit invalid_grant (self.needs_reauth), the
+        refresh token is dead until a human completes re-authorization — skip
+        further calls instead of hammering Spotify's token endpoint every tick.
+        """
+        if self.needs_reauth:
+            return
         if self.token_expires_at and time.time() < self.token_expires_at - 120:
             return
         self.update_spotipy_token()
@@ -251,7 +351,15 @@ class SpotifyUser:
         self._ensure_fresh_token()
         spotify_logger.disabled = True
         try:
-            return self._fetch_current_user_playing_track()
+            if not self._network_ok:
+                # Single probe — no retries — when we know the network is down.
+                result = self.sp.current_user_playing_track()
+                self._network_ok = True
+                logger.info("Network restored for %s", self.name)
+                return result
+            result = self._fetch_current_user_playing_track()
+            self._network_ok = True
+            return result
         except SpotifyException as e:
             if e.http_status == 401:
                 self.update_spotipy_token()
@@ -261,6 +369,12 @@ class SpotifyUser:
                     logger.error("Retry after 401 failed for %s: %s", self.name, inner)
                     return _FETCH_FAILED
             logger.error("SpotifyException for %s: %s", self.name, e)
+            return _FETCH_FAILED
+        except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:
+            logger.error("Failed to get current track for %s: %s", self.name, e)
+            if self._network_ok:
+                logger.warning("Flagging network offline for %s", self.name)
+                self._network_ok = False
             return _FETCH_FAILED
         except Exception as e:
             logger.error("Failed to get current track for %s: %s", self.name, e)
