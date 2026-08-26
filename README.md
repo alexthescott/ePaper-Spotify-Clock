@@ -34,7 +34,7 @@ If you're picking up this repo from a clone/fork made before this note was added
 - We presume you have a headless Raspberry Pi (I use a Zero W 2) with Waveshare's 4.2inch ePaper display attached via GPIO and SPI enabled via `raspi-config`.
 - Clone this repository and run the automated setup:
 	```bash
-	git clone <this-repo-url>
+	git clone https://github.com/alexthescott/ePaper-Spotify-Clock
 	cd ePaper-Spotify-Clock
 	make setup
 	```
@@ -46,7 +46,7 @@ If you're picking up this repo from a clone/fork made before this note was added
 	- generate and install a systemd unit (`epaper-clock.service`), enabling it on boot (does not start it yet — see next steps)
 
 	Running `make setup` on a non-Pi/non-Linux machine automatically skips the Pi-only steps (`system-deps`, `waveshare`, `systemd`) with a warning, so you can still use it to set up a local dev venv.
-- Edit `config/keys.json` with one or two Spotify users' client id/secret from [Spotify's Create App page](https://developer.spotify.com/dashboard) and a free [OpenWeatherMap token](https://home.openweathermap.org/api_keys).
+- Create a Spotify app at [Spotify's Create App page](https://developer.spotify.com/dashboard): select **Web API** under "Which API/SDKs are you planning to use?", and add `http://127.0.0.1:8080/callback` as a Redirect URI. Edit `config/keys.json` with one or two Spotify users' client id/secret from that app and a free [OpenWeatherMap token](https://home.openweathermap.org/api_keys).
 - **Complete Spotify OAuth interactively before starting the service** — the systemd service runs non-interactively and can't complete the initial browser-paste auth flow:
 	```bash
 	python3 main.py --local
