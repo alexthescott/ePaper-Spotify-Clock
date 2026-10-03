@@ -83,3 +83,6 @@ Because Spotify now requires OAuth redirect URIs to be either HTTPS or the liter
 4. The Pi's script catches the redirect automatically, exchanges it for a fresh token, and writes it straight to `cache/.authcache1` (or `.authcache2`) — no copy-pasting URLs, no restarting the service. The clock resumes on its own within one tick.
 
 Once re-authorized, the banner clears on the clock's next tick and the date returns to normal.
+
+### Inspiration
+Conceptually, this project wouldn't exist without having seen first, Brett van Zuiden's 2020 [UpNext project]([url](https://brettcvz.com/projects/6-upnext)) + Jon Ashcroft's [Now Playing](https://ashcroft.dev/blog/now-playing-screen-spotify-raspberry-pi-es6/) project
