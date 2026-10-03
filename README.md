@@ -85,4 +85,4 @@ Because Spotify now requires OAuth redirect URIs to be either HTTPS or the liter
 Once re-authorized, the banner clears on the clock's next tick and the date returns to normal.
 
 ### Inspiration
-Conceptually, this project wouldn't exist without having seen first, Brett van Zuiden's 2020 [UpNext project]([url](https://brettcvz.com/projects/6-upnext)) + Jon Ashcroft's [Now Playing]([url]https://ashcroft.dev/blog/now-playing-screen-spotify-raspberry-pi-es6/) project
+Conceptually, this project wouldn't exist without having seen first, Brett van Zuiden's 2020 [UpNext project](https://brettcvz.com/projects/6-upnext) + Jon Ashcroft's [Now Playing](https://ashcroft.dev/blog/now-playing-screen-spotify-raspberry-pi-es6/) project
